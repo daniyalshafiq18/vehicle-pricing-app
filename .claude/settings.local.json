@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(npx vite *)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :3000)",
+      "Bash(npm --version)",
+      "Bash(taskkill /F /PID 4888)",
+      "Bash(taskkill /F /PID 17380)",
+      "Bash(taskkill /F /PID 14968)",
+      "Bash(findstr \":3000 \")",
+      "Bash(findstr \":3001 \")",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(tasklist /FI \"PID eq 4888\" /FO CSV)",
+      "Bash(tasklist /FI \"PID eq 17380\" /FO CSV)",
+      "Bash(cmd.exe //c \"tasklist /FI \"\"PID eq 4888\"\" /FO CSV\")",
+      "Bash(cmd.exe //c \"tasklist /FI \"\"PID eq 17380\"\" /FO CSV\")",
+      "Bash(powershell -Command \"Get-Process -Id 4888 -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime\")",
+      "Bash(powershell -Command \"Get-Process -Id 17380 -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime\")",
+      "Bash(powershell -Command \"Get-Process -Id 14968 -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime\")",
+      "Bash(powershell -Command \"Stop-Process -Id 4888 -Force; Stop-Process -Id 17380 -Force\")",
+      "Bash(npm run *)",
+      "Bash(lsof -ti:3000 -ti:3001)",
+      "Bash(xargs -r kill)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(node *)",
+      "mcp__ide__executeCode"
+    ]
+  }
+}
