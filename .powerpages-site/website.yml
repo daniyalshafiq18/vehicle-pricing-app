@@ -1,6 +1,13 @@
-defaultlanguage: 2faeeb07-cea0-425f-82e6-678cacc7df7d
-footerwebtemplateid: 9de0f6e4-cae6-40ea-84df-9dafd7fd8c70
-headerwebtemplateid: e91eb5a9-f77f-4c1f-9900-2ad809666309
-id: f84a472a-b4d2-4a12-996f-209625db68bd
+# defaultlanguage: 2faeeb07-cea0-425f-82e6-678cacc7df7d
+# footerwebtemplateid: 9de0f6e4-cae6-40ea-84df-9dafd7fd8c70
+# headerwebtemplateid: e91eb5a9-f77f-4c1f-9900-2ad809666309
+# id: f84a472a-b4d2-4a12-996f-209625db68bd
+# name: Vehicle Pricing Intelligence Platform Insurance
+# website_language: 1033
+
+defaultlanguage: adf3158d-d04c-4e30-a304-4c704cb0fecb
+footerwebtemplateid: bbff8cd2-7360-49eb-a1f7-aac7e85b5226
+headerwebtemplateid: 2d41c7bc-05f1-48f1-a701-dd44978125c5
+id: a8fa7d3d-8fe4-4d12-a5bd-779b9cdf973d
 name: Vehicle Pricing Intelligence Platform Insurance
 website_language: 1033

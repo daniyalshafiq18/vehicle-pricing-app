@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react';
 import type { IDataSource } from '@types';
 import { ExcelDataSource } from './excelDataSource';
-import { DataverseDataSource } from './dataverse/dataverseDataSource';
 
 interface DataSourceContextValue {
   dataSource: IDataSource | null;
@@ -26,11 +25,9 @@ interface DataSourceProviderProps {
   children: ReactNode;
   /** Optional: force a specific file path for ExcelDataSource */
   filePath?: string;
-  /** Optional: force a specific data source type ('excel' | 'dataverse') */
-  forceSource?: 'excel' | 'dataverse';
 }
 
-export function DataSourceProvider({ children, filePath, forceSource }: DataSourceProviderProps) {
+export function DataSourceProvider({ children, filePath }: DataSourceProviderProps) {
   const [state, setState] = useState<{
     isInitialized: boolean;
     isInitializing: boolean;
@@ -41,15 +38,7 @@ export function DataSourceProvider({ children, filePath, forceSource }: DataSour
   const initialize = useCallback(async () => {
     setState((s) => ({ ...s, isInitializing: true, error: null }));
     try {
-      const sourceType = forceSource ?? (import.meta.env.VITE_DATA_SOURCE as string)?.toLowerCase() ?? 'excel';
-      let ds: IDataSource;
-
-      if (sourceType === 'dataverse') {
-        ds = new DataverseDataSource();
-      } else {
-        ds = new ExcelDataSource(filePath);
-      }
-
+      const ds = new ExcelDataSource(filePath);
       await ds.initialize();
       dsRef.current = ds;
       globalDataSource = ds;
@@ -58,7 +47,7 @@ export function DataSourceProvider({ children, filePath, forceSource }: DataSour
       const message = err instanceof Error ? err.message : 'Failed to initialize data source';
       setState({ isInitialized: false, isInitializing: false, error: message });
     }
-  }, [filePath, forceSource]);
+  }, [filePath]);
 
   useEffect(() => {
     initialize();
