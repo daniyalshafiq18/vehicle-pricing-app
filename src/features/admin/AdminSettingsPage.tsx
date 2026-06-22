@@ -110,14 +110,14 @@ export function AdminSettingsPage() {
                     <div className="flex items-center justify-between rounded-xl border bg-card p-3">
                       <div>
                         <p className="text-sm text-foreground">Current Source</p>
-                        <p className="text-xs text-muted-foreground">Excel (UAE_Vehicle_Data.xlsx)</p>
+                        <p className="text-xs text-muted-foreground">Microsoft Dataverse</p>
                       </div>
                       <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
                         Active
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      To migrate, swap ExcelDataSource with DataverseDataSource. The IDataSource interface ensures no UI changes needed.
+                      All vehicle data is fetched from Microsoft Dataverse via the Power Pages Web API. Uses CSRF-authenticated requests via <code className="text-[10px] bg-muted px-1 rounded">safeFetch</code>.
                     </p>
                   </div>
                 </div>

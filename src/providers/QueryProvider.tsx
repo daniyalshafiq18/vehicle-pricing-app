@@ -12,7 +12,7 @@ function createQueryClient(): QueryClient {
         refetchOnWindowFocus: false,
       },
       mutations: {
-        retry: 1,
+        retry: 0,
       },
     },
   });

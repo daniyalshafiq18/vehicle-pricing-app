@@ -419,7 +419,7 @@ export function AdminQueriesPage() {
               size="sm"
               onClick={exportInquiries}
               disabled={!inquiries?.length}
-              title="Export all inquiries as Excel"
+              title="Export all inquiries as CSV"
             >
               <Download className="mr-1.5 h-4 w-4" />
               Export

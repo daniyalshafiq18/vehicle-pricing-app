@@ -37,7 +37,6 @@ import {
 } from 'lucide-react';
 import type { Vehicle } from '@types';
 import { formatCurrency, formatNumber, cn } from '@utils';
-import * as XLSX from 'xlsx';
 
 const specColors: Record<string, string> = {
   'SPIDER': 'bg-primary/10 text-primary border-primary/20',
@@ -635,22 +634,25 @@ export function AdminVehiclesPage() {
     setPage(1);
   }, [resetFilters, setPage]);
 
-  const handleExportXLSX = useCallback(() => {
+  const handleExportCSV = useCallback(() => {
     const vehicles = data?.vehicles;
     if (!vehicles || !vehicles.length) return;
-    const rows = vehicles.map((v, i) => ({
-      '#': (page - 1) * pageSize + i + 1,
-      Year: v.year, Make: v.make, Model: v.model, Spec: v.spec,
-      'Body Type': v.bodyType,
-      Engine: `${v.engineSize}L`, Horsepower: v.horsepower,
-      Transmission: v.transmission, 'Drive Type': v.driveType,
-      Category: v.category,
-      Price: pricingMap?.get(v.id) ? formatCurrency(pricingMap.get(v.id)!.averagePrice) : '',
-    }));
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Vehicles');
-    XLSX.writeFile(wb, `vehicles-page-${page}.xlsx`);
+    const headers = ['#', 'Year', 'Make', 'Model', 'Spec', 'Body Type', 'Engine', 'Horsepower', 'Transmission', 'Drive Type', 'Category', 'Price'];
+    const rows = vehicles.map((v, i) => [
+      (page - 1) * pageSize + i + 1,
+      v.year, v.make, v.model, v.spec, v.bodyType,
+      `${v.engineSize}L`, v.horsepower,
+      v.transmission, v.driveType, v.category,
+      pricingMap?.get(v.id) ? pricingMap.get(v.id)!.averagePrice : '',
+    ]);
+    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vehicles-page-${page}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }, [data?.vehicles, page, pageSize, pricingMap]);
 
   const getPageNumbers = useCallback(() => {
@@ -698,7 +700,7 @@ export function AdminVehiclesPage() {
               }}
             />
           </div>
-          <Button variant="outline" size="sm" onClick={handleExportXLSX} disabled={!data?.vehicles.length} title="Export vehicles as Excel">
+          <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={!data?.vehicles.length} title="Export vehicles as CSV">
             <Download className="mr-1.5 h-4 w-4" />
             Export
           </Button>

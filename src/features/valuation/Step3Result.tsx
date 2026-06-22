@@ -31,7 +31,7 @@ export function Step3Result() {
   const saveInquiry = useSaveInquiry();
   const inquirySaved = useRef(false);
 
-  const { data: valuation, isLoading, error } = useValuation(
+  const { data: valuation, isLoading, error, isFetched } = useValuation(
     vehicleSelection.year,
     vehicleSelection.make,
     vehicleSelection.model,
@@ -43,33 +43,72 @@ export function Step3Result() {
     if (valuation) setValuationResult(valuation);
   }, [valuation, setValuationResult]);
 
-  // Save inquiry when valuation loads successfully
+  // ── Debug: track mount / effect cycles ────────────────────────
+  const mountId = useRef(crypto.randomUUID().slice(0, 8));
+  const renderCount = useRef(0);
+  renderCount.current++;
+
+  // Log every render to see how valuation/isFetched reference changes
+  const log = (msg: string) =>
+    console.log(`[Step3Result-${mountId.current} r${renderCount.current}] ${msg}`, {
+      hasVal: !!valuation,
+      isFetched,
+      saved: inquirySaved.current,
+      valRef: valuation ? `${(valuation as any)?.vehicle?.make}-${(valuation as any)?.vehicle?.model}` : 'undefined',
+    });
+
+  log('render');
+
   useEffect(() => {
-    if (valuation && !inquirySaved.current) {
-      inquirySaved.current = true;
-      const inquiry: Inquiry = {
-        id: crypto.randomUUID(),
-        firstName: personalInfo.firstName,
-        lastName: personalInfo.lastName,
-        email: personalInfo.email,
-        phone: personalInfo.phone,
-        country: personalInfo.country,
-        city: personalInfo.city,
-        consent: personalInfo.consent,
-        selectedVehicle: {
-          year: vehicleSelection.year ?? 0,
-          make: vehicleSelection.make,
-          model: vehicleSelection.model,
-          spec: vehicleSelection.spec,
-          bodyType: vehicleSelection.bodyType,
-        },
-        valuationResult: valuation,
-        createdAt: new Date(),
-        status: 'pending',
-      };
-      saveInquiry.mutate(inquiry);
+    log('effect fire (deps: valuation, isFetched)');
+  });
+
+  // ── Single-fire save guard ────────────────────────────────────
+  // We prevent duplicate saves with THREE layers:
+  //   Layer 1 — useRef: blocks re-entrance within the same component lifetime.
+  //             A ref cannot cause a re-render so it's immune to the
+  //             sync-render interleaving problem.
+  //   Layer 2 — effect deps [valuation, isFetched] only: stable references
+  //             mean the effect won't re-fire from mutation state changes.
+  //   Layer 3 — synchronous early-return + lock: set the ref BEFORE the async
+  //             mutate() call, so any interleaved render cycle sees it locked.
+  useEffect(() => {
+    if (!valuation || !isFetched) {
+      log('skip — data not ready');
+      return;
     }
-  }, [valuation, personalInfo, vehicleSelection, saveInquiry]);
+    if (inquirySaved.current) {
+      log('skip — already saved');
+      return;
+    }
+
+    // Acquire lock (synchronous — immune to race)
+    inquirySaved.current = true;
+    log('LOCK ACQUIRED — saving inquiry');
+
+    const inquiry: Inquiry = {
+      id: crypto.randomUUID(),
+      firstName: personalInfo.firstName,
+      lastName: personalInfo.lastName,
+      email: personalInfo.email,
+      phone: personalInfo.phone,
+      country: personalInfo.country,
+      city: personalInfo.city,
+      consent: personalInfo.consent,
+      selectedVehicle: {
+        year: vehicleSelection.year ?? 0,
+        make: vehicleSelection.make,
+        model: vehicleSelection.model,
+        spec: vehicleSelection.spec,
+        bodyType: vehicleSelection.bodyType,
+      },
+      valuationResult: valuation,
+      createdAt: new Date(),
+      status: 'pending',
+    };
+    saveInquiry.mutate(inquiry);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [valuation, isFetched]);
 
   if (isLoading) {
     return (

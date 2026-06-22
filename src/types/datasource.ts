@@ -14,9 +14,8 @@ import type { Inquiry } from './inquiry';
  * IDataSource — abstract data access layer.
  *
  * The entire application talks to data through this interface.
- * To migrate from Excel to Dataverse (or any other backend),
- * implement this interface in a new class and swap it at the
- * provider level. No UI components change.
+ * Implement this interface in a new class and swap it at the
+ * provider level to change backends. No UI components change.
  */
 export interface IDataSource {
   // ─── Lifecycle ────────────────────────────────────────

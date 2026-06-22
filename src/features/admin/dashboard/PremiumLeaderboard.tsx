@@ -113,16 +113,16 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
     URL.revokeObjectURL(url);
   };
 
-  // ─── Export Excel (XLSX via simple CSV fallback) ────
-  const exportExcel = () => {
+  // ─── Export TSV (opens in spreadsheet apps) ──────────
+  const exportTSV = () => {
     const headers = ['Rank', 'Year', 'Make', 'Model', 'Spec', 'Min Price', 'Avg Price', 'Max Price'];
     const rows = data.map((v) => [v.rank, v.year, v.make, v.model, v.spec, v.minPrice, v.averagePrice, v.maxPrice]);
     const csv = [headers.join('\t'), ...rows.map((r) => r.join('\t'))].join('\n');
-    const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
+    const blob = new Blob([csv], { type: 'text/tab-separated-values' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'premium-vehicles.xls';
+    a.download = 'premium-vehicles.tsv';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -153,11 +153,11 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
             CSV
           </button>
           <button
-            onClick={exportExcel}
+            onClick={exportTSV}
             className="inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <FileSpreadsheet className="h-3 w-3" />
-            Excel
+            TSV
           </button>
         </div>
       </div>

@@ -1,0 +1,8 @@
+description: Loads the React SPA with full Power Pages runtime
+entityname: adx_webpage
+id: f4c8e9b1-7a4d-43c2-8e0b-9f6d2a5b3c7e
+isdefault: false
+name: SPA Template
+type: 756150001
+usewebsiteheaderandfooter: true
+webtemplateid: b3a1d4c7-2b81-4e9f-8ba5-c6d7e3f1a9b2

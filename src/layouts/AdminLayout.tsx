@@ -69,10 +69,7 @@ export function AdminLayout() {
             'min-w-0 transition-opacity duration-200',
             collapsed && 'hidden',
           )}>
-            <p className="truncate text-sm font-bold text-foreground">Vehicle Intelligence</p>
-            <p className="truncate text-[10px] uppercase tracking-wider text-muted-foreground/60">
-              Command Center
-            </p>
+            <p className="truncate text-sm font-bold text-foreground">Admin Center</p>
           </div>
         </div>
 

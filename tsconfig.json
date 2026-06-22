@@ -33,8 +33,6 @@
       "@hooks/*": ["./src/hooks/*"],
       "@repositories": ["./src/repositories"],
       "@repositories/*": ["./src/repositories/*"],
-      "@services": ["./src/services"],
-      "@services/*": ["./src/services/*"],
       "@providers": ["./src/providers"],
       "@providers/*": ["./src/providers/*"],
       "@stores": ["./src/stores"],
@@ -45,6 +43,8 @@
       "@utils/*": ["./src/utils/*"],
       "@data": ["./src/data"],
       "@data/*": ["./src/data/*"],
+      "@lib": ["./src/lib"],
+      "@lib/*": ["./src/lib/*"],
       "@styles": ["./src/styles"],
       "@styles/*": ["./src/styles/*"]
     }

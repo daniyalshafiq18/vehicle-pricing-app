@@ -17,6 +17,7 @@ export function useValuation(year: number | null, make: string, model: string, s
     queryKey: [VALUATION_KEY, year, make, model, spec, bodyType],
     queryFn: () => (year && make && model && spec ? pricingRepository.getValuation(year, make, model, spec, bodyType) : null),
     enabled: !!year && !!make && !!model && !!spec,
+    staleTime: 5 * 60 * 1000,
     retry: 1,
   });
 }

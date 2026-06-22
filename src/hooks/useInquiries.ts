@@ -4,7 +4,6 @@ import { useInquiryStore } from '@stores';
 import type { Inquiry } from '@types';
 import { useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import * as XLSX from 'xlsx';
 
 const INQUIRIES_KEY = 'inquiries';
 
@@ -65,31 +64,27 @@ export function useExportInquiries() {
       return;
     }
 
-    const data = inquiries.map((inq, i) => ({
-      '#': i + 1,
-      'First Name': inq.firstName,
-      'Last Name': inq.lastName,
-      'Email': inq.email,
-      'Phone': inq.phone,
-      'City': inq.city,
-      'Country': inq.country,
-      'Year': inq.selectedVehicle.year,
-      'Make': inq.selectedVehicle.make,
-      'Model': inq.selectedVehicle.model,
-      'Spec': inq.selectedVehicle.spec,
-      'Body Type': inq.selectedVehicle.bodyType,
-      'Status': inq.status,
-      'Avg Price': inq.valuationResult?.pricing.averagePrice ?? '',
-      'Min Price': inq.valuationResult?.pricing.minimumPrice ?? '',
-      'Max Price': inq.valuationResult?.pricing.maximumPrice ?? '',
-      'Median Price': inq.valuationResult?.pricing.medianPrice ?? '',
-      'Submitted': new Date(inq.createdAt).toLocaleDateString('en-US'),
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Inquiries');
-    XLSX.writeFile(wb, `inquiries-export-${Date.now()}.xlsx`);
+    const headers = ['First Name', 'Last Name', 'Email', 'Phone', 'City', 'Country',
+      'Year', 'Make', 'Model', 'Spec', 'Body Type', 'Status',
+      'Avg Price', 'Min Price', 'Max Price', 'Median Price', 'Submitted'];
+    const rows = inquiries.map((inq) => [
+      inq.firstName, inq.lastName, inq.email, inq.phone, inq.city, inq.country,
+      inq.selectedVehicle.year, inq.selectedVehicle.make, inq.selectedVehicle.model,
+      inq.selectedVehicle.spec, inq.selectedVehicle.bodyType, inq.status,
+      inq.valuationResult?.pricing.averagePrice ?? '',
+      inq.valuationResult?.pricing.minimumPrice ?? '',
+      inq.valuationResult?.pricing.maximumPrice ?? '',
+      inq.valuationResult?.pricing.medianPrice ?? '',
+      new Date(inq.createdAt).toLocaleDateString('en-US'),
+    ]);
+    const csv = [headers.join(','), ...rows.map((r) => r.map((c) => `"${c}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `inquiries-export-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
     toast.success(`Exported ${inquiries.length} inquiries`);
   }, []);
 }
