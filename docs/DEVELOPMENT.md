@@ -32,8 +32,8 @@ Component → React Query Hook → Repository → IDataSource → DataverseDataS
 ## Dataverse Data Source
 
 The `DataverseDataSource` class:
-1. Queries `/_api/vpi_vehicledatas` via CSRF-authenticated `safeFetch`
-2. Follows `@odata.nextLink` for paginated loading
+1. Calls `fetchAllVehicles()` from `src/lib/vehicleApi.ts` which queries `/_api/vpi_vehicledatas`
+2. Uses **keyset pagination** (ordered by `vpi_vehicledataid asc`, filtered with `gt`) — the portal API does not support `@odata.nextLink` for large sets
 3. Maps option-set integers to readable labels via `dataverseOptionSets.ts`
 4. Builds pricing index, hierarchy, and analytics in memory (same pattern)
 5. Applies central pricing algorithm to compute min/avg/max/median per make-segment
@@ -46,15 +46,39 @@ The `DataverseDataSource` class:
 - Memoised hierarchy/analytics in data source
 - Code splitting via Vite's `manualChunks`
 
+## API Modules (`src/lib/`)
+
+The Web API layer is split into four dedicated modules, each with a dual-path strategy:
+
+| Module | Purpose | Primary Path | Fallback Path |
+|---|---|---|---|
+| `safeAjax.ts` | CSRF-authenticated fetch wrapper | `webapi.safeAjax` | native `fetch` + `shell.getTokenDeferred()` |
+| `vehicleApi.ts` | Fetch all vehicles with keyset pagination | `safeFetch` | — |
+| `contactApi.ts` | Create/upsert contact records | `webapi.safeAjax` (reads `entityid` header) | `safeFetchWithMeta` |
+| `inquiryApi.ts` | Create vehicle inquiry records | `webapi.safeAjax` (reads `entityid` header) | `safeFetchWithMeta` |
+
+All API modules read the created record's GUID from the `entityid` response header (Power Pages standard), with a fallback to `OData-EntityId` header parsing.
+
 ## Inquiry System
 
 ### Data Flow
 ```
+Write path:
 Step3Result (valuation complete)
   → useSaveInquiry (mutation)
     → inquiryRepository.save()
       → DataverseDataSource.saveInquiry() (upserts contact + creates vpi_vehicleinquiry via Web API POST)
+
+Read path:
+AdminQueriesPage / sidebar badge
+  → useInquiries (30s auto-refetch)
+    → inquiryRepository.getAll()
+      → DataverseDataSource.getInquiries()
+        → GET /_api/vpi_vehicleinquiries?$expand=vpi_Contact(...),vpi_Vehicle(...)
+          (Customer and vehicle data fetched through lookup expansion)
 ```
+
+**Note on entity design:** The `vpi_vehicleinquiry` entity stores only lookup references (`vpi_Contact`, `vpi_Vehicle`) — it has no snapshot fields for contact or vehicle data. All customer names, emails, and vehicle details are read via `$expand` at query time, using `bodyTypeLabel()` and `cityLabel()` option-set helpers for choice fields. Any alternate data source implementation must reproduce this lookup-based reading pattern.
 
 ### Status Values
 `pending` | `reviewed` | `contacted` | `closed`

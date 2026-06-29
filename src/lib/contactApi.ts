@@ -14,7 +14,6 @@ import { safeFetchWithMeta } from '@lib/safeAjax';
  * Fields accepted when creating a contact.
  */
 export interface ContactPayload {
-  contactid?: string | null;
   firstname?: string | null;
   lastname?: string | null;
   emailaddress1?: string | null;

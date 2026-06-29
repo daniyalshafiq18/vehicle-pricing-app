@@ -1,8 +1,8 @@
 adx_entitypermission_webrole:
 - 2d255b08-3a0e-466d-95a9-a5452f58fc5c
 - b0ecfd4e-57d2-4044-8d82-82b6f0cdae91
-append: false
-appendto: false
+append: true
+appendto: true
 create: true
 delete: false
 entitylogicalname: contact

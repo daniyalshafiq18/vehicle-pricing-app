@@ -28,16 +28,17 @@ export default defineConfig({
     host: true,
     open: true,
   },
+  base: './',
   build: {
     target: 'es2020',
     sourcemap: true,
+    cssCodeSplit: false,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          charts: ['recharts'],
-          table: ['@tanstack/react-table', '@tanstack/react-virtual'],
-        },
+        entryFileNames: 'assets/[name].js',
+        chunkFileNames: 'assets/[name].js',
+        assetFileNames: 'assets/[name][extname]',
+        manualChunks: undefined,
       },
     },
   },

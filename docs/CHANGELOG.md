@@ -1,5 +1,68 @@
 # Changelog
 
+## 2026-06-29
+
+### Documentation — Stale Memory Files Fixed
+- **`README.md`** — Removed stale env vars (`VITE_API_BASE_URL`, `VITE_DATA_SOURCE`, `VITE_ENABLE_MOCK_DATA`) from table that no longer exist in `.env.example`
+- **`docs/SETUP.md`** — Synced env var snippet to match actual `.env.example` (removed same 3 vars)
+- **Claude system memory** (`C:\Users\PC\.claude\projects\C--vehicle-pricing-app\memory\`) — Fixed all 4 memory files:
+  - `project-identity.md` — replaced ExcelDataSource/DatasheetJS references with Dataverse
+  - `learned-conventions.md` — updated "Excel is current" → "Dataverse is current"
+  - `cleanup-history.md` — added note that Phase-2 superseded the intermediate revert
+  - `dataverse-phase2-infrastructure.md` — Rewritten to describe final architecture (not the discarded `src/data/dataverse/` approach)
+  - Created `MEMORY.md` index for the system memory directory
+- `memory/project-identity.md` and `memory/learned-conventions.md` (repo) were already up to date
+
+## 2026-06-24
+
+### Valuation Pricing — Accurate Per-Vehicle Min/Max
+- **Root cause:** `buildPricingIndex()` computed `minimumPrice` and `maximumPrice` from the **entire make segment** (all vehicles of the same make), not the specific vehicle variant's own values. A Toyota Camry LE would show min/max spanning the cheapest Corolla to the priciest Land Cruiser.
+- **Fix:** Added `rawMinPrices` and `rawMaxPrices` maps populated from `vpi_minprice`/`vpi_maxprice` during `initialize()`
+- **Fix:** `getValuation()` now overrides `minimumPrice`/`maximumPrice` with the per-vehicle raw values from Dataverse (cloned to avoid mutating the shared cache)
+
+### Admin Inquiry Modal — Pricing Data Now Visible
+- **Root cause:** `parseInquiry()` never constructed `valuationResult` — the modal always showed "No valuation data available"
+- **Fix:** Added `vpi_vehicledataid` to the `$expand` vehicle `$select` in `getInquiries()` and `getInquiryById()` so the vehicle GUID is available for cache lookup
+- **Fix:** `parseInquiry()` now looks up the cached `Vehicle` + `VehiclePricing` by the expanded vehicle GUID and constructs a full `ValuationResult` (with confidence indicator)
+- **Fix:** When cache lookup misses, falls back to a minimal `ValuationResult` from the raw pricing fields in the expanded vehicle data
+
+### Documentation — Inquiry System Data Flow
+- **`docs/context.md`** — Updated Lifecycle section with `$expand` detail explaining that customer/vehicle data is fetched through Dataverse lookups at query time (not snapshot fields); added note about future data source compatibility
+- **`docs/DEVELOPMENT.md`** — Split Inquiry Data Flow into write path and read path; added `$expand=vpi_Contact(...),vpi_Vehicle(...)` to the read diagram; added note explaining the lookup-based reading pattern and option-set helper usage
+- **`docs/PHASE-2-PERFORMANCE-OPTIMIZATION.md`** — Created comprehensive performance optimization roadmap with 8 prioritized items, effort estimates, and verification checklist
+
+## 2026-06-23
+
+### Bug Fix — Admin Queries Page Shows Blank Rows (Inquiry Snapshot Data)
+- **Root cause:** The `vpi_vehicleinquiry` entity has no snapshot fields (`vpi_firstname`, `vpi_email`, etc.) — the original `parseInquiry()` read them via `(record as any)` which always returned empty strings
+- **Fix:** Removed the non-existent snapshot fields — the POST payload now only sends the 4 valid fields (`vpi_name`, `vpi_Contact@odata.bind`, `vpi_Vehicle@odata.bind`, `vpi_status`)
+- **Fix:** `getInquiries()` now uses **`$expand=vpi_Contact(...),vpi_Vehicle(...)`** to fetch customer and vehicle data through the Dataverse lookups — returns real names, emails, vehicle details
+- **Fix:** `getInquiryById()` also uses `$expand` for consistency
+- **Fix:** `parseInquiry()` reads contact fields from the expanded `vpi_Contact` object and vehicle fields from `vpi_Vehicle` — uses `bodyTypeLabel()`/`cityLabel()` option-set helpers
+- **Chore:** Removed `RawInquiryRecord` interface (no longer needed) — only `RawContactRecord` remains
+- **Chore:** Removed 11 debug `console.log` calls from `dataverseDataSource.ts` and 6 from `Step3Result.tsx`
+
+### Documentation Sweep — Full Audit
+- **All docs updated** to reflect Phase 2 completion
+- **All docs updated** to reflect Phase 2 completion — see individual files for details
+- Fixed stale Excel references across `README.md`, `memory/project-identity.md`, `memory/learned-conventions.md`
+- Fixed pagination description (`@odata.nextLink` → keyset pagination) in `DEVELOPMENT.md` and `MIGRATION.md`
+- Added missing API module docs (`contactApi.ts`, `inquiryApi.ts`) to `context.md`, `DEVELOPMENT.md`, `MIGRATION.md`
+- Updated `CLAUDE.md` lib description from `webapi.ts` to `safeAjax.ts`
+
+## 2026-06-22
+
+### Phase-2 — API Layer Refactored
+- **Created `src/lib/contactApi.ts`** — dedicated contact creation module with dual-path strategy:
+  - Primary: `webapi.safeAjax` (reads `entityid` response header)
+  - Fallback: `safeFetchWithMeta` native `fetch()` (supports `entityid` and `OData-EntityId` headers)
+- **Created `src/lib/inquiryApi.ts`** — dedicated inquiry creation module with same dual-path strategy
+  - Enhanced error reporting includes full XHR response body for debugging failures
+- **Refactored `dataverseDataSource.ts`** — `saveInquiry()` and `upsertContact()` now delegate to the dedicated API modules instead of inline calls
+- **Added debug logging** (`[saveInquiry]`, `[upsertContact #N]`) for troubleshooting the inquiry save pipeline (temporary — to be cleaned up)
+- **Cleaned up stale Power Pages build artifacts** — removed 16 old `.js.map` and `.webfile.yml` entries from the `.powerpages-site/` export directory
+- **`vite.config.ts`** — re-enabled `manualChunks: undefined` for simpler build output
+
 ## 2026-06-19
 
 ### Simplified — Removed Proxy Complexity

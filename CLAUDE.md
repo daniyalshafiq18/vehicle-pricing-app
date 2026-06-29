@@ -99,7 +99,7 @@ src/
 ├── types/          # TypeScript interfaces
 ├── utils/          # Helpers (formatters, validators, memoize)
 ├── data/           # Data source context + DataverseDataSource + config
-├── lib/            # Utility modules (webapi.ts — CSRF-authenticated fetch wrapper)
+├── lib/            # Utility modules (safeAjax.ts — CSRF-authenticated fetch wrapper + vehicleApi/contactApi/inquiryApi)
 ├── styles/         # globals.css
 └── testing/        # Vitest setup
 ```

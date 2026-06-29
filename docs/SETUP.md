@@ -19,8 +19,6 @@ The file `.env.example` documents available environment variables (all reserved 
 ```bash
 VITE_APP_TITLE=Vehicle Pricing Intelligence Platform
 VITE_APP_VERSION=1.0.0
-VITE_API_BASE_URL=http://localhost:3000/api
-VITE_ENABLE_MOCK_DATA=false
 VITE_CACHE_TTL=3600000
 VITE_MAX_VEHICLE_DISPLAY=100
 ```

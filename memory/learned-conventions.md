@@ -9,9 +9,9 @@ metadata:
 
 ## Architecture Preferences
 - **Data flow is strictly downward**: Components → Hooks → Repositories → IDataSource → Implementation. Never bypass layers.
-- **IDataSource is the contract**: All data access goes through this interface. The Excel file is the current implementation, Dataverse is the planned future implementation.
+- **IDataSource is the contract**: All data access goes through this interface. Dataverse is the current implementation via the Power Pages Web API.
 - **Keep the project root clean**: No loose files — docs in `docs/`, config in root, code in `src/`. Screenshots, test artifacts, and duplicate exports should be removed.
-- **Env vars are for future use only**: Currently the app reads Excel directly. Don't add env var consumption until a backend adapter is added.
+- **Env vars are for future use only**: Currently the app uses Dataverse directly. Don't add env var consumption until a configurable backend is needed.
 
 ## Code Quality
 - **No console.log in production code** — the only console call is in `error-boundary.tsx` for error reporting

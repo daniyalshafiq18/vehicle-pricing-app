@@ -17,7 +17,7 @@ metadata:
 - Zustand 5 (client/UI state)
 - Recharts (dashboard charts)
 - React Hook Form + Zod (wizard forms)
-- SheetJS / xlsx (Excel parsing)
+- Power Pages Web API (Dataverse CRUD via `/_api/`)
 - Framer Motion (animations)
 - Lucide React (icons)
 - React Router v6
@@ -26,12 +26,12 @@ metadata:
 
 ## Architecture — Data Layer
 ```
-Components → Hooks (React Query) → Repositories → IDataSource → ExcelDataSource
+Components → Hooks (React Query) → Repositories → IDataSource → DataverseDataSource
 ```
 
 - `IDataSource` interface in `src/types/datasource.ts` — the contract for all data access
-- `ExcelDataSource` in `src/data/excelDataSource.ts` — current implementation, reads `UAE_Vehicle_Data.xlsx` (~33K vehicles) into memory
-- `DataSourceContext.tsx` provides a singleton `getDataSource()` — swap the implementation here to migrate to Dataverse
+- `DataverseDataSource` in `src/data/dataverseDataSource.ts` — current implementation, reads from Microsoft Dataverse via Power Pages Web API (`/_api/`)
+- `DataSourceContext.tsx` provides a singleton `getDataSource()` — swap the implementation here to migrate to a different backend
 - **No UI component ever imports the data source directly** — full decoupling
 
 ## Path Aliases

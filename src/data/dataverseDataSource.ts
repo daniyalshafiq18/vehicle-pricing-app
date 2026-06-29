@@ -12,6 +12,8 @@
 import { safeFetch } from '@lib/safeAjax';
 import { fetchAllVehicles } from '@lib/vehicleApi';
 import { createContact } from '@lib/contactApi';
+import { createInquiry } from '@lib/inquiryApi';
+import type { CreateInquiryPayload } from '@lib/inquiryApi';
 import { memoize } from '@utils';
 import type {
   IDataSource,
@@ -117,6 +119,10 @@ export class DataverseDataSource implements IDataSource {
   private inquiries: Inquiry[] = [];
   /** Raw prices extracted from API records, keyed by vehicle ID. */
   private rawPrices = new Map<string, number>();
+  /** Raw min prices from API records, keyed by vehicle ID. */
+  private rawMinPrices = new Map<string, number>();
+  /** Raw max prices from API records, keyed by vehicle ID. */
+  private rawMaxPrices = new Map<string, number>();
 
   private memoizedGetHierarchy = memoize(() => this.buildHierarchy());
   private memoizedGetAnalytics = memoize(() => this.computeAnalytics());
@@ -127,13 +133,19 @@ export class DataverseDataSource implements IDataSource {
   async initialize(): Promise<void> {
     const records = await fetchAllVehicles();
 
-    // Extract average prices from raw API records before parsing
+    // Extract pricing data from raw API records before parsing
     this.rawPrices.clear();
+    this.rawMinPrices.clear();
+    this.rawMaxPrices.clear();
     for (const r of records) {
       const id = r[VEHICLE_FIELDS.ID] as string | undefined;
       const price = r[VEHICLE_FIELDS.AVG_PRICE] as number | undefined;
-      if (id && typeof price === 'number' && price > 0) {
-        this.rawPrices.set(id, price);
+      const minPrice = r[VEHICLE_FIELDS.MIN_PRICE] as number | undefined;
+      const maxPrice = r[VEHICLE_FIELDS.MAX_PRICE] as number | undefined;
+      if (id) {
+        if (typeof price === 'number' && price > 0) this.rawPrices.set(id, price);
+        if (typeof minPrice === 'number' && minPrice > 0) this.rawMinPrices.set(id, minPrice);
+        if (typeof maxPrice === 'number' && maxPrice > 0) this.rawMaxPrices.set(id, maxPrice);
       }
     }
 
@@ -318,7 +330,22 @@ export class DataverseDataSource implements IDataSource {
     if (!vehicle) return null;
 
     const basePricing = this.pricing.get(vehicle.id);
-    const pricing = basePricing ?? this.createDefaultPricing(vehicle);
+    const pricing = basePricing
+      ? { ...basePricing, priceRange: { ...basePricing.priceRange }, marketTrend: { ...basePricing.marketTrend } }
+      : this.createDefaultPricing(vehicle);
+
+    // Override min/max with per-vehicle values from Dataverse for accuracy
+    const rawMin = this.rawMinPrices.get(vehicle.id);
+    const rawMax = this.rawMaxPrices.get(vehicle.id);
+    if (rawMin) {
+      pricing.minimumPrice = rawMin;
+      pricing.priceRange.min = rawMin;
+    }
+    if (rawMax) {
+      pricing.maximumPrice = rawMax;
+      pricing.priceRange.max = rawMax;
+    }
+
     const comparables = await this.getComparableVehicles(vehicle.id);
     const marketInsights = this.generateMarketInsights(vehicle, pricing);
 
@@ -656,47 +683,64 @@ export class DataverseDataSource implements IDataSource {
   // ─── Inquiries ────────────────────────────────────────
 
   async saveInquiry(inquiry: Inquiry): Promise<void> {
-    console.log(`[saveInquiry] ENTERED for ${inquiry.email} / ${inquiry.selectedVehicle.make} ${inquiry.selectedVehicle.model}`);
     // 1. Upsert Contact
     const contactId = await this.upsertContact(inquiry);
-    console.log(`[saveInquiry] upsertContact returned contactId=${contactId}`);
 
-    // 2. Create Vehicle Inquiry
-    console.log(`[saveInquiry] SENDING POST inquiry`);
-    await safeFetch({
-      url: entityUrl(ENTITIES.INQUIRY),
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      body: JSON.stringify({
-        [INQUIRY_FIELDS.CONTACT_LOOKUP]: contactId
-          ? { '@odata.bind': `/contacts(${contactId})` }
-          : null,
-        [INQUIRY_FIELDS.VEHICLE_LOOKUP]: { '@odata.bind': `/${ENTITIES.VEHICLE}(${inquiry.id})` },
-        [INQUIRY_FIELDS.STATUS]: inquiryStatusValue(inquiry.status) ?? 1,
-        'vpi_firstname': inquiry.firstName,
-        'vpi_lastname': inquiry.lastName,
-        'vpi_email': inquiry.email,
-        'vpi_phone': inquiry.phone,
-        'vpi_city': cityValue(inquiry.city) ?? null,
-        'vpi_country': inquiry.country,
-        'vpi_consent': inquiry.consent,
-        'vpi_vehiclemake': inquiry.selectedVehicle.make,
-        'vpi_vehiclemodel': inquiry.selectedVehicle.model,
-        'vpi_vehiclespec': inquiry.selectedVehicle.spec,
-        'vpi_vehicleyear': inquiry.selectedVehicle.year,
-        'vpi_bodytype': bodyTypeLabel(inquiry.selectedVehicle.bodyType),
-      }),
-    });
+    // 2. Create Vehicle Inquiry via dedicated api module
+    const vehicleGuid = inquiry.valuationResult?.vehicle.id;
+    const name = [
+      inquiry.firstName,
+      inquiry.lastName,
+      inquiry.selectedVehicle.year,
+      inquiry.selectedVehicle.make,
+      inquiry.selectedVehicle.model,
+    ]
+      .filter(Boolean)
+      .join(' - ');
 
-    console.log(`[saveInquiry] POST inquiry completed`);
+    const payload: CreateInquiryPayload = {
+      vpi_name: name,
+      'vpi_Contact@odata.bind': contactId ? `/contacts(${contactId})` : null,
+      'vpi_Vehicle@odata.bind': vehicleGuid
+        ? `/${ENTITIES.VEHICLE}(${vehicleGuid})`
+        : null,
+      vpi_status: inquiryStatusValue(inquiry.status) ?? 1,
+    };
+
+    // 3. Send to Dataverse
+    await createInquiry(payload);
+
     // Keep local cache in sync
     this.inquiries.push(inquiry);
   }
 
   async getInquiries(): Promise<Inquiry[]> {
     try {
-      const response = await safeFetch<ODataResponse<RawInquiryRecord>>({
-        url: `${entityUrl(ENTITIES.INQUIRY)}?$select=${INQUIRY_SELECT_FIELDS}&$orderby=vpi_createdon desc`,
+      // Use $expand to fetch related contact and vehicle data through the lookups
+      // The snapshot fields (vpi_firstname, vpi_email, etc.) don't exist on the
+      // vpi_vehicleinquiry entity — they come from the related Contact and Vehicle.
+      const contactSelect = [
+        CONTACT_FIELDS.FIRST_NAME,
+        CONTACT_FIELDS.LAST_NAME,
+        CONTACT_FIELDS.EMAIL,
+        CONTACT_FIELDS.PHONE,
+        CONTACT_FIELDS.CITY,
+        CONTACT_FIELDS.COUNTRY,
+      ].join(',');
+      const vehicleSelect = [
+        VEHICLE_FIELDS.ID,
+        VEHICLE_FIELDS.MAKE,
+        VEHICLE_FIELDS.MODEL,
+        VEHICLE_FIELDS.SPEC,
+        VEHICLE_FIELDS.YEAR,
+        VEHICLE_FIELDS.BODY_TYPE,
+        VEHICLE_FIELDS.AVG_PRICE,
+        VEHICLE_FIELDS.MIN_PRICE,
+        VEHICLE_FIELDS.MAX_PRICE,
+      ].join(',');
+
+      const response = await safeFetch<ODataResponse<Record<string, unknown>>>({
+        url: `${entityUrl(ENTITIES.INQUIRY)}?$select=${INQUIRY_SELECT_FIELDS}&$expand=vpi_Contact($select=${contactSelect}),vpi_Vehicle($select=${vehicleSelect})&$orderby=createdon desc`,
       });
       this.inquiries = (response.value ?? []).map((r) => this.parseInquiry(r));
     } catch {
@@ -710,8 +754,28 @@ export class DataverseDataSource implements IDataSource {
     if (cached) return cached;
 
     try {
-      const record = await safeFetch<RawInquiryRecord>({
-        url: `${entityUrl(ENTITIES.INQUIRY)}(${id})?$select=${INQUIRY_SELECT_FIELDS}`,
+      const contactSelect = [
+        CONTACT_FIELDS.FIRST_NAME,
+        CONTACT_FIELDS.LAST_NAME,
+        CONTACT_FIELDS.EMAIL,
+        CONTACT_FIELDS.PHONE,
+        CONTACT_FIELDS.CITY,
+        CONTACT_FIELDS.COUNTRY,
+      ].join(',');
+      const vehicleSelect = [
+        VEHICLE_FIELDS.ID,
+        VEHICLE_FIELDS.MAKE,
+        VEHICLE_FIELDS.MODEL,
+        VEHICLE_FIELDS.SPEC,
+        VEHICLE_FIELDS.YEAR,
+        VEHICLE_FIELDS.BODY_TYPE,
+        VEHICLE_FIELDS.AVG_PRICE,
+        VEHICLE_FIELDS.MIN_PRICE,
+        VEHICLE_FIELDS.MAX_PRICE,
+      ].join(',');
+
+      const record = await safeFetch<Record<string, unknown>>({
+        url: `${entityUrl(ENTITIES.INQUIRY)}(${id})?$select=${INQUIRY_SELECT_FIELDS}&$expand=vpi_Contact($select=${contactSelect}),vpi_Vehicle($select=${vehicleSelect})`,
       });
       return this.parseInquiry(record);
     } catch {
@@ -739,19 +803,12 @@ export class DataverseDataSource implements IDataSource {
 
   // ─── Private: Contact Management ──────────────────────
 
-  private _upsertCount = 0;
   private async upsertContact(inquiry: Inquiry): Promise<string | null> {
-    this._upsertCount++;
-    const callId = this._upsertCount;
-    console.log(`[upsertContact #${callId}] ENTERED for ${inquiry.email}`);
-
     try {
       // Try to find existing contact by email
-      console.log(`[upsertContact #${callId}] SENDING GET check`);
       const existing = await safeFetch<ODataResponse<RawContactRecord>>({
         url: `${entityUrl(ENTITIES.CONTACT)}?$select=${CONTACT_SELECT_FIELDS}&$filter=${CONTACT_FIELDS.EMAIL} eq '${encodeURIComponent(inquiry.email)}'&$top=1`,
       });
-      console.log(`[upsertContact #${callId}] GET returned`, { found: existing.value?.length });
       if (existing.value?.length && existing.value[0]?.[CONTACT_FIELDS.ID]) {
         return existing.value[0][CONTACT_FIELDS.ID]!;
       }
@@ -760,7 +817,6 @@ export class DataverseDataSource implements IDataSource {
     }
 
     // Create new contact
-    console.log(`[upsertContact #${callId}] SENDING POST create`);
     try {
       const contactId = await createContact({
         firstname: inquiry.firstName,
@@ -770,35 +826,119 @@ export class DataverseDataSource implements IDataSource {
         vpi_city: cityValue(inquiry.city) ?? null,
         vpi_country: inquiry.country,
       });
-      console.log(`[upsertContact #${callId}] POST returned`, { hasId: !!contactId });
       return contactId;
-    } catch (e) {
-      console.log(`[upsertContact #${callId}] POST failed`, e);
+    } catch {
       return null;
     }
   }
 
   // ─── Private: Parsing ─────────────────────────────────
 
-  private parseInquiry(record: RawInquiryRecord): Inquiry {
+  private parseInquiry(record: Record<string, unknown>): Inquiry {
+    // Expanded contact data from $expand=vpi_Contact
+    const contact = (record['vpi_Contact'] as Record<string, unknown>) ?? {};
+    // Expanded vehicle data from $expand=vpi_Vehicle
+    const vehicle = (record['vpi_Vehicle'] as Record<string, unknown>) ?? {};
+
+    const rawCreatedOn = record[INQUIRY_FIELDS.CREATED_ON];
+    const rawCity = contact[CONTACT_FIELDS.CITY];
+    const rawBodyType = vehicle[VEHICLE_FIELDS.BODY_TYPE];
+    const rawYear = vehicle[VEHICLE_FIELDS.YEAR];
+    const rawMinPrice = vehicle[VEHICLE_FIELDS.MIN_PRICE] as number | undefined;
+    const rawAvgPrice = vehicle[VEHICLE_FIELDS.AVG_PRICE] as number | undefined;
+    const rawMaxPrice = vehicle[VEHICLE_FIELDS.MAX_PRICE] as number | undefined;
+
+    // Build valuation result from cached vehicle + pricing, or minimal from expanded data
+    const vehicleId = (vehicle[VEHICLE_FIELDS.ID] as string) ?? '';
+    const cachedVehicle = vehicleId ? this.vehicles.find((v) => v.id === vehicleId) : undefined;
+    const cachedPricing = vehicleId ? this.pricing.get(vehicleId) : undefined;
+
+    let valuationResult: ValuationResult | undefined;
+
+    if (cachedVehicle && cachedPricing) {
+      // Clone to avoid mutating the shared pricing cache, then override
+      // min/max with per-vehicle raw values for accuracy (same as getValuation)
+      const avg = rawAvgPrice ?? cachedPricing.averagePrice;
+      const min = rawMinPrice ?? cachedPricing.minimumPrice;
+      const max = rawMaxPrice ?? cachedPricing.maximumPrice;
+      valuationResult = {
+        vehicle: cachedVehicle,
+        pricing: {
+          ...cachedPricing,
+          averagePrice: avg,
+          minimumPrice: min,
+          maximumPrice: max,
+          medianPrice: avg,
+          priceRange: { ...cachedPricing.priceRange, min, max, average: avg, median: avg },
+          marketTrend: { ...cachedPricing.marketTrend },
+        },
+        comparables: [],
+        marketInsights: [],
+        confidenceIndicator: this.computeConfidence(cachedPricing),
+      };
+    } else if (rawMinPrice || rawAvgPrice || rawMaxPrice) {
+      const avg = rawAvgPrice ?? 0;
+      const min = rawMinPrice ?? 0;
+      const max = rawMaxPrice ?? 0;
+      valuationResult = {
+        vehicle: cachedVehicle ?? {
+          id: vehicleId,
+          year: numeric(rawYear),
+          make: (vehicle[VEHICLE_FIELDS.MAKE] as string) ?? '',
+          model: (vehicle[VEHICLE_FIELDS.MODEL] as string) ?? '',
+          spec: (vehicle[VEHICLE_FIELDS.SPEC] as string) ?? '',
+          trim: (vehicle[VEHICLE_FIELDS.SPEC] as string) ?? '',
+          engineSize: 0,
+          horsepower: 0,
+          cylinders: 0,
+          doors: 0,
+          seats: 0,
+          transmission: 'Automatic',
+          bodyType: bodyTypeLabel(typeof rawBodyType === 'number' ? rawBodyType : undefined) as Vehicle['bodyType'],
+          driveType: 'Unknown',
+          vehicleType: 'Car',
+          category: 'OTHER/STANDARD',
+          powertrain: 'Petrol/Diesel',
+          description: '',
+        },
+        pricing: {
+          vehicleId,
+          averagePrice: avg,
+          minimumPrice: min,
+          maximumPrice: max,
+          medianPrice: avg,
+          standardDeviation: 0,
+          sampleSize: 0,
+          priceRange: { min, max, average: avg, median: avg, p10: 0, p25: 0, p75: 0, p90: 0 },
+          confidenceScore: 0,
+          marketTrend: { direction: 'stable', percentage: 0, periodMonths: 3, volatility: 'low' },
+          lastUpdated: new Date(),
+        },
+        comparables: [],
+        marketInsights: [],
+        confidenceIndicator: 'moderate',
+      };
+    }
+
     return {
-      id: record[INQUIRY_FIELDS.ID] ?? '',
-      firstName: (record as any).vpi_firstname ?? '',
-      lastName: (record as any).vpi_lastname ?? '',
-      email: (record as any).vpi_email ?? '',
-      phone: (record as any).vpi_phone ?? '',
-      country: (record as any).vpi_country ?? '',
-      city: cityLabel((record as any).vpi_city, 'Dubai'),
-      consent: Boolean((record as any).vpi_consent),
+      id: (record[INQUIRY_FIELDS.ID] as string) ?? '',
+      firstName: (contact[CONTACT_FIELDS.FIRST_NAME] as string) ?? '',
+      lastName: (contact[CONTACT_FIELDS.LAST_NAME] as string) ?? '',
+      email: (contact[CONTACT_FIELDS.EMAIL] as string) ?? '',
+      phone: (contact[CONTACT_FIELDS.PHONE] as string) ?? '',
+      country: (contact[CONTACT_FIELDS.COUNTRY] as string) ?? '',
+      city: cityLabel(typeof rawCity === 'number' ? rawCity : undefined, 'Dubai'),
+      consent: false,
       selectedVehicle: {
-        year: Number((record as any).vpi_vehicleyear) || 0,
-        make: (record as any).vpi_vehiclemake ?? '',
-        model: (record as any).vpi_vehiclemodel ?? '',
-        spec: (record as any).vpi_vehiclespec ?? '',
-        bodyType: (record as any).vpi_bodytype ?? '',
+        year: numeric(rawYear),
+        make: (vehicle[VEHICLE_FIELDS.MAKE] as string) ?? '',
+        model: (vehicle[VEHICLE_FIELDS.MODEL] as string) ?? '',
+        spec: (vehicle[VEHICLE_FIELDS.SPEC] as string) ?? '',
+        bodyType: bodyTypeLabel(typeof rawBodyType === 'number' ? rawBodyType : undefined) as string,
       },
-      createdAt: new Date(),
-      status: inquiryStatusLabel(record[INQUIRY_FIELDS.STATUS], 'pending') as Inquiry['status'],
+      createdAt: rawCreatedOn ? new Date(rawCreatedOn as string) : new Date(),
+      status: inquiryStatusLabel(record[INQUIRY_FIELDS.STATUS] as number, 'pending') as Inquiry['status'],
+      valuationResult,
     };
   }
 
@@ -1293,9 +1433,4 @@ interface RawContactRecord {
   [CONTACT_FIELDS.PHONE]?: string;
   [CONTACT_FIELDS.CITY]?: number;
   [CONTACT_FIELDS.COUNTRY]?: string;
-}
-
-interface RawInquiryRecord {
-  [INQUIRY_FIELDS.ID]?: string;
-  [INQUIRY_FIELDS.STATUS]?: number;
 }

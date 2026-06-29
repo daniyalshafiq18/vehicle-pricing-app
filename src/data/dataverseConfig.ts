@@ -68,9 +68,11 @@ export const CONTACT_FIELDS = {
 // ─── Inquiry Field Logical Names ──────────────────────────
 export const INQUIRY_FIELDS = {
   ID: 'vpi_vehicleinquiryid',
+  NAME: 'vpi_name',
   CONTACT_LOOKUP: 'vpi_Contact',
   VEHICLE_LOOKUP: 'vpi_Vehicle',
   STATUS: 'vpi_status',
+  CREATED_ON: 'createdon',
 } as const;
 
 /** The fields we $select when fetching vehicles (avoids pulling blob columns). */

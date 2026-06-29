@@ -235,10 +235,13 @@ Step3Result auto-saves via useSaveInquiry mutation (useRef guard prevents duplic
     ↓
 DataverseDataSource saves to Dataverse (upserts contact + creates vpi_vehicleinquiry record)
     ↓
-Admin sidebar polls useInquiries every 30s via `/_api/vpi_vehicleinquiries` → badge count updates
+Admin sidebar polls useInquiries every 30s via `/_api/vpi_vehicleinquiries`
+    └── Uses `$expand=vpi_Contact(...),vpi_Vehicle(...)` to fetch customer & vehicle data through Dataverse lookups
     ↓
 Admin views/manages on /admin/queries → status changes via PATCH to `vpi_vehicleinquiries`
 ```
+
+**Note:** The `vpi_vehicleinquiry` entity does not store snapshot copies of customer or vehicle fields. The admin queries page reads them through Dataverse lookup expansion (`$expand`). Any future data source implementation must handle this the same way.
 
 ### Files
 
@@ -249,6 +252,8 @@ Admin views/manages on /admin/queries → status changes via PATCH to `vpi_vehic
 | `src/data/dataverseDataSource.ts` | Dataverse Web API implementation |
 | `src/data/dataverseConfig.ts` | Entity/field name constants, API base path |
 | `src/data/dataverseOptionSets.ts` | Bidirectional choice-field maps (69 body types, etc.) |
+| `src/lib/contactApi.ts` | Contact CRUD — creates contacts via `/_api/contacts` (dual-path: `webapi.safeAjax` / native `fetch`) |
+| `src/lib/inquiryApi.ts` | Inquiry CRUD — creates inquiries via `/_api/vpi_vehicleinquiries` (dual-path: `webapi.safeAjax` / native `fetch`) |
 | `src/repositories/inquiryRepository.ts` | Repository delegating to `getDataSource()` |
 | `src/hooks/useInquiries.ts` | `useInquiries` (query + 30s poll), `useSaveInquiry`, `useUpdateInquiryStatus`, `useExportInquiries` |
 | `src/features/admin/AdminQueriesPage.tsx` | Table + filter tabs + search + pagination + modal + export |

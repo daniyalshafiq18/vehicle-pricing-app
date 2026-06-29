@@ -9,10 +9,12 @@ The platform uses Microsoft Dataverse as its data source via the Power Pages Web
 ## Architecture
 
 ```
-safeFetch (CSRF token via shell.getTokenDeferred())
+safeFetch / safeFetchWithMeta (CSRF token via shell.getTokenDeferred())
     ↓
-DataverseDataSource
-    ├── Paginated init: follows @odata.nextLink to load all vpi_vehicledatas
+vehicleApi.ts / contactApi.ts / inquiryApi.ts  (dedicated API modules)
+    ↓
+DataverseDataSource (orchestrates calls, caches in memory)
+    ├── Paginated init: keyset pagination (ordered by vpi_vehicledataid asc, filtered with gt)
     ├── In-memory cache: analytics + hierarchy computed client-side
     └── Inquiry CRUD: POST/PATCH via Web API (persistent)
 ```
@@ -24,14 +26,17 @@ DataverseDataSource
 | `src/data/dataverseConfig.ts` | API base, entity names, field constants |
 | `src/data/dataverseOptionSets.ts` | Bidirectional choice-field maps (int ↔ label) |
 | `src/data/dataverseDataSource.ts` | Full `IDataSource` implementation |
-| `src/lib/webapi.ts` | CSRF-authenticated fetch wrapper |
+| `src/lib/safeAjax.ts` | CSRF-authenticated fetch wrapper (primary: `webapi.safeAjax`, fallback: native `fetch`) |
+| `src/lib/vehicleApi.ts` | Keyset-paginated vehicle fetch from `/_api/vpi_vehicledatas` |
+| `src/lib/contactApi.ts` | Contact upsert via `/_api/contacts` (reads `entityid` header) |
+| `src/lib/inquiryApi.ts` | Inquiry creation via `/_api/vpi_vehicleinquiries` (reads `entityid` header) |
 | `docs/dataverse-schema.md` | Dataverse table/field/option-set reference |
 
 ## Data Flow
 
 | Layer | Implementation |
 |---|---|
-| Init | Paginates Web API (`/_api/vpi_vehicledatas`), follows `@odata.nextLink` |
+| Init | Paginates Web API (`/_api/vpi_vehicledatas`) via keyset pagination (ordered by ID, `gt` filter) — portal API lacks `@odata.nextLink` for large sets |
 | Vehicle data | Cached in-memory array after init |
 | Analytics | Computed from cache (same algorithm) |
 | Inquiries | POST/PATCH to `vpi_vehicleinquiries` + `contacts` (persistent) |
