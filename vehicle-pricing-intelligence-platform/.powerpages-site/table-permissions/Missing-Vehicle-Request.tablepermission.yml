@@ -1,0 +1,14 @@
+adx_entitypermission_webrole:
+- 2d255b08-3a0e-466d-95a9-a5452f58fc5c
+- b0ecfd4e-57d2-4044-8d82-82b6f0cdae91
+append: true
+appendto: true
+create: true
+delete: false
+entitylogicalname: vpi_missingvehiclerequests
+entityname: Missing Vehicle Request
+id: 13c4a450-3611-4062-bea2-8cfea8b2a4ec
+parententitypermission: 
+read: true
+scope: 756150000
+write: true

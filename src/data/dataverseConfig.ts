@@ -22,6 +22,7 @@ export const ENTITIES = {
   VEHICLE: 'vpi_vehicledatas',
   CONTACT: 'contacts',
   INQUIRY: 'vpi_vehicleinquiries',
+  MISSING_VEHICLE_REQUEST: 'vpi_missingvehiclerequestses',
 } as const;
 
 // ─── Vehicle Data Field Logical Names ─────────────────────
@@ -83,3 +84,33 @@ export const CONTACT_SELECT_FIELDS = Object.values(CONTACT_FIELDS).join(',');
 
 /** The $select string for inquiry queries. */
 export const INQUIRY_SELECT_FIELDS = Object.values(INQUIRY_FIELDS).join(',');
+
+// ─── Missing Vehicle Request Field Logical Names ─────────────
+export const MISSING_VEHICLE_REQUEST_FIELDS = {
+  ID: 'vpi_missingvehiclerequestid',
+  NAME: 'vpi_name',
+  MAKE: 'vpi_make',
+  MODEL: 'vpi_model',
+  TRIM: 'vpi_trim',
+  MODEL_YEAR: 'vpi_modelyear',
+  BODY_TYPE: 'vpi_bodytype',
+  MIN_MILEAGE: 'vpi_minmilage',
+  MAX_MILEAGE: 'vpi_maxmilage',
+  MIN_PRICE: 'vpi_minprice',
+  MAX_PRICE: 'vpi_maxprice',
+  CREATED_ON: 'createdon',
+} as const;
+
+export const MISSING_VEHICLE_REQUEST_SELECT_FIELDS = Object.values(MISSING_VEHICLE_REQUEST_FIELDS).join(',');
+
+// ─── Price Suggestion Field Logical Names ────────────────────
+export const PRICE_SUGGESTION_FIELDS = {
+  ID: 'vpi_pricesuggestionid',
+  COMMENT: 'vpi_comment',
+  MIN_PRICE: 'vpi_minprice',
+  MAX_PRICE: 'vpi_maxprice',
+  SOURCE_URL: 'vpi_sourceurl',
+  SUBMITTED_BY: 'vpi_submittedby',
+  VEHICLE_LOOKUP: 'vpi_Vehicle',
+  CREATED_ON: 'createdon',
+} as const;

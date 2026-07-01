@@ -1,0 +1,14 @@
+adx_entitypermission_webrole:
+- 2d255b08-3a0e-466d-95a9-a5452f58fc5c
+- b0ecfd4e-57d2-4044-8d82-82b6f0cdae91
+append: true
+appendto: true
+create: true
+delete: false
+entitylogicalname: vpi_pricesuggestions
+entityname: Price Suggestion
+id: ed0f2985-5cf8-47fd-ba43-75d27188bafd
+parententitypermission: 
+read: true
+scope: 756150000
+write: true

@@ -12,6 +12,8 @@ import {
   LayoutGrid,
   ChevronDown,
   Check,
+  Search,
+  X,
 } from 'lucide-react';
 
 // ── helpers ──────────────────────────────────────────────────────────
@@ -73,7 +75,7 @@ function bodyTypesForVehicle(
 
 const CASCADE_STEPS = ['Make', 'Model', 'Spec', 'Year', 'Body Type'] as const;
 
-// ── custom select sub-component ─────────────────────────────────────
+// ── searchable select sub-component ─────────────────────────────────
 
 interface VehicleSelectProps {
   label: string;
@@ -95,8 +97,11 @@ function VehicleSelect({
   onChange,
 }: VehicleSelectProps) {
   const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const ref = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // close on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -107,10 +112,31 @@ function VehicleSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // auto-focus the search input when dropdown opens
+  useEffect(() => {
+    if (open) {
+      // small delay so the input is rendered before focus
+      requestAnimationFrame(() => searchInputRef.current?.focus());
+    } else {
+      setSearchQuery('');
+    }
+  }, [open]);
+
   const displayValue =
     options.find((o) => String(o.value) === String(value))?.label ?? '';
   const isSelected =
     value !== '' && value !== null && value !== undefined;
+
+  // filter options by search query (case-insensitive)
+  const filteredOptions = useMemo(
+    () =>
+      searchQuery
+        ? options.filter((opt) =>
+            opt.label.toLowerCase().includes(searchQuery.toLowerCase()),
+          )
+        : options,
+    [options, searchQuery],
+  );
 
   return (
     <div className="space-y-2" ref={ref}>
@@ -153,35 +179,92 @@ function VehicleSelect({
         </button>
 
         {open && !disabled && (
-          <div className="absolute left-0 right-0 top-full z-50 mt-1.5 max-h-60 overflow-y-auto rounded-xl border border-border/50 bg-background shadow-xl shadow-black/5">
-            {options.map((opt) => {
-              const selected = String(opt.value) === String(value);
-              return (
+          <div className="absolute left-0 right-0 top-full z-50 mt-1.5 rounded-xl border border-border/50 bg-background shadow-xl shadow-black/5">
+            {/* Search input */}
+            <div className="relative border-b border-border/40">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Type to search..."
+                className="w-full border-0 bg-transparent py-3 pl-10 pr-9 text-sm outline-none placeholder:text-muted-foreground/40"
+              />
+              {searchQuery && (
                 <button
-                  key={opt.value}
                   type="button"
-                  onClick={() => {
-                    onChange(opt.value);
-                    setOpen(false);
-                  }}
-                  className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
-                    selected
-                      ? 'bg-primary/5 text-primary font-medium'
-                      : 'text-foreground hover:bg-muted/50'
-                  }`}
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground"
                 >
-                  <div
-                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                      selected ? 'bg-primary' : 'bg-transparent'
-                    }`}
-                  />
-                  <span className="flex-1 truncate">{opt.label}</span>
-                  {selected && (
-                    <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
-                  )}
+                  <X className="h-4 w-4" />
                 </button>
-              );
-            })}
+              )}
+            </div>
+
+            {/* Options list */}
+            <div className="max-h-52 overflow-y-auto">
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map((opt) => {
+                  const selected = String(opt.value) === String(value);
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        onChange(opt.value);
+                        setOpen(false);
+                      }}
+                      className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
+                        selected
+                          ? 'bg-primary/5 text-primary font-medium'
+                          : 'text-foreground hover:bg-muted/50'
+                      }`}
+                    >
+                      <div
+                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                          selected ? 'bg-primary' : 'bg-transparent'
+                        }`}
+                      />
+                      <span className="flex-1 truncate">{opt.label}</span>
+                      {selected && (
+                        <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                      )}
+                    </button>
+                  );
+                })
+              ) : searchQuery ? (
+                <div className="border-b border-border/40 px-4 py-6 text-center text-sm text-muted-foreground/60">
+                  No results found for "{searchQuery}"
+                </div>
+              ) : (
+                <div className="px-4 py-6 text-center text-sm text-muted-foreground/60">
+                  Type to enter a custom value
+                </div>
+              )}
+              {/* Allow custom typed value when no exact match exists */}
+              {searchQuery &&
+                !options.some(
+                  (o) =>
+                    o.label.toLowerCase() === searchQuery.toLowerCase(),
+                ) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange(searchQuery);
+                      setOpen(false);
+                    }}
+                    className="flex w-full items-center gap-3 border-t border-primary/10 bg-primary/[0.03] px-4 py-3 text-left text-sm font-medium text-primary transition-colors hover:bg-primary/5"
+                  >
+                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/5">
+                      <span className="text-[10px] font-bold text-primary">+</span>
+                    </div>
+                    <span>
+                      Use "<span className="font-semibold">{searchQuery}</span>"
+                    </span>
+                  </button>
+                )}
+            </div>
           </div>
         )}
       </div>
@@ -352,13 +435,8 @@ export function Step2VehicleSelection() {
               label="Model"
               icon={Tag}
               value={vehicleSelection.model}
-              placeholder={
-                vehicleSelection.make
-                  ? 'Select model'
-                  : 'Select a make first'
-              }
+              placeholder="Select or type a model"
               options={models.map((m) => ({ value: m, label: m }))}
-              disabled={!vehicleSelection.make}
               onChange={(v) =>
                 setVehicleSelection({
                   model: v,
@@ -374,13 +452,8 @@ export function Step2VehicleSelection() {
               label="Specification"
               icon={SlidersHorizontal}
               value={vehicleSelection.spec}
-              placeholder={
-                vehicleSelection.model
-                  ? 'Select spec'
-                  : 'Select a model first'
-              }
+              placeholder="Select or type a spec"
               options={specs.map((s) => ({ value: s, label: s }))}
-              disabled={!vehicleSelection.model}
               onChange={(v) =>
                 setVehicleSelection({ spec: v, year: null, bodyType: '' })
               }
@@ -391,16 +464,11 @@ export function Step2VehicleSelection() {
               label="Year"
               icon={Calendar}
               value={vehicleSelection.year ?? ''}
-              placeholder={
-                vehicleSelection.spec
-                  ? 'Select year'
-                  : 'Select a spec first'
-              }
+              placeholder="Select or type a year"
               options={years.map((y) => ({
                 value: String(y),
                 label: String(y),
               }))}
-              disabled={!vehicleSelection.spec}
               onChange={(v) => {
                 setVehicleSelection({ year: Number(v), bodyType: '' });
               }}
@@ -412,17 +480,14 @@ export function Step2VehicleSelection() {
               icon={LayoutGrid}
               value={vehicleSelection.bodyType}
               placeholder={
-                vehicleSelection.year
-                  ? allBodyTypes.length === 0
-                    ? 'No body types available'
-                    : 'Select body type'
-                  : 'Select a year first'
+                allBodyTypes.length === 0
+                  ? 'Type a body type'
+                  : 'Select or type a body type'
               }
               options={allBodyTypes.map((bt) => ({
                 value: bt,
                 label: bt,
               }))}
-              disabled={!vehicleSelection.year || allBodyTypes.length === 0}
               onChange={(v) => setVehicleSelection({ bodyType: v })}
             />
           </div>

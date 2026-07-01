@@ -14,6 +14,7 @@ import { fetchAllVehicles } from '@lib/vehicleApi';
 import { createContact } from '@lib/contactApi';
 import { createInquiry } from '@lib/inquiryApi';
 import type { CreateInquiryPayload } from '@lib/inquiryApi';
+import { upsertMissingVehicleRequest, fetchMissingVehicleRequests } from '@lib/missingVehicleApi';
 import { memoize } from '@utils';
 import type {
   IDataSource,
@@ -32,6 +33,7 @@ import type {
   BoxPlotData,
   TopVehicle,
   Inquiry,
+  MissingVehicleRequest,
 } from '@types';
 import {
   API_BASE,
@@ -799,6 +801,21 @@ export class DataverseDataSource implements IDataSource {
     if (inquiry) {
       inquiry.status = status;
     }
+  }
+
+  // ─── Missing Vehicle Requests ────────────────────────────
+  async upsertMissingVehicleRequest(payload: {
+    make: string;
+    model: string;
+    bodyType: string;
+    trim: string;
+    modelYear: number;
+  }): Promise<string> {
+    return upsertMissingVehicleRequest(payload);
+  }
+
+  async getMissingVehicleRequests(): Promise<MissingVehicleRequest[]> {
+    return fetchMissingVehicleRequests();
   }
 
   // ─── Private: Contact Management ──────────────────────

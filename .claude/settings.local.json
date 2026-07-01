@@ -26,7 +26,8 @@
       "Bash(xargs -r kill)",
       "Bash(curl -s http://localhost:3000)",
       "Bash(node *)",
-      "mcp__ide__executeCode"
+      "mcp__ide__executeCode",
+      "Bash(npx playwright *)"
     ]
   }
 }

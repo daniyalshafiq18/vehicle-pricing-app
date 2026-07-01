@@ -1,10 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useInquiryStore } from '@stores';
-import { useValuation, useSaveInquiry } from '@hooks';
+import { useValuation, useSaveInquiry, useUpsertMissingVehicleRequest } from '@hooks';
 import { useVehicleStore } from '@stores';
 import type { Inquiry } from '@types';
-import { Button, Card, CardContent, Badge, Skeleton } from '@components/ui';
-import { motion } from 'framer-motion';
+import { Button, Card, CardContent, Badge, Skeleton, Dialog } from '@components/ui';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
   Download,
@@ -22,14 +23,24 @@ import {
   DoorOpen,
   Zap,
   Tag,
+  SearchX,
+  Send,
+  CheckCircle2,
 } from 'lucide-react';
 import { formatCurrency } from '@utils';
 
 export function Step3Result() {
+  const [searchParams] = useSearchParams();
+  const debugForceNotFound = searchParams.get('test') === 'notfound';
+
   const { personalInfo, vehicleSelection, prevStep, reset } = useInquiryStore();
   const { valuationResult, setValuationResult } = useVehicleStore();
   const saveInquiry = useSaveInquiry();
+  const upsertRequest = useUpsertMissingVehicleRequest();
   const inquirySaved = useRef(false);
+
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [requestSubmitted, setRequestSubmitted] = useState(false);
 
   const { data: valuation, isLoading, error, isFetched } = useValuation(
     vehicleSelection.year,
@@ -39,18 +50,17 @@ export function Step3Result() {
     vehicleSelection.bodyType,
   );
 
+  const isNotFound = debugForceNotFound || (isFetched && !valuation && !isLoading && !error);
+
   useEffect(() => {
     if (valuation) setValuationResult(valuation);
   }, [valuation, setValuationResult]);
 
   // ── Single-fire save guard ────────────────────────────────────
-  // Prevents duplicate saves using useRef (immune to re-renders)
-  // and synchronous lock acquisition before the async mutate() call.
   useEffect(() => {
     if (!valuation || !isFetched) return;
     if (inquirySaved.current) return;
 
-    // Acquire lock (synchronous — immune to race)
     inquirySaved.current = true;
 
     const inquiry: Inquiry = {
@@ -77,7 +87,27 @@ export function Step3Result() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [valuation, isFetched]);
 
-  if (isLoading) {
+  const handleSubmitRequest = () => {
+    upsertRequest.mutate(
+      {
+        make: vehicleSelection.make,
+        model: vehicleSelection.model,
+        bodyType: vehicleSelection.bodyType,
+        trim: vehicleSelection.spec,
+        modelYear: vehicleSelection.year ?? 0,
+      },
+      {
+        onSuccess: () => {
+          setShowRequestDialog(false);
+          setRequestSubmitted(true);
+        },
+      },
+    );
+  };
+
+  // ── Loading ──────────────────────────────────────────────────
+  // (skip loading in debug mode so we see the not-found UI immediately)
+  if (isLoading && !debugForceNotFound) {
     return (
       <div className="mx-auto max-w-4xl space-y-6">
         <Skeleton className="h-12 w-96" />
@@ -91,6 +121,168 @@ export function Step3Result() {
     );
   }
 
+  // ── Vehicle Not Found ────────────────────────────────────────
+  if (isNotFound || requestSubmitted) {
+    return (
+      <div className="mx-auto max-w-lg">
+        <AnimatePresence mode="wait">
+          {requestSubmitted ? (
+            /* ── Success State ── */
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center"
+            >
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10">
+                <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+              </div>
+              <h2 className="mb-2 text-2xl font-bold tracking-tight">Thanks!</h2>
+              <p className="mb-2 text-muted-foreground">
+                This vehicle has been added to our review queue.
+              </p>
+              <p className="mb-8 text-sm text-muted-foreground/70">
+                We'll prioritize vehicles requested by multiple users.
+              </p>
+              <div className="flex justify-center gap-3">
+                <Button variant="outline" size="lg" onClick={prevStep}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+                </Button>
+                <Button variant="gradient" size="lg" onClick={reset}>
+                  New Valuation
+                </Button>
+              </div>
+            </motion.div>
+          ) : (
+            /* ── Vehicle Not Found ── */
+            <motion.div
+              key="not-found"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center"
+            >
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-amber-500/10">
+                <SearchX className="h-10 w-10 text-amber-500" />
+              </div>
+              <h2 className="mb-2 text-2xl font-bold tracking-tight">Vehicle Not Found</h2>
+              <p className="mb-1 text-muted-foreground">
+                We couldn't find this vehicle in our valuation database yet.
+              </p>
+              <p className="mb-8 text-sm text-muted-foreground/70">
+                We're continuously expanding our UAE vehicle catalogue.
+              </p>
+
+              {/* Summary card */}
+              <Card className="mb-8 border-amber-500/20 bg-amber-500/5">
+                <CardContent className="p-5">
+                  <div className="grid grid-cols-2 gap-3 text-left">
+                    {[
+                      { label: 'Make', value: vehicleSelection.make },
+                      { label: 'Model', value: vehicleSelection.model },
+                      { label: 'Year', value: vehicleSelection.year },
+                      { label: 'Spec', value: vehicleSelection.spec },
+                      { label: 'Body Type', value: vehicleSelection.bodyType },
+                    ].filter((item) => item.value).map((item) => (
+                      <div key={item.label} className="rounded-lg bg-background/60 px-3 py-2">
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                          {item.label}
+                        </p>
+                        <p className="text-sm font-semibold text-foreground">{String(item.value)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Button
+                variant="gradient"
+                size="lg"
+                onClick={() => setShowRequestDialog(true)}
+                className="mb-3 w-full"
+              >
+                <Send className="mr-2 h-4 w-4" />
+                Request This Vehicle
+              </Button>
+              <p className="text-xs text-muted-foreground/60">
+                Most requested vehicles are added first.
+              </p>
+
+              <div className="mt-6">
+                <Button variant="outline" size="lg" onClick={prevStep}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Try Another Vehicle
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Request Dialog ── */}
+        <Dialog
+          isOpen={showRequestDialog}
+          onClose={() => setShowRequestDialog(false)}
+          title="Request This Vehicle"
+          description="We'll add it to our review queue."
+          size="md"
+        >
+          <div className="space-y-5">
+            {/* Prefilled summary */}
+            <div className="rounded-xl border bg-muted/30 p-4">
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: 'Make', value: vehicleSelection.make },
+                  { label: 'Model', value: vehicleSelection.model },
+                  { label: 'Year', value: vehicleSelection.year },
+                  { label: 'Body Type', value: vehicleSelection.bodyType },
+                  { label: 'Spec', value: vehicleSelection.spec },
+                ]
+                  .filter((item) => item.value)
+                  .map((item) => (
+                    <div key={item.label}>
+                      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                        {item.label}
+                      </p>
+                      <p className="text-sm font-semibold text-foreground">{String(item.value)}</p>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowRequestDialog(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="gradient"
+                onClick={handleSubmitRequest}
+                disabled={upsertRequest.isPending}
+                className="flex-1"
+              >
+                {upsertRequest.isPending ? (
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    Submit Request
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </Dialog>
+      </div>
+    );
+  }
+
+  // ── Error ────────────────────────────────────────────────────
   if (error || !valuationResult) {
     return (
       <div className="mx-auto max-w-2xl text-center">
@@ -110,6 +302,7 @@ export function Step3Result() {
     );
   }
 
+  // ── Valuation ────────────────────────────────────────────────
   const { vehicle, pricing, marketInsights } = valuationResult;
 
   return (

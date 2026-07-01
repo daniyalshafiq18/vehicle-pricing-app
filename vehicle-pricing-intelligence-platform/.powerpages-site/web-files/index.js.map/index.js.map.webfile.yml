@@ -1,4 +1,4 @@
-annotationid: 35a0a14d-ab63-4b74-b133-04c00138b364
+annotationid: 82d20311-5074-f111-ab0f-6045bde726ba
 contentdisposition: 756150000
 enabletracking: false
 excludefromsearch: false
@@ -6,7 +6,7 @@ filename: index.js.map
 hiddenfromsitemap: false
 id: d5de9373-757c-4d38-a337-117cc3e411ef
 isdocument: true
-mimetype: application/octet-stream
+mimetype: application/json
 name: index.js.map
 objectid: d5de9373-757c-4d38-a337-117cc3e411ef
 objecttypecode: adx_webfile

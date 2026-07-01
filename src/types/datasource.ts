@@ -9,6 +9,7 @@ import type {
 } from './vehicle';
 import type { AnalyticsData, DashboardAnalytics, DashboardFilters } from './analytics';
 import type { Inquiry } from './inquiry';
+import type { MissingVehicleRequest } from './missingVehicleRequest';
 
 /**
  * IDataSource — abstract data access layer.
@@ -52,4 +53,14 @@ export interface IDataSource {
   getInquiries(): Promise<Inquiry[]>;
   getInquiryById(id: string): Promise<Inquiry | null>;
   updateInquiryStatus(id: string, status: Inquiry['status']): Promise<void>;
+
+  // ─── Missing Vehicle Requests ──────────────────────────
+  upsertMissingVehicleRequest(payload: {
+    make: string;
+    model: string;
+    bodyType: string;
+    trim: string;
+    modelYear: number;
+  }): Promise<string>;
+  getMissingVehicleRequests(): Promise<MissingVehicleRequest[]>;
 }

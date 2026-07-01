@@ -8,6 +8,7 @@ import {
   Car,
   Settings,
   ClipboardList,
+  SearchX,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -19,6 +20,7 @@ const sidebarItems = [
   { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
   { label: 'Vehicles', path: '/admin/vehicles', icon: Car },
   { label: 'Queries', path: '/admin/queries', icon: ClipboardList },
+  { label: 'Missing Vehicles', path: '/admin/missing-vehicles', icon: SearchX },
   { label: 'Settings', path: '/admin/settings', icon: Settings },
 ];
 
@@ -26,6 +28,7 @@ const pageTitles: Record<string, string> = {
   '/admin': 'Dashboard',
   '/admin/vehicles': 'Vehicles',
   '/admin/queries': 'Queries',
+  '/admin/missing-vehicles': 'Missing Vehicles',
   '/admin/settings': 'Settings',
 };
 

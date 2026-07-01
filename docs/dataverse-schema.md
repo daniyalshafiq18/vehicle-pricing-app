@@ -1,6 +1,6 @@
 # Dataverse Schema Documentation — Vehicle Pricing Intelligence Platform
 
-> **Last updated:** 2026-06-16
+> **Last updated:** 2026-06-30
 > **Platform:** Microsoft Dataverse (Power Pages)
 
 ---
@@ -9,13 +9,15 @@
 
 The Vehicle Pricing Intelligence Platform uses Microsoft Dataverse as its long-term system of record for vehicle valuation, customer inquiries, and vehicle master data.
 
-The solution consists of three primary tables:
+The solution now consists of five primary tables:
 
 | Display Name | Logical Name | Purpose |
 |---|---|---|
 | Vehicle Data | `vpi_vehicledatas` | Stores vehicle master and pricing information |
 | Contact | `contacts` | Stores customer information |
 | Vehicle Inquiry | `vpi_vehicleinquiries` | Stores valuation requests and links customers to vehicles |
+| Missing Vehicle Request | `vpi_missingvehiclerequests` | Records vehicles users searched for that don't exist in master data |
+| Price Suggestion | `vpi_pricesuggestions` | Accumulates market-based pricing suggestions submitted by users |
 
 ---
 
@@ -38,15 +40,22 @@ The solution consists of three primary tables:
           │
           │
           │ 1
-┌─────────▼───────────┐
-│    Vehicle Data     │
-│  vpi_vehicledatas   │
-└─────────────────────┘
+┌─────────▼───────────┐    1            N  ┌─────────────────────────┐
+│    Vehicle Data     │─────────────────────│    Price Suggestion     │
+│  vpi_vehicledatas   │                     │ vpi_pricesuggestions    │
+└─────────────────────┘                     └─────────────────────────┘
+
+┌──────────────────────────────┐
+│  Missing Vehicle Request     │
+│ vpi_missingvehiclerequests   │
+└──────────────────────────────┘
 ```
 
 **Relationships:**
 - **Contact → Vehicle Inquiry**: One-to-Many (1:N) — One contact can create multiple vehicle inquiries
 - **Vehicle Data → Vehicle Inquiry**: One-to-Many (1:N) — One vehicle can be referenced by multiple inquiries
+- **Vehicle Data → Price Suggestion**: One-to-Many (1:N) — One vehicle can receive multiple pricing suggestions
+- **Missing Vehicle Request**: Standalone table — captures searches for vehicles not yet in master data, no direct FK relationships
 
 ---
 
@@ -400,26 +409,135 @@ The solution consists of three primary tables:
 
 ---
 
+## Table 4: Missing Vehicle Request (`vpi_missingvehiclerequests`)
+
+### Table Information
+
+| Property | Value |
+|---|---|
+| Display Name | Missing Vehicle Request |
+| Logical Name | `vpi_missingvehiclerequests` |
+| Primary Key | `vpi_missingvehiclerequestid` (GUID) |
+
+### Purpose
+
+This table records vehicles that users searched for but do not currently exist in the master Vehicle Data table. Instead of losing those searches, they become actionable work items for the admin — serving as a scraper queue, estimated pricing intake, and missing vehicle inbox.
+
+### Fields
+
+| Display Name | Logical Name | Type | Usage |
+|---|---|---|---|
+| Make | `vpi_make` | Single Line Text | Vehicle make/brand searched by user |
+| Model | `vpi_model` | Single Line Text | Vehicle model searched by user |
+| Body Type | `vpi_bodytype` | Choice | Same shared optionset as Vehicle Data |
+| Trim | `vpi_trim` | Single Line Text | Vehicle trim / variant |
+| Model Year | `vpi_modelyear` | Whole Number | Model year of the searched vehicle |
+| Min Price | `vpi_minprice` | Currency | Estimated minimum market price |
+| Max Price | `vpi_maxprice` | Currency | Estimated maximum market price |
+| Min Mileage | `vpi_minmileage` | Whole Number | Minimum mileage supplied by user |
+| Max Mileage | `vpi_maxmileage` | Whole Number | Maximum mileage supplied by user |
+
+#### Currency Base Fields (auto-maintained by Dataverse)
+
+| Display Name | Logical Name | Usage |
+|---|---|---|
+| Min Price (Base) | `vpi_minprice_base` | Not used by application |
+| Max Price (Base) | `vpi_maxprice_base` | Not used by application |
+
+### Choice Fields
+
+#### Body Type (`vpi_bodytype`)
+
+Shares the same global optionset as [Vehicle Data Body Type](#body-type-vpi_bodytype) — identical labels and values. Refer to that section for the full list (Bus = 1, Sedan = 46, SUV = 55, etc.).
+
+---
+
+## Table 5: Price Suggestion (`vpi_pricesuggestions`)
+
+### Table Information
+
+| Property | Value |
+|---|---|
+| Display Name | Price Suggestion |
+| Logical Name | `vpi_pricesuggestions` |
+| Primary Key | `vpi_pricesuggestionid` (GUID) |
+
+### Purpose
+
+This table stores market-based pricing suggestions submitted by users. Instead of directly changing the master vehicle record, suggestions accumulate here until reviewed by an administrator.
+
+### Fields
+
+| Display Name | Logical Name | Type | Usage |
+|---|---|---|---|
+| Comment | `vpi_comment` | Multiple Lines of Text | User's comment or justification for the suggested price |
+| Min Price | `vpi_minprice` | Currency | Suggested minimum price |
+| Max Price | `vpi_maxprice` | Currency | Suggested maximum price |
+| Source URL | `vpi_sourceurl` | URL | Link to source / listing supporting the suggestion |
+| Submitted By | `vpi_submittedby` | Single Line Text | Name or identifier of the person submitting |
+
+### Lookup Fields
+
+#### Vehicle Lookup
+
+| Property | Value |
+|---|---|
+| Logical Name | `vpi_Vehicle` |
+| Type | Lookup |
+| Target | Vehicle Data (`vpi_vehicledatas`) |
+| Stored internally as | `_vpi_vehicle_value` |
+
+#### Currency Base Fields (auto-maintained by Dataverse)
+
+| Display Name | Logical Name | Usage |
+|---|---|---|
+| Min Price (Base) | `vpi_minprice_base` | Not used by application |
+| Max Price (Base) | `vpi_maxprice_base` | Not used by application |
+
+---
+
 ## Business Flow
 
 ```
-User enters details
+User enters details in wizard
         │
         ▼
-Contact Created/Found
-        │
-        ▼
-Vehicle Selected
-        │
-        ▼
-Vehicle Inquiry Created
-        │
-        ▼
-Admin Reviews Inquiry
-        │
-        ▼
-Status Updated
+┌─── Vehicle exists? ───┐
+│  (checked against     │
+│   Vehicle Data)       │
+└───────┬───────┬───────┘
+        │ NO    │ YES
+        ▼       ▼
+  Missing      Contact
+  Vehicle      Created/Found
+  Request          │
+  Created          ▼
+  (scraper   Vehicle Selected
+   queue)          │
+                   ▼
+             Vehicle Inquiry
+                Created
+                   │
+                   ▼
+            Admin Reviews Inquiry
+                   │
+                   ▼
+             Status Updated
+                   │
+                   ▼
+          ┌────────┴────────┐
+          │                 │
+          ▼                 ▼
+    Price Suggestion   Vehicle Inquiry
+    (user-submitted)   (standard flow)
+    → Admin Review
 ```
+
+### New Phase 3 Flows
+
+1. **Missing Vehicle Request Flow** — When a user searches for a vehicle not in master data, the system creates a `Missing Vehicle Request` record. This feeds a scraper queue and provides estimated pricing data for admin review. Admins can later add the vehicle to master data.
+
+2. **Price Suggestion Flow** — Users (or external sources) submit pricing suggestions linked to existing vehicles. These accumulate in the `Price Suggestion` table for admin review rather than directly modifying the master record.
 
 ---
 
@@ -430,3 +548,5 @@ Status Updated
 | Vehicle Data (`vpi_vehicledatas`) | Master Data |
 | Contact (`contacts`) | Customer Data |
 | Vehicle Inquiry (`vpi_vehicleinquiries`) | Transaction Data |
+| Missing Vehicle Request (`vpi_missingvehiclerequests`) | Lead / Workflow Data |
+| Price Suggestion (`vpi_pricesuggestions`) | Contribution Data |
