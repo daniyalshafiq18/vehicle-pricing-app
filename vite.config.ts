@@ -31,7 +31,7 @@ export default defineConfig({
   base: './',
   build: {
     target: 'es2020',
-    sourcemap: true,
+    sourcemap: false,
     cssCodeSplit: false,
     rollupOptions: {
       output: {

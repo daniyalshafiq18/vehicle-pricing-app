@@ -41,6 +41,11 @@ export function Step3Result() {
 
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [requestSubmitted, setRequestSubmitted] = useState(false);
+  const [requestCylinders, setRequestCylinders] = useState('');
+  const [requestFuelType, setRequestFuelType] = useState('');
+  const [requestTransmissionType, setRequestTransmissionType] = useState('');
+  const [requestMinMileage, setRequestMinMileage] = useState('');
+  const [requestMaxMileage, setRequestMaxMileage] = useState('');
 
   const { data: valuation, isLoading, error, isFetched } = useValuation(
     vehicleSelection.year,
@@ -95,6 +100,11 @@ export function Step3Result() {
         bodyType: vehicleSelection.bodyType,
         trim: vehicleSelection.spec,
         modelYear: vehicleSelection.year ?? 0,
+        cylinders: requestCylinders || undefined,
+        fuelType: requestFuelType || undefined,
+        transmissionType: requestTransmissionType || undefined,
+        minMileage: requestMinMileage ? Number(requestMinMileage) : undefined,
+        maxMileage: requestMaxMileage ? Number(requestMaxMileage) : undefined,
       },
       {
         onSuccess: () => {
@@ -246,6 +256,75 @@ export function Step3Result() {
                       <p className="text-sm font-semibold text-foreground">{String(item.value)}</p>
                     </div>
                   ))}
+              </div>
+            </div>
+
+            {/* Additional details */}
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Additional Details
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                <select
+                  value={requestCylinders}
+                  onChange={(e) => setRequestCylinders(e.target.value)}
+                  className="h-9 rounded-lg border bg-background px-3 text-xs outline-none focus:border-primary/50"
+                >
+                  <option value="">Cylinders</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                  <option value="8">8</option>
+                  <option value="10">10</option>
+                  <option value="12">12</option>
+                  <option value="16">16</option>
+                </select>
+                <select
+                  value={requestFuelType}
+                  onChange={(e) => setRequestFuelType(e.target.value)}
+                  className="h-9 rounded-lg border bg-background px-3 text-xs outline-none focus:border-primary/50"
+                >
+                  <option value="">Fuel Type</option>
+                  <option value="Petrol">Petrol</option>
+                  <option value="Diesel">Diesel</option>
+                  <option value="Hybrid">Hybrid</option>
+                  <option value="Electrical">Electrical</option>
+                </select>
+                <select
+                  value={requestTransmissionType}
+                  onChange={(e) => setRequestTransmissionType(e.target.value)}
+                  className="h-9 rounded-lg border bg-background px-3 text-xs outline-none focus:border-primary/50"
+                >
+                  <option value="">Transmission</option>
+                  <option value="Automatic">Automatic</option>
+                  <option value="Manual">Manual</option>
+                  <option value="CVT">CVT</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Mileage range */}
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Mileage Range (km)
+              </p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  value={requestMinMileage}
+                  onChange={(e) => setRequestMinMileage(e.target.value)}
+                  className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                />
+                <span className="text-muted-foreground/40">—</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  value={requestMaxMileage}
+                  onChange={(e) => setRequestMaxMileage(e.target.value)}
+                  className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                />
               </div>
             </div>
 

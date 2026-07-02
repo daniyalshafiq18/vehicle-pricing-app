@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useMissingVehicleRequests } from '@hooks';
+import { useMissingVehicleRequests, useUpdateMissingVehicleRequestStatus } from '@hooks';
 import { Button, Dialog, SkeletonTable } from '@components/ui';
 import { motion } from 'framer-motion';
 import {
@@ -11,8 +11,126 @@ import {
   ChevronRight,
   RotateCcw,
   Calendar,
+  Check,
+  ChevronDown,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  XCircle,
 } from 'lucide-react';
 import type { MissingVehicleRequest } from '@types';
+import { cn } from '@utils';
+
+// ─── Status helpers ────────────────────────────────────────────
+
+const STATUS_OPTIONS = ['Pending', 'Approved', 'In Progress', 'Reject'] as const;
+
+const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; className: string; dot: string }> = {
+  Pending: {
+    label: 'Pending',
+    icon: <Clock className="h-3 w-3" />,
+    className: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
+    dot: 'bg-amber-500',
+  },
+  Approved: {
+    label: 'Approved',
+    icon: <CheckCircle2 className="h-3 w-3" />,
+    className: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    dot: 'bg-emerald-500',
+  },
+  'In Progress': {
+    label: 'In Progress',
+    icon: <AlertCircle className="h-3 w-3" />,
+    className: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20',
+    dot: 'bg-blue-500',
+  },
+  Reject: {
+    label: 'Reject',
+    icon: <XCircle className="h-3 w-3" />,
+    className: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/20',
+    dot: 'bg-red-500',
+  },
+};
+
+function StatusBadge({ status }: { status: string | undefined }) {
+  const cfg = STATUS_CONFIG[status ?? ''];
+  if (!cfg) {
+    const fallback = STATUS_CONFIG['Pending']!;
+    return (
+      <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium', fallback.className)}>
+        <span className={cn('h-1.5 w-1.5 rounded-full', fallback.dot)} />
+        {status || 'Pending'}
+      </span>
+    );
+  }
+  return (
+    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium', cfg.className)}>
+      <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
+      {cfg.label}
+    </span>
+  );
+}
+
+function StatusSelect({ request }: { request: MissingVehicleRequest }) {
+  const updateStatus = useUpdateMissingVehicleRequestStatus();
+  const [open, setOpen] = useState(false);
+
+  const handleSelect = useCallback(
+    (newStatus: string) => {
+      setOpen(false);
+      updateStatus.mutate({ id: request.id, status: newStatus });
+    },
+    [request.id, updateStatus],
+  );
+
+  const currentCfg = STATUS_CONFIG[request.status ?? ''] ?? STATUS_CONFIG['Pending']!;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        disabled={updateStatus.isPending}
+        className={cn(
+          'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all',
+          'hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring',
+          'disabled:opacity-50',
+          currentCfg.className,
+        )}
+      >
+        {currentCfg.icon}
+        {currentCfg.label}
+        <ChevronDown className={cn('h-3 w-3 transition-transform', open && 'rotate-180')} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-full z-50 mt-1 w-40 overflow-hidden rounded-xl border bg-popover shadow-lg">
+            {STATUS_OPTIONS.map((opt) => {
+              const cfg = STATUS_CONFIG[opt]!;
+              const isActive = request.status === opt;
+              return (
+                <button
+                  key={opt}
+                  onClick={() => handleSelect(opt)}
+                  className={cn(
+                    'flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors',
+                    isActive
+                      ? 'bg-accent text-foreground'
+                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                  )}
+                >
+                  <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
+                  {cfg.label}
+                  {isActive && <Check className="ml-auto h-3 w-3 text-primary" />}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 // ─── Format helpers ──────────────────────────────────────────────
 
@@ -85,6 +203,7 @@ function MissingVehicleDetailModal({
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <StatusSelect request={request} />
               <button
                 onClick={onClose}
                 className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-background/80 hover:text-foreground"
@@ -105,13 +224,17 @@ function MissingVehicleDetailModal({
               { label: 'Year', value: request.modelYear },
               { label: 'Spec / Trim', value: request.trim },
               { label: 'Body Type', value: request.bodyType },
+              { label: 'Cylinders', value: request.cylinders },
+              { label: 'Fuel Type', value: request.fuelType },
+              { label: 'Transmission', value: request.transmissionType },
+              { label: 'Status', value: request.status },
             ].map((item) => (
               <div key={item.label} className="rounded-xl border bg-card p-3.5">
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
                   {item.label}
                 </p>
                 <p className="mt-1 text-sm font-medium text-foreground break-words">
-                  {String(item.value)}
+                  {item.value ? String(item.value) : '—'}
                 </p>
               </div>
             ))}
@@ -139,12 +262,23 @@ export function AdminMissingVehiclesPage() {
   const [search, setSearch] = useState('');
   const [selectedRequest, setSelectedRequest] = useState<MissingVehicleRequest | null>(null);
   const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<string | 'all'>('all');
   const pageSize = 15;
 
   const { data: requests, isLoading } = useMissingVehicleRequests();
 
-  // Filter by search
+  // Status counts for the summary bar
+  const statusCounts = {
+    all: requests?.length ?? 0,
+    pending: requests?.filter((r) => r.status === 'Pending' || !r.status).length ?? 0,
+    approved: requests?.filter((r) => r.status === 'Approved').length ?? 0,
+    inProgress: requests?.filter((r) => r.status === 'In Progress').length ?? 0,
+    reject: requests?.filter((r) => r.status === 'Reject').length ?? 0,
+  };
+
+  // Filter by search and status
   const filtered = (requests ?? []).filter((req) => {
+    if (statusFilter !== 'all' && req.status !== statusFilter) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -199,6 +333,14 @@ export function AdminMissingVehiclesPage() {
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Missing Vehicles</h1>
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{requests?.length ?? 0}</span> total requests
+              {statusCounts.pending > 0 && (
+                <>
+                  <span className="mx-1.5 text-muted-foreground/30">·</span>
+                  <span className="font-medium text-amber-600 dark:text-amber-400">
+                    {statusCounts.pending} pending
+                  </span>
+                </>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -225,6 +367,41 @@ export function AdminMissingVehiclesPage() {
         </div>
       </motion.div>
 
+      {/* Status filter tabs */}
+      <motion.div variants={itemVariants}>
+        <div className="flex items-center gap-1.5 rounded-xl border bg-card p-1.5 overflow-x-auto">
+          {[
+            { key: 'all' as const, label: 'All', count: statusCounts.all, color: '' },
+            { key: 'Pending' as const, label: 'Pending', count: statusCounts.pending, color: 'bg-amber-500' },
+            { key: 'Approved' as const, label: 'Approved', count: statusCounts.approved, color: 'bg-emerald-500' },
+            { key: 'In Progress' as const, label: 'In Progress', count: statusCounts.inProgress, color: 'bg-blue-500' },
+            { key: 'Reject' as const, label: 'Reject', count: statusCounts.reject, color: 'bg-red-500' },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => { setStatusFilter(tab.key); setPage(1); }}
+              className={cn(
+                'flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-medium transition-all whitespace-nowrap',
+                statusFilter === tab.key
+                  ? 'bg-primary/10 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
+              )}
+            >
+              {tab.color && <span className={cn('h-1.5 w-1.5 rounded-full', tab.color)} />}
+              {tab.label}
+              <span className={cn(
+                'ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
+                statusFilter === tab.key
+                  ? 'bg-primary/15 text-primary'
+                  : 'bg-muted text-muted-foreground',
+              )}>
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
+      </motion.div>
+
       {/* Table card */}
       <motion.div variants={itemVariants}>
         <div className="rounded-2xl border bg-card overflow-hidden">
@@ -246,6 +423,7 @@ export function AdminMissingVehiclesPage() {
                     <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Year</th>
                     <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Spec / Trim</th>
                     <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Body Type</th>
+                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
                     <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Requested</th>
                     <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
                   </tr>
@@ -285,6 +463,9 @@ export function AdminMissingVehiclesPage() {
                         <span className="text-xs text-foreground/80">{req.bodyType || '—'}</span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
+                        <StatusBadge status={req.status} />
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex flex-col">
                           <span className="text-xs text-foreground">
                             {req.createdOn ? formatShortDate(req.createdOn) : '—'}
@@ -319,22 +500,24 @@ export function AdminMissingVehiclesPage() {
                 <SearchX className="h-10 w-10 text-muted-foreground/60" />
               </div>
               <p className="text-lg font-medium text-foreground">
-                {search ? 'No matching requests' : 'No missing vehicle requests yet'}
+                {search || statusFilter !== 'all' ? 'No matching requests' : 'No missing vehicle requests yet'}
               </p>
               <p className="mt-1 text-sm text-muted-foreground text-center max-w-sm">
                 {search
                   ? 'Try adjusting your search.'
-                  : 'When users search for vehicles not in the database, they will appear here.'}
+                  : statusFilter !== 'all'
+                    ? `No requests with "${statusFilter}" status.`
+                    : 'When users search for vehicles not in the database, they will appear here.'}
               </p>
-              {search && (
+              {(search || statusFilter !== 'all') && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => { setSearch(''); }}
+                  onClick={() => { setSearch(''); setStatusFilter('all'); }}
                   className="mt-4"
                 >
                   <RotateCcw className="mr-1.5 h-3 w-3" />
-                  Clear search
+                  Clear filters
                 </Button>
               )}
             </div>

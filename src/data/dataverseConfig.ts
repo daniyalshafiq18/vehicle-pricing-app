@@ -87,17 +87,18 @@ export const INQUIRY_SELECT_FIELDS = Object.values(INQUIRY_FIELDS).join(',');
 
 // ─── Missing Vehicle Request Field Logical Names ─────────────
 export const MISSING_VEHICLE_REQUEST_FIELDS = {
-  ID: 'vpi_missingvehiclerequestid',
-  NAME: 'vpi_name',
+  ID: 'vpi_missingvehiclerequestsid',
   MAKE: 'vpi_make',
   MODEL: 'vpi_model',
   TRIM: 'vpi_trim',
   MODEL_YEAR: 'vpi_modelyear',
   BODY_TYPE: 'vpi_bodytype',
+  CYLINDERS: 'vpi_cylinders',
+  FUEL_TYPE: 'vpi_fueltype',
+  TRANSMISSION_TYPE: 'vpi_transmissiontype',
+  STATUS: 'vpi_status',
   MIN_MILEAGE: 'vpi_minmilage',
   MAX_MILEAGE: 'vpi_maxmilage',
-  MIN_PRICE: 'vpi_minprice',
-  MAX_PRICE: 'vpi_maxprice',
   CREATED_ON: 'createdon',
 } as const;
 

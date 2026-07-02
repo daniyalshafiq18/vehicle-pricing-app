@@ -58,9 +58,15 @@ export interface IDataSource {
   upsertMissingVehicleRequest(payload: {
     make: string;
     model: string;
-    bodyType: string;
+    bodyType?: string;
     trim: string;
     modelYear: number;
+    cylinders?: string;
+    fuelType?: string;
+    transmissionType?: string;
+    minMileage?: number;
+    maxMileage?: number;
   }): Promise<string>;
   getMissingVehicleRequests(): Promise<MissingVehicleRequest[]>;
+  updateMissingVehicleRequestStatus(id: string, status: string): Promise<void>;
 }

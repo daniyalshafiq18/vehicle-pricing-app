@@ -5,10 +5,11 @@ export interface MissingVehicleRequest {
   bodyType: string;
   trim: string;
   modelYear: number;
-  minPrice?: number;
-  maxPrice?: number;
+  cylinders?: string;
+  fuelType?: string;
+  transmissionType?: string;
+  status?: string;
   minMileage?: number;
   maxMileage?: number;
-  name?: string;
   createdOn?: Date;
 }

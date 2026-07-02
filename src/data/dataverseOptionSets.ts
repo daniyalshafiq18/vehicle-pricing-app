@@ -357,3 +357,58 @@ export const cityLabel = (v: unknown, fallback = 'Dubai'): string =>
   toLabel(CITY, v, fallback);
 export const cityValue = (label: string): number | null =>
   toValue(CITY, label);
+
+// ─── Missing Vehicle Cylinders ──────────────────────────────
+
+export const MISSING_VEHICLE_CYLINDERS: Record<string, number> = {
+  '3': 1,
+  '4': 2,
+  '5': 3,
+  '6': 4,
+  '8': 5,
+  '10': 6,
+  '12': 7,
+  '16': 8,
+};
+export const missingVehicleCylindersValue = (label: string): number | null =>
+  toValue(MISSING_VEHICLE_CYLINDERS, label);
+export const missingVehicleCylindersLabel = (v: unknown, fallback = '4'): string =>
+  toLabel(MISSING_VEHICLE_CYLINDERS, v, fallback);
+
+// ─── Missing Vehicle Fuel Type ─────────────────────────────
+
+export const MISSING_VEHICLE_FUEL_TYPE: Record<string, number> = {
+  Petrol: 1,
+  Diesel: 2,
+  Hybrid: 3,
+  Electrical: 4,
+};
+export const missingVehicleFuelTypeValue = (label: string): number | null =>
+  toValue(MISSING_VEHICLE_FUEL_TYPE, label);
+export const missingVehicleFuelTypeLabel = (v: unknown, fallback = 'Petrol'): string =>
+  toLabel(MISSING_VEHICLE_FUEL_TYPE, v, fallback);
+
+// ─── Missing Vehicle Transmission Type ─────────────────────
+
+export const MISSING_VEHICLE_TRANSMISSION_TYPE: Record<string, number> = {
+  Automatic: 1,
+  Manual: 2,
+  CVT: 3,
+};
+export const missingVehicleTransmissionTypeValue = (label: string): number | null =>
+  toValue(MISSING_VEHICLE_TRANSMISSION_TYPE, label);
+export const missingVehicleTransmissionTypeLabel = (v: unknown, fallback = 'Automatic'): string =>
+  toLabel(MISSING_VEHICLE_TRANSMISSION_TYPE, v, fallback);
+
+// ─── Missing Vehicle Status (vpi_status) ───────────────────
+
+export const MISSING_VEHICLE_STATUS: Record<string, number> = {
+  Pending: 1,
+  Approved: 2,
+  'In Progress': 3,
+  Reject: 4,
+};
+export const missingVehicleStatusValue = (label: string): number | null =>
+  toValue(MISSING_VEHICLE_STATUS, label);
+export const missingVehicleStatusLabel = (v: unknown, fallback = 'Pending'): string =>
+  toLabel(MISSING_VEHICLE_STATUS, v, fallback);

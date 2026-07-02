@@ -3,12 +3,25 @@
  *
  * Simple create via the Dataverse Web API. Each user submission creates a
  * new record — no dedup or counter logic.
+ *
+ * @see ../data/dataverseConfig.ts for field logical names
+ * @see ../data/dataverseOptionSets.ts for choice field mappings
  */
 
 import { API_BASE, ENTITIES, MISSING_VEHICLE_REQUEST_FIELDS } from '@data/dataverseConfig';
-import { missingVehicleBodyTypeValue } from '@data/dataverseOptionSets';
+import {
+  missingVehicleBodyTypeValue,
+  missingVehicleCylindersValue,
+  missingVehicleFuelTypeValue,
+  missingVehicleTransmissionTypeValue,
+  missingVehicleStatusValue,
+  missingVehicleCylindersLabel,
+  missingVehicleFuelTypeLabel,
+  missingVehicleTransmissionTypeLabel,
+  missingVehicleStatusLabel,
+} from '@data/dataverseOptionSets';
 import type { MissingVehicleRequest } from '@types';
-import { safeFetchWithMeta } from './safeAjax';
+import { safeFetch, safeFetchWithMeta } from './safeAjax';
 
 interface ODataResponse {
   value: Record<string, unknown>[];
@@ -24,11 +37,12 @@ function parseRawRecord(raw: Record<string, unknown>): MissingVehicleRequest {
     bodyType: (raw[bodyTypeKey] as string) ?? '',
     trim: (raw[MISSING_VEHICLE_REQUEST_FIELDS.TRIM] as string) ?? '',
     modelYear: (raw[MISSING_VEHICLE_REQUEST_FIELDS.MODEL_YEAR] as number) ?? 0,
-    minPrice: raw[MISSING_VEHICLE_REQUEST_FIELDS.MIN_PRICE] as number | undefined,
-    maxPrice: raw[MISSING_VEHICLE_REQUEST_FIELDS.MAX_PRICE] as number | undefined,
+    cylinders: missingVehicleCylindersLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.CYLINDERS]),
+    fuelType: missingVehicleFuelTypeLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.FUEL_TYPE]),
+    transmissionType: missingVehicleTransmissionTypeLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.TRANSMISSION_TYPE]),
+    status: missingVehicleStatusLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.STATUS]),
     minMileage: raw[MISSING_VEHICLE_REQUEST_FIELDS.MIN_MILEAGE] as number | undefined,
     maxMileage: raw[MISSING_VEHICLE_REQUEST_FIELDS.MAX_MILEAGE] as number | undefined,
-    name: raw[MISSING_VEHICLE_REQUEST_FIELDS.NAME] as string | undefined,
     createdOn: raw[MISSING_VEHICLE_REQUEST_FIELDS.CREATED_ON]
       ? new Date(raw[MISSING_VEHICLE_REQUEST_FIELDS.CREATED_ON] as string)
       : undefined,
@@ -41,26 +55,59 @@ function parseRawRecord(raw: Record<string, unknown>): MissingVehicleRequest {
 export async function upsertMissingVehicleRequest(payload: {
   make: string;
   model: string;
-  bodyType: string;
+  bodyType?: string;
   trim: string;
   modelYear: number;
+  cylinders?: string;
+  fuelType?: string;
+  transmissionType?: string;
+  minMileage?: number;
+  maxMileage?: number;
 }): Promise<string> {
   const baseUrl = `${API_BASE}/${ENTITIES.MISSING_VEHICLE_REQUEST}`;
-  const bodyTypeInt = payload.bodyType
-    ? missingVehicleBodyTypeValue(payload.bodyType)
-    : null;
 
   const record: Record<string, unknown> = {
-    [MISSING_VEHICLE_REQUEST_FIELDS.NAME]:
-      `${payload.modelYear} ${payload.make} ${payload.model}`.trim(),
     [MISSING_VEHICLE_REQUEST_FIELDS.MAKE]: payload.make,
     [MISSING_VEHICLE_REQUEST_FIELDS.MODEL]: payload.model,
     [MISSING_VEHICLE_REQUEST_FIELDS.TRIM]: payload.trim,
     [MISSING_VEHICLE_REQUEST_FIELDS.MODEL_YEAR]: payload.modelYear,
   };
 
+  // Optional choice fields — only send if provided
+  const bodyTypeInt = payload.bodyType
+    ? missingVehicleBodyTypeValue(payload.bodyType)
+    : null;
   if (bodyTypeInt !== null) {
     record[MISSING_VEHICLE_REQUEST_FIELDS.BODY_TYPE] = bodyTypeInt;
+  }
+
+  const cylindersInt = payload.cylinders
+    ? missingVehicleCylindersValue(payload.cylinders)
+    : null;
+  if (cylindersInt !== null) {
+    record[MISSING_VEHICLE_REQUEST_FIELDS.CYLINDERS] = cylindersInt;
+  }
+
+  const fuelTypeInt = payload.fuelType
+    ? missingVehicleFuelTypeValue(payload.fuelType)
+    : null;
+  if (fuelTypeInt !== null) {
+    record[MISSING_VEHICLE_REQUEST_FIELDS.FUEL_TYPE] = fuelTypeInt;
+  }
+
+  const transmissionInt = payload.transmissionType
+    ? missingVehicleTransmissionTypeValue(payload.transmissionType)
+    : null;
+  if (transmissionInt !== null) {
+    record[MISSING_VEHICLE_REQUEST_FIELDS.TRANSMISSION_TYPE] = transmissionInt;
+  }
+
+  if (payload.minMileage !== undefined) {
+    record[MISSING_VEHICLE_REQUEST_FIELDS.MIN_MILEAGE] = payload.minMileage;
+  }
+
+  if (payload.maxMileage !== undefined) {
+    record[MISSING_VEHICLE_REQUEST_FIELDS.MAX_MILEAGE] = payload.maxMileage;
   }
 
   const { meta } = await safeFetchWithMeta<Record<string, unknown>>({
@@ -90,4 +137,27 @@ export async function fetchMissingVehicleRequests(): Promise<MissingVehicleReque
   }).then((r) => r.data);
 
   return (resp.value ?? []).map(parseRawRecord);
+}
+
+/**
+ * Update the status of a missing vehicle request.
+ */
+export async function updateMissingVehicleRequestStatus(
+  id: string,
+  statusLabel: string,
+): Promise<void> {
+  const statusValue = missingVehicleStatusValue(statusLabel);
+  if (statusValue === null) return;
+
+  const baseUrl = `${API_BASE}/${ENTITIES.MISSING_VEHICLE_REQUEST}`;
+
+  await safeFetch<void>({
+    url: `${baseUrl}(${id})`,
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'If-Match': '*',
+    },
+    body: JSON.stringify({ [MISSING_VEHICLE_REQUEST_FIELDS.STATUS]: statusValue }),
+  });
 }

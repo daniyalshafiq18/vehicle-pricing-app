@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-07-02
+
+### Added — Missing Vehicle Status Management (Final API)
+- **`src/data/dataverseConfig.ts`** — Updated `MISSING_VEHICLE_REQUEST_FIELDS` with new API fields: `CYLINDERS`, `FUEL_TYPE`, `TRANSMISSION_TYPE`, `STATUS`. Removed `NAME`, `MIN_PRICE`, `MAX_PRICE`.
+- **`src/data/dataverseOptionSets.ts`** — Added 4 dedicated optionsets: `MISSING_VEHICLE_CYLINDERS`, `MISSING_VEHICLE_FUEL_TYPE`, `MISSING_VEHICLE_TRANSMISSION_TYPE`, `MISSING_VEHICLE_STATUS` — each with `*Value()` and `*Label()` helpers.
+- **`src/types/missingVehicleRequest.ts`** — Updated type: added `cylinders?`, `fuelType?`, `transmissionType?`, `status?`. Removed `name?`, `minPrice?`, `maxPrice?`.
+- **`src/types/datasource.ts`** — Updated `upsertMissingVehicleRequest` payload with optional `bodyType?`, `cylinders?`, `fuelType?`, `transmissionType?`, `minMileage?`, `maxMileage?`. Re-added `updateMissingVehicleRequestStatus` to `IDataSource`.
+- **`src/lib/missingVehicleApi.ts`** — Full rewrite with POST (all fields via optionset value helpers), GET (with `odata.include-annotations=*` for label parsing), and PATCH (status updates with `If-Match: *`).
+- **`src/data/dataverseDataSource.ts`** — Re-added `updateMissingVehicleRequestStatus` delegation.
+- **`src/repositories/missingVehicleRepository.ts`** — Re-added `updateStatus` method.
+- **`src/hooks/useMissingVehicleRequests.ts`** — Re-added `useUpdateMissingVehicleRequestStatus` mutation with toast feedback.
+- **`src/features/valuation/Step3Result.tsx`** — Rebuilt request dialog with 3 dropdowns (Cylinders, Fuel Type, Transmission) and Mileage Range inputs.
+- **`src/features/admin/AdminMissingVehiclesPage.tsx`** — Rebuilt with status management: `StatusBadge` component, `StatusSelect` dropdown, status filter tabs (All/Pending/Approved/In Progress/Reject with counts), Status column in table, and updated detail modal with status dropdown + new fields grid.
+- **`src/lib/safeAjax.ts`** — Improved error handling: parses `xhr.responseText` for Dataverse error details instead of generic `errorThrown`.
+- **`vite.config.ts`** — Disabled source maps (`sourcemap: false`) to fix Power Pages portal upload.
+
 ## 2026-06-30
 
 ### Changed — Missing Vehicle Request API (Simplified Schema)

@@ -19,9 +19,14 @@ export function useUpsertMissingVehicleRequest() {
     mutationFn: (payload: {
       make: string;
       model: string;
-      bodyType: string;
+      bodyType?: string;
       trim: string;
       modelYear: number;
+      cylinders?: string;
+      fuelType?: string;
+      transmissionType?: string;
+      minMileage?: number;
+      maxMileage?: number;
     }) => missingVehicleRepository.upsert(payload),
     onSuccess: () => {
       toast.success('Vehicle request submitted!');
@@ -29,6 +34,22 @@ export function useUpsertMissingVehicleRequest() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to submit vehicle request');
+    },
+  });
+}
+
+export function useUpdateMissingVehicleRequestStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      missingVehicleRepository.updateStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [MISSING_VEHICLE_REQUESTS_KEY] });
+      toast.success('Status updated');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update status');
     },
   });
 }
