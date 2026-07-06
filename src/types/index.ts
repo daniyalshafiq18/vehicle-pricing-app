@@ -5,3 +5,4 @@ export * from './datasource';
 export * from './store';
 export * from './navigation';
 export * from './missingVehicleRequest';
+export * from './priceSuggestion';

@@ -1,5 +1,72 @@
 # Changelog
 
+## 2026-07-06
+
+### Changed — Price Suggestion Status Now Fetched Dynamically from Dataverse
+- **`src/lib/optionSetApi.ts`** (new) — Generic `fetchPicklistOptions()` function that queries the Dataverse `EntityDefinitions` metadata API for picklist options, returning `{value, label}` pairs. Falls back gracefully when the metadata endpoint is unavailable.
+- **`src/hooks/usePriceSuggestionStatuses.ts`** (new) — `usePriceSuggestionStatusOptions()` React Query hook that fetches status options from Dataverse with 5-minute cache. Falls back to `PRICE_SUGGESTION_STATUS` from `dataverseOptionSets.ts` if the metadata endpoint is unavailable.
+- **`src/data/dataverseOptionSets.ts`** — Added `Pending: 4` to `PRICE_SUGGESTION_STATUS` to match the updated Dataverse optionset. Changed the default fallback label from `'Approve'` to `'Pending'`.
+- **`src/lib/priceSuggestionApi.ts`** — `upsertPriceSuggestion` now sets `vpi_status = 4` (Pending) instead of `null`. `fetchPriceSuggestions` now parses the raw `statusValue` alongside the display label. `updatePriceSuggestionStatus` now accepts the numeric optionset value directly instead of converting from a label string.
+- **`src/types/priceSuggestion.ts`** — Added `statusValue?: number` field alongside the existing `status?: string` label.
+- **`src/types/datasource.ts`** — Updated `IDataSource.updatePriceSuggestionStatus` to accept `statusValue: number` instead of `status: string`.
+- **`src/data/dataverseDataSource.ts`** — Updated signature to match the interface change.
+- **`src/repositories/priceSuggestionRepository.ts`** — Updated `updateStatus` to accept `statusValue: number`.
+- **`src/hooks/usePriceSuggestions.ts`** — Updated mutation payload from `{id, status}` to `{id, statusValue}`.
+- **`src/features/admin/AdminPriceSuggestionsPage.tsx`** — Major refactor: `StatusSelect` now receives dynamic options from the hook and passes the numeric value directly when updating. `StatusBadge` looks up visual config by `statusValue` (integer) instead of label string. Filter tabs are built dynamically from fetched Dataverse options. Status counts computed by `statusValue`. The static `STATUS_OPTIONS` and `STATUS_CONFIG` (label-keyed) are replaced with value-keyed `STATUS_VISUALS` and the live `PicklistOption[]` from Dataverse.
+
+## 2026-07-03
+
+### Added — Contact Creation on Missing Vehicle Request
+- **`src/types/datasource.ts`** — Added `contactName` to upsert payload
+- **`src/data/dataverseDataSource.ts`** — Added `contactName` pass-through
+- **`src/repositories/missingVehicleRepository.ts`** — Added `contactName` to upsert payload
+- **`src/hooks/useMissingVehicleRequests.ts`** — Added `contactName` to mutation payload
+- **`src/lib/missingVehicleApi.ts`** — Now creates a contact via `createContact()` when the email isn't found, then links MVR to the new contact; splits `contactName` into first/last for the contact record
+- **`src/features/valuation/Step3Result.tsx`** — Passes `personalInfo.firstName + lastName` as `contactName` in the MVR submission
+
+### Added — Price Suggestions System
+- **`src/data/dataverseConfig.ts`** — Added `PRICE_SUGGESTION` entity, `STATUS` field to `PRICE_SUGGESTION_FIELDS`, and `PRICE_SUGGESTION_SELECT_FIELDS`
+- **`src/data/dataverseOptionSets.ts`** — Added `PRICE_SUGGESTION_STATUS` optionset (Approve=1, Reject=2, Edit & Approve=3) with label/value helpers
+- **`src/types/priceSuggestion.ts`** (new) — PriceSuggestion interface (id, comment, minPrice, maxPrice, sourceUrl, submittedBy, vehicleId, status, createdOn)
+- **`src/types/datasource.ts`** — Added `upsertPriceSuggestion`, `getPriceSuggestions`, `updatePriceSuggestionStatus` to IDataSource
+- **`src/lib/priceSuggestionApi.ts`** (new) — Full CRUD API: POST create with vehicle lookup binding, GET all with status label parsing, PATCH status update
+- **`src/repositories/priceSuggestionRepository.ts`** (new) — Thin repository layer
+- **`src/hooks/usePriceSuggestions.ts`** (new) — React Query hooks: `usePriceSuggestions`, `useUpsertPriceSuggestion`, `useUpdatePriceSuggestionStatus`
+- **`src/data/dataverseDataSource.ts`** — Wired all price suggestion methods into DataverseDataSource
+- **`src/features/admin/AdminPriceSuggestionsPage.tsx`** (new) — Full admin management page with table (Submitted By, Min/Max Price, Status, Submitted date), status filter tabs (All/Pending/Rejected/Edit & Approve), search, pagination, detail modal with status dropdown, source URL link, and comment display
+- **`src/layouts/AdminLayout.tsx`** — Added "Price Suggestions" sidebar nav item with `DollarSign` icon and pending-count badge
+- **`src/app/router.tsx`** — Added `/admin/price-suggestions` route
+- **`src/features/valuation/Step3Result.tsx`** — Added "Suggest Price" button in valuation actions and dialog with price range, source URL, and comment fields; submits linked to the vehicle via Dataverse lookup
+
+### Fix — Vehicle Selection Free-Text + Display Fixes
+- **`src/features/valuation/Step2VehicleSelection.tsx`** — 3 fixes to support free-text entry for missing vehicles while preserving cascade filtering for existing ones:
+  1. **Display fallback** — `VehicleSelect` button now shows the raw stored value even when it doesn't match any dropdown option (previously showed blank for free-text entries)
+  2. **Enter key support** — Pressing Enter in the search input now immediately accepts the typed value (same as clicking "Use 'xxx'")
+  3. **Cascade preserved** — Year and Body Type still filter by make/model/spec cascade for existing vehicles; free-text "Use 'xxx'" button + Enter key allow custom values for missing vehicles
+
+### Added — Drive Type Field on Missing Vehicle Requests
+- **`src/data/dataverseOptionSets.ts`** — Added `MISSING_VEHICLE_DRIVE_TYPE` mapping (4X4=1, AWD=2, FWD=3, RWD=4, Unknown=5) with `missingVehicleDriveTypeValue`/`missingVehicleDriveTypeLabel` helpers
+- **`src/data/dataverseConfig.ts`** — Added `DRIVE_TYPE` field to `MISSING_VEHICLE_REQUEST_FIELDS` (`vpi_drivetype`)
+- **`src/types/missingVehicleRequest.ts`** — Added `driveType?: string` field
+- **`src/types/datasource.ts`** — Added `driveType?: string` to upsert payload
+- **`src/data/dataverseDataSource.ts`** — Added `driveType` pass-through in upsert method
+- **`src/repositories/missingVehicleRepository.ts`** — Added `driveType` to upsert payload
+- **`src/hooks/useMissingVehicleRequests.ts`** — Added `driveType` to mutation payload
+- **`src/lib/missingVehicleApi.ts`** — Added `driveType` to POST body (with optionset conversion) and GET response parsing
+- **`src/features/valuation/Step3Result.tsx`** — Added Drive Type dropdown (4X4/AWD/FWD/RWD/Unknown) to the request dialog
+- **`src/features/admin/AdminMissingVehiclesPage.tsx`** — Added Drive Type field to the detail modal grid
+
+### Added — Contact Lookup on Missing Vehicle Requests
+- **`src/data/dataverseConfig.ts`** — Added `CONTACT_LOOKUP: 'vpi_Contact'` field
+- **`src/types/missingVehicleRequest.ts`** — Added `contactName` and `contactEmail` display fields
+- **`src/types/datasource.ts`** — Added `contactEmail` to upsert payload
+- **`src/lib/missingVehicleApi.ts`** — Added `findContactIdByEmail()` helper to resolve email → GUID; sets `vpi_Contact@odata.bind` on POST; `$expand=vpi_Contact($select=firstname,lastname,emailaddress1)` on GET with contact field parsing
+- **`src/data/dataverseDataSource.ts`** — Added `contactEmail` pass-through
+- **`src/repositories/missingVehicleRepository.ts`** — Added `contactEmail` to upsert payload
+- **`src/hooks/useMissingVehicleRequests.ts`** — Added `contactEmail` to mutation payload
+- **`src/features/valuation/Step3Result.tsx`** — Passes `personalInfo.email` as `contactEmail` when submitting a missing vehicle request
+- **`src/features/admin/AdminMissingVehiclesPage.tsx`** — Added "Requested By" column (name + email) to the table and Contact fields to the detail modal
+
 ## 2026-07-02
 
 ### Added — Missing Vehicle Status Management (Final API)

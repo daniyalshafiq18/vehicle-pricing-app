@@ -112,6 +112,15 @@ function VehicleSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // accept typed value on Enter
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      e.preventDefault();
+      onChange(searchQuery.trim());
+      setOpen(false);
+    }
+  };
+
   // auto-focus the search input when dropdown opens
   useEffect(() => {
     if (open) {
@@ -123,7 +132,7 @@ function VehicleSelect({
   }, [open]);
 
   const displayValue =
-    options.find((o) => String(o.value) === String(value))?.label ?? '';
+    options.find((o) => String(o.value) === String(value))?.label ?? String(value);
   const isSelected =
     value !== '' && value !== null && value !== undefined;
 
@@ -188,6 +197,7 @@ function VehicleSelect({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
                 placeholder="Type to search..."
                 className="w-full border-0 bg-transparent py-3 pl-10 pr-9 text-sm outline-none placeholder:text-muted-foreground/40"
               />
@@ -297,31 +307,53 @@ export function Step2VehicleSelection() {
         : [],
     [hierarchy, vehicleSelection.make, vehicleSelection.model],
   );
-  const years = useMemo(
+  // All unique body types across the entire hierarchy (fallback for missing-vehicle free-text)
+  const allBodyTypesFromDB = useMemo(
     () =>
-      hierarchy && vehicleSelection.make && vehicleSelection.model && vehicleSelection.spec
-        ? yearsForMakeModelSpec(
-            hierarchy,
-            vehicleSelection.make,
-            vehicleSelection.model,
-            vehicleSelection.spec,
-          )
-        : hierarchy?.years ?? [],
+      hierarchy
+        ? [...new Set(Object.values(hierarchy.bodyTypes).flat())].sort()
+        : [],
+    [hierarchy],
+  );
+
+  // Years: cascade-filter when make/model/spec combo exists in DB,
+  // otherwise show all years (free-text entry for missing vehicles)
+  const years = useMemo(
+    () => {
+      if (!hierarchy) return [];
+      if (vehicleSelection.make && vehicleSelection.model && vehicleSelection.spec) {
+        const matched = yearsForMakeModelSpec(
+          hierarchy,
+          vehicleSelection.make,
+          vehicleSelection.model,
+          vehicleSelection.spec,
+        );
+        if (matched.length > 0) return matched; // combo found in DB → cascade filter
+      }
+      // combo not found or not fully selected → show all years
+      return hierarchy.years ?? [];
+    },
     [hierarchy, vehicleSelection.make, vehicleSelection.model, vehicleSelection.spec],
   );
 
+  // Body types: cascade-filter when the full combo exists in DB,
+  // otherwise show all body types from the database
   const allBodyTypes = useMemo(
-    () =>
-      hierarchy && vehicleSelection.year && vehicleSelection.make && vehicleSelection.model && vehicleSelection.spec
-        ? bodyTypesForVehicle(
-            hierarchy,
-            vehicleSelection.year,
-            vehicleSelection.make,
-            vehicleSelection.model,
-            vehicleSelection.spec,
-          )
-        : [],
-    [hierarchy, vehicleSelection.year, vehicleSelection.make, vehicleSelection.model, vehicleSelection.spec],
+    () => {
+      if (!hierarchy) return [];
+      if (vehicleSelection.year && vehicleSelection.make && vehicleSelection.model && vehicleSelection.spec) {
+        const matched = bodyTypesForVehicle(
+          hierarchy,
+          vehicleSelection.year,
+          vehicleSelection.make,
+          vehicleSelection.model,
+          vehicleSelection.spec,
+        );
+        if (matched.length > 0) return matched; // combo found in DB → cascade filter
+      }
+      return allBodyTypesFromDB; // combo not found → show all body types
+    },
+    [hierarchy, vehicleSelection.year, vehicleSelection.make, vehicleSelection.model, vehicleSelection.spec, allBodyTypesFromDB],
   );
 
   // auto-populate body type when only one option

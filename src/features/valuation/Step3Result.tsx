@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useInquiryStore } from '@stores';
-import { useValuation, useSaveInquiry, useUpsertMissingVehicleRequest } from '@hooks';
+import { useValuation, useSaveInquiry, useUpsertMissingVehicleRequest, useUpsertPriceSuggestion } from '@hooks';
 import { useVehicleStore } from '@stores';
 import type { Inquiry } from '@types';
 import { Button, Card, CardContent, Badge, Skeleton, Dialog } from '@components/ui';
@@ -26,6 +26,8 @@ import {
   SearchX,
   Send,
   CheckCircle2,
+  DollarSign,
+  ExternalLink,
 } from 'lucide-react';
 import { formatCurrency } from '@utils';
 
@@ -37,13 +39,21 @@ export function Step3Result() {
   const { valuationResult, setValuationResult } = useVehicleStore();
   const saveInquiry = useSaveInquiry();
   const upsertRequest = useUpsertMissingVehicleRequest();
+  const upsertSuggestion = useUpsertPriceSuggestion();
   const inquirySaved = useRef(false);
 
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [requestSubmitted, setRequestSubmitted] = useState(false);
+
+  const [showSuggestDialog, setShowSuggestDialog] = useState(false);
+  const [suggestMinPrice, setSuggestMinPrice] = useState('');
+  const [suggestMaxPrice, setSuggestMaxPrice] = useState('');
+  const [suggestSourceUrl, setSuggestSourceUrl] = useState('');
+  const [suggestComment, setSuggestComment] = useState('');
   const [requestCylinders, setRequestCylinders] = useState('');
   const [requestFuelType, setRequestFuelType] = useState('');
   const [requestTransmissionType, setRequestTransmissionType] = useState('');
+  const [requestDriveType, setRequestDriveType] = useState('');
   const [requestMinMileage, setRequestMinMileage] = useState('');
   const [requestMaxMileage, setRequestMaxMileage] = useState('');
 
@@ -103,6 +113,11 @@ export function Step3Result() {
         cylinders: requestCylinders || undefined,
         fuelType: requestFuelType || undefined,
         transmissionType: requestTransmissionType || undefined,
+        driveType: requestDriveType || undefined,
+        contactEmail: personalInfo.email || undefined,
+        contactName: personalInfo.firstName && personalInfo.lastName
+          ? `${personalInfo.firstName} ${personalInfo.lastName}`
+          : personalInfo.firstName || undefined,
         minMileage: requestMinMileage ? Number(requestMinMileage) : undefined,
         maxMileage: requestMaxMileage ? Number(requestMaxMileage) : undefined,
       },
@@ -110,6 +125,31 @@ export function Step3Result() {
         onSuccess: () => {
           setShowRequestDialog(false);
           setRequestSubmitted(true);
+        },
+      },
+    );
+  };
+
+  const handleSubmitSuggestion = () => {
+    const vehicleId = valuationResult?.vehicle.id;
+    if (!vehicleId) return;
+
+    upsertSuggestion.mutate(
+      {
+        vehicleId,
+        minPrice: suggestMinPrice ? Number(suggestMinPrice) : undefined,
+        maxPrice: suggestMaxPrice ? Number(suggestMaxPrice) : undefined,
+        sourceUrl: suggestSourceUrl || undefined,
+        comment: suggestComment || undefined,
+        submittedBy: personalInfo.email || personalInfo.firstName || undefined,
+      },
+      {
+        onSuccess: () => {
+          setShowSuggestDialog(false);
+          setSuggestMinPrice('');
+          setSuggestMaxPrice('');
+          setSuggestSourceUrl('');
+          setSuggestComment('');
         },
       },
     );
@@ -264,7 +304,7 @@ export function Step3Result() {
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Additional Details
               </p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
                 <select
                   value={requestCylinders}
                   onChange={(e) => setRequestCylinders(e.target.value)}
@@ -286,10 +326,9 @@ export function Step3Result() {
                   className="h-9 rounded-lg border bg-background px-3 text-xs outline-none focus:border-primary/50"
                 >
                   <option value="">Fuel Type</option>
-                  <option value="Petrol">Petrol</option>
-                  <option value="Diesel">Diesel</option>
+                  <option value="Electric">Electric</option>
                   <option value="Hybrid">Hybrid</option>
-                  <option value="Electrical">Electrical</option>
+                  <option value="Petrol/Diesel">Petrol/Diesel</option>
                 </select>
                 <select
                   value={requestTransmissionType}
@@ -300,6 +339,18 @@ export function Step3Result() {
                   <option value="Automatic">Automatic</option>
                   <option value="Manual">Manual</option>
                   <option value="CVT">CVT</option>
+                </select>
+                <select
+                  value={requestDriveType}
+                  onChange={(e) => setRequestDriveType(e.target.value)}
+                  className="h-9 rounded-lg border bg-background px-3 text-xs outline-none focus:border-primary/50"
+                >
+                  <option value="">Drive Type</option>
+                  <option value="4X4">4X4</option>
+                  <option value="AWD">AWD</option>
+                  <option value="FWD">FWD</option>
+                  <option value="RWD">RWD</option>
+                  <option value="Unknown">Unknown</option>
                 </select>
               </div>
             </div>
@@ -507,6 +558,13 @@ export function Step3Result() {
         <div className="flex gap-3">
           <Button
             variant="outline"
+            onClick={() => setShowSuggestDialog(true)}
+          >
+            <DollarSign className="mr-2 h-4 w-4" />
+            Suggest Price
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => {
               window.print();
             }}
@@ -519,6 +577,110 @@ export function Step3Result() {
           </Button>
         </div>
       </div>
+
+      {/* ── Suggest Price Dialog ── */}
+      <Dialog
+        isOpen={showSuggestDialog}
+        onClose={() => setShowSuggestDialog(false)}
+        title="Suggest Market Price"
+        description="Share your knowledge about this vehicle's market value."
+        size="md"
+      >
+        <div className="space-y-5">
+          {/* Reference vehicle */}
+          <div className="rounded-xl border bg-muted/30 p-4">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+              Vehicle
+            </p>
+            <p className="mt-1 text-sm font-semibold text-foreground">
+              {vehicle.year} {vehicle.make} {vehicle.model} — {vehicle.spec}
+            </p>
+          </div>
+
+          {/* Price inputs */}
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Suggested Price Range
+            </p>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                placeholder="Min Price"
+                value={suggestMinPrice}
+                onChange={(e) => setSuggestMinPrice(e.target.value)}
+                className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+              />
+              <span className="text-muted-foreground/40">—</span>
+              <input
+                type="number"
+                placeholder="Max Price"
+                value={suggestMaxPrice}
+                onChange={(e) => setSuggestMaxPrice(e.target.value)}
+                className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+              />
+            </div>
+          </div>
+
+          {/* Source URL */}
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Source URL <span className="text-muted-foreground/50">(optional)</span>
+            </p>
+            <div className="relative">
+              <ExternalLink className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
+              <input
+                type="url"
+                placeholder="https://example.com/listing"
+                value={suggestSourceUrl}
+                onChange={(e) => setSuggestSourceUrl(e.target.value)}
+                className="h-9 w-full rounded-lg border bg-background pl-9 pr-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+              />
+            </div>
+          </div>
+
+          {/* Comment */}
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Comment <span className="text-muted-foreground/50">(optional)</span>
+            </p>
+            <textarea
+              placeholder="Why do you think this price range is accurate?"
+              value={suggestComment}
+              onChange={(e) => setSuggestComment(e.target.value)}
+              rows={3}
+              className="w-full rounded-lg border bg-background px-3 py-2 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50 resize-none"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowSuggestDialog(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="gradient"
+              onClick={handleSubmitSuggestion}
+              disabled={upsertSuggestion.isPending || (!suggestMinPrice && !suggestMaxPrice)}
+              className="flex-1"
+            >
+              {upsertSuggestion.isPending ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  Submit Suggestion
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </motion.div>
   );
 }

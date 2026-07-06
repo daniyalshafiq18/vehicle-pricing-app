@@ -23,6 +23,7 @@ export const ENTITIES = {
   CONTACT: 'contacts',
   INQUIRY: 'vpi_vehicleinquiries',
   MISSING_VEHICLE_REQUEST: 'vpi_missingvehiclerequestses',
+  PRICE_SUGGESTION: 'vpi_pricesuggestions',
 } as const;
 
 // ─── Vehicle Data Field Logical Names ─────────────────────
@@ -96,6 +97,9 @@ export const MISSING_VEHICLE_REQUEST_FIELDS = {
   CYLINDERS: 'vpi_cylinders',
   FUEL_TYPE: 'vpi_fueltype',
   TRANSMISSION_TYPE: 'vpi_transmissiontype',
+  DRIVE_TYPE: 'vpi_drivetype',
+  CONTACT_LOOKUP: 'vpi_Contact',
+  MISSING_VEHICLE_LOOKUP: 'vpi_MissingVehicle',
   STATUS: 'vpi_status',
   MIN_MILEAGE: 'vpi_minmilage',
   MAX_MILEAGE: 'vpi_maxmilage',
@@ -113,5 +117,8 @@ export const PRICE_SUGGESTION_FIELDS = {
   SOURCE_URL: 'vpi_sourceurl',
   SUBMITTED_BY: 'vpi_submittedby',
   VEHICLE_LOOKUP: 'vpi_Vehicle',
+  STATUS: 'vpi_status',
   CREATED_ON: 'createdon',
 } as const;
+
+export const PRICE_SUGGESTION_SELECT_FIELDS = Object.values(PRICE_SUGGESTION_FIELDS).join(',');

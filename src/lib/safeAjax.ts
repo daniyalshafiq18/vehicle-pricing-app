@@ -91,27 +91,17 @@ export async function safeFetch<T = unknown>({
   // ── Primary: portal's built-in webapi.safeAjax ──
   if (window.webapi?.safeAjax) {
     return new Promise<T>((resolve, reject) => {
-      let parsedBody: unknown = undefined;
-      if (body != null) {
-        try {
-          parsedBody = typeof body === 'string' ? JSON.parse(body) : body;
-        } catch {
-          parsedBody = body;
-        }
-      }
-
       window.webapi!.safeAjax({
         type: method,
         url,
         contentType: headers['Content-Type'] || 'application/json',
-        headers: {
-          ...headers,
-          Prefer: headers['Prefer'] || 'odata.include-annotations=*',
-        },
-        data: parsedBody,
+        data: body, // Raw JSON string — matches the working API pattern
         success: (data) => resolve(data as T),
-        error: (_xhr, _textStatus, errorThrown) =>
-          reject(new Error(errorThrown || 'Web API request failed')),
+        error: (xhr, _textStatus, errorThrown) => {
+          // Parse the Dataverse error details from the response body
+          const detail = extractErrorDetail(xhr, errorThrown);
+          reject(new Error(detail));
+        },
       });
     });
   }
@@ -149,6 +139,24 @@ export async function safeFetch<T = unknown>({
   );
 }
 
+// ─── Error helpers ─────────────────────────────────
+
+/**
+ * Extract the best error message from a failed webapi.safeAjax call.
+ * Dataverse returns structured error details in xhr.responseText.
+ */
+function extractErrorDetail(xhr: unknown, fallback: string): string {
+  try {
+    const xhr_ = xhr as XMLHttpRequest;
+    const text = xhr_.responseText;
+    if (!text) return fallback;
+    const parsed = JSON.parse(text);
+    return parsed?.error?.message ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 /**
  * Response metadata interface returned by `safeFetchWithMeta`.
  */
@@ -173,24 +181,11 @@ export async function safeFetchWithMeta<T = unknown>({
   // ── Primary: portal's built-in webapi.safeAjax ──
   if (window.webapi?.safeAjax) {
     return new Promise((resolve, reject) => {
-      let parsedBody: unknown = undefined;
-      if (body != null) {
-        try {
-          parsedBody = typeof body === 'string' ? JSON.parse(body) : body;
-        } catch {
-          parsedBody = body;
-        }
-      }
-
       window.webapi!.safeAjax({
         type: method,
         url,
         contentType: headers['Content-Type'] || 'application/json',
-        headers: {
-          ...headers,
-          Prefer: headers['Prefer'] || 'odata.include-annotations=*',
-        },
-        data: parsedBody,
+        data: body, // Raw JSON string — matches the working API pattern
         success: (data, _textStatus, xhr) => {
           const xhr_ = xhr as XMLHttpRequest;
           resolve({
@@ -198,8 +193,10 @@ export async function safeFetchWithMeta<T = unknown>({
             meta: { getHeader: (name) => xhr_.getResponseHeader(name) },
           });
         },
-        error: (_xhr, _textStatus, errorThrown) =>
-          reject(new Error(errorThrown || 'Web API request failed')),
+        error: (xhr, _textStatus, errorThrown) => {
+          const detail = extractErrorDetail(xhr, errorThrown);
+          reject(new Error(detail));
+        },
       });
     });
   }

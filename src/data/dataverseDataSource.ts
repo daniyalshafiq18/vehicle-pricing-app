@@ -14,7 +14,8 @@ import { fetchAllVehicles } from '@lib/vehicleApi';
 import { createContact } from '@lib/contactApi';
 import { createInquiry } from '@lib/inquiryApi';
 import type { CreateInquiryPayload } from '@lib/inquiryApi';
-import { upsertMissingVehicleRequest, fetchMissingVehicleRequests, updateMissingVehicleRequestStatus } from '@lib/missingVehicleApi';
+import { upsertMissingVehicleRequest, fetchMissingVehicleRequests, updateMissingVehicleRequestStatus, approveAndCreateVehicle } from '@lib/missingVehicleApi';
+import { upsertPriceSuggestion, fetchPriceSuggestions, updatePriceSuggestionStatus } from '@lib/priceSuggestionApi';
 import { memoize } from '@utils';
 import type {
   IDataSource,
@@ -34,6 +35,7 @@ import type {
   TopVehicle,
   Inquiry,
   MissingVehicleRequest,
+  PriceSuggestion,
 } from '@types';
 import {
   API_BASE,
@@ -813,6 +815,9 @@ export class DataverseDataSource implements IDataSource {
     cylinders?: string;
     fuelType?: string;
     transmissionType?: string;
+    driveType?: string;
+    contactEmail?: string;
+    contactName?: string;
     minMileage?: number;
     maxMileage?: number;
   }): Promise<string> {
@@ -825,6 +830,30 @@ export class DataverseDataSource implements IDataSource {
 
   async updateMissingVehicleRequestStatus(id: string, status: string): Promise<void> {
     return updateMissingVehicleRequestStatus(id, status);
+  }
+
+  async approveAndCreateVehicle(mvr: MissingVehicleRequest): Promise<void> {
+    return approveAndCreateVehicle(mvr);
+  }
+
+  // ─── Price Suggestions ───────────────────────────────────
+  async upsertPriceSuggestion(payload: {
+    comment?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    sourceUrl?: string;
+    submittedBy?: string;
+    vehicleId: string;
+  }): Promise<string> {
+    return upsertPriceSuggestion(payload);
+  }
+
+  async getPriceSuggestions(): Promise<PriceSuggestion[]> {
+    return fetchPriceSuggestions();
+  }
+
+  async updatePriceSuggestionStatus(id: string, statusValue: number): Promise<void> {
+    return updatePriceSuggestionStatus(id, statusValue);
   }
 
   // ─── Private: Contact Management ──────────────────────

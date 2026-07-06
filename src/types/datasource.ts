@@ -9,6 +9,7 @@ import type {
 } from './vehicle';
 import type { AnalyticsData, DashboardAnalytics, DashboardFilters } from './analytics';
 import type { Inquiry } from './inquiry';
+import type { PriceSuggestion } from './priceSuggestion';
 import type { MissingVehicleRequest } from './missingVehicleRequest';
 
 /**
@@ -64,9 +65,25 @@ export interface IDataSource {
     cylinders?: string;
     fuelType?: string;
     transmissionType?: string;
+    driveType?: string;
+    contactEmail?: string;
+    contactName?: string;
     minMileage?: number;
     maxMileage?: number;
   }): Promise<string>;
   getMissingVehicleRequests(): Promise<MissingVehicleRequest[]>;
   updateMissingVehicleRequestStatus(id: string, status: string): Promise<void>;
+  approveAndCreateVehicle(mvr: MissingVehicleRequest): Promise<void>;
+
+  // ─── Price Suggestions ────────────────────────────
+  upsertPriceSuggestion(payload: {
+    comment?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    sourceUrl?: string;
+    submittedBy?: string;
+    vehicleId: string;
+  }): Promise<string>;
+  getPriceSuggestions(): Promise<PriceSuggestion[]>;
+  updatePriceSuggestionStatus(id: string, statusValue: number): Promise<void>;
 }

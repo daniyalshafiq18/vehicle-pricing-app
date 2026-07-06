@@ -8,8 +8,11 @@ export interface MissingVehicleRequest {
   cylinders?: string;
   fuelType?: string;
   transmissionType?: string;
+  driveType?: string;
   status?: string;
   minMileage?: number;
   maxMileage?: number;
   createdOn?: Date;
+  contactName?: string;
+  contactEmail?: string;
 }

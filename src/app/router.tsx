@@ -7,7 +7,7 @@ import { ValuationResultPage } from '@features/valuation';
 import { AdminDashboardPage } from '@features/admin';
 import { AdminVehiclesPage } from '@features/admin';
 import { AdminQueriesPage } from '@features/admin';
-import { AdminSettingsPage, AdminMissingVehiclesPage } from '@features/admin';
+import { AdminSettingsPage, AdminMissingVehiclesPage, AdminPriceSuggestionsPage } from '@features/admin';
 
 export function AppRouter() {
   return (
@@ -27,6 +27,7 @@ export function AppRouter() {
         <Route path="queries" element={<AdminQueriesPage />} />
         <Route path="settings" element={<AdminSettingsPage />} />
         <Route path="missing-vehicles" element={<AdminMissingVehiclesPage />} />
+        <Route path="price-suggestions" element={<AdminPriceSuggestionsPage />} />
       </Route>
     </Routes>
   );

@@ -2,13 +2,14 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminStore } from '@stores';
 import { ThemeSwitcher } from '@components/ui';
 import { cn } from '@utils';
-import { useInquiries } from '@hooks';
+import { useInquiries, useMissingVehicleRequests, usePriceSuggestions } from '@hooks';
 import {
   LayoutDashboard,
   Car,
   Settings,
   ClipboardList,
   SearchX,
+  DollarSign,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -21,6 +22,7 @@ const sidebarItems = [
   { label: 'Vehicles', path: '/admin/vehicles', icon: Car },
   { label: 'Queries', path: '/admin/queries', icon: ClipboardList },
   { label: 'Missing Vehicles', path: '/admin/missing-vehicles', icon: SearchX },
+  { label: 'Price Suggestions', path: '/admin/price-suggestions', icon: DollarSign },
   { label: 'Settings', path: '/admin/settings', icon: Settings },
 ];
 
@@ -29,6 +31,7 @@ const pageTitles: Record<string, string> = {
   '/admin/vehicles': 'Vehicles',
   '/admin/queries': 'Queries',
   '/admin/missing-vehicles': 'Missing Vehicles',
+  '/admin/price-suggestions': 'Price Suggestions',
   '/admin/settings': 'Settings',
 };
 
@@ -37,7 +40,11 @@ export function AdminLayout() {
   const location = useLocation();
   const { isSidebarCollapsed, toggleSidebar } = useAdminStore();
   const { data: inquiries } = useInquiries();
+  const { data: missingRequests } = useMissingVehicleRequests();
+  const { data: priceSuggestions } = usePriceSuggestions();
   const pendingCount = inquiries?.filter((i) => i.status === 'pending').length ?? 0;
+  const pendingMissingCount = missingRequests?.filter((r) => r.status === 'Pending' || !r.status).length ?? 0;
+  const pendingPriceSuggestionsCount = priceSuggestions?.filter((s) => !s.status || s.status === 'Approve').length ?? 0;
   const [hovered, setHovered] = useState(false);
 
   const collapsed = isSidebarCollapsed && !hovered;
@@ -109,12 +116,28 @@ export function AdminLayout() {
                   'text-foreground transition-opacity duration-200',
                   collapsed && 'hidden',
                 )}>{item.label}</span>
-                {item.label === 'Queries' && pendingCount > 0 && (
+                {(item.label === 'Queries' && pendingCount > 0) && (
                   <span className={cn(
                     'ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white',
                     collapsed && 'hidden',
                   )}>
                     {pendingCount > 99 ? '99+' : pendingCount}
+                  </span>
+                )}
+                {(item.label === 'Missing Vehicles' && pendingMissingCount > 0) && (
+                  <span className={cn(
+                    'ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white',
+                    collapsed && 'hidden',
+                  )}>
+                    {pendingMissingCount > 99 ? '99+' : pendingMissingCount}
+                  </span>
+                )}
+                {(item.label === 'Price Suggestions' && pendingPriceSuggestionsCount > 0) && (
+                  <span className={cn(
+                    'ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-white',
+                    collapsed && 'hidden',
+                  )}>
+                    {pendingPriceSuggestionsCount > 99 ? '99+' : pendingPriceSuggestionsCount}
                   </span>
                 )}
               </button>

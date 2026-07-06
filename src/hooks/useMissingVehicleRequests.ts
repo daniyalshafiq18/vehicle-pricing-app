@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { missingVehicleRepository } from '@repositories';
+import type { MissingVehicleRequest } from '@types';
 import toast from 'react-hot-toast';
 
 const MISSING_VEHICLE_REQUESTS_KEY = 'missing-vehicle-requests';
@@ -25,6 +26,9 @@ export function useUpsertMissingVehicleRequest() {
       cylinders?: string;
       fuelType?: string;
       transmissionType?: string;
+      driveType?: string;
+      contactEmail?: string;
+      contactName?: string;
       minMileage?: number;
       maxMileage?: number;
     }) => missingVehicleRepository.upsert(payload),
@@ -50,6 +54,22 @@ export function useUpdateMissingVehicleRequestStatus() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update status');
+    },
+  });
+}
+
+export function useApproveMissingVehicleRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (mvr: MissingVehicleRequest) =>
+      missingVehicleRepository.approve(mvr),
+    onSuccess: () => {
+      toast.success('Vehicle approved and added to master data');
+      queryClient.invalidateQueries({ queryKey: [MISSING_VEHICLE_REQUESTS_KEY] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to approve vehicle');
     },
   });
 }

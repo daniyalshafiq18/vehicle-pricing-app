@@ -378,14 +378,13 @@ export const missingVehicleCylindersLabel = (v: unknown, fallback = '4'): string
 // ─── Missing Vehicle Fuel Type ─────────────────────────────
 
 export const MISSING_VEHICLE_FUEL_TYPE: Record<string, number> = {
-  Petrol: 1,
-  Diesel: 2,
-  Hybrid: 3,
-  Electrical: 4,
+  Electric: 1,
+  Hybrid: 2,
+  'Petrol/Diesel': 3,
 };
 export const missingVehicleFuelTypeValue = (label: string): number | null =>
   toValue(MISSING_VEHICLE_FUEL_TYPE, label);
-export const missingVehicleFuelTypeLabel = (v: unknown, fallback = 'Petrol'): string =>
+export const missingVehicleFuelTypeLabel = (v: unknown, fallback = 'Petrol/Diesel'): string =>
   toLabel(MISSING_VEHICLE_FUEL_TYPE, v, fallback);
 
 // ─── Missing Vehicle Transmission Type ─────────────────────
@@ -400,6 +399,20 @@ export const missingVehicleTransmissionTypeValue = (label: string): number | nul
 export const missingVehicleTransmissionTypeLabel = (v: unknown, fallback = 'Automatic'): string =>
   toLabel(MISSING_VEHICLE_TRANSMISSION_TYPE, v, fallback);
 
+// ─── Missing Vehicle Drive Type ──────────────────────────
+
+const MISSING_VEHICLE_DRIVE_TYPE_VALUES: Record<string, number> = {
+  '4X4': 1,
+  AWD: 2,
+  FWD: 3,
+  RWD: 4,
+  Unknown: 5,
+};
+export const missingVehicleDriveTypeValue = (label: string): number | null =>
+  toValue(MISSING_VEHICLE_DRIVE_TYPE_VALUES, label);
+export const missingVehicleDriveTypeLabel = (v: unknown, fallback = 'Unknown'): string =>
+  toLabel(MISSING_VEHICLE_DRIVE_TYPE_VALUES, v, fallback);
+
 // ─── Missing Vehicle Status (vpi_status) ───────────────────
 
 export const MISSING_VEHICLE_STATUS: Record<string, number> = {
@@ -412,3 +425,16 @@ export const missingVehicleStatusValue = (label: string): number | null =>
   toValue(MISSING_VEHICLE_STATUS, label);
 export const missingVehicleStatusLabel = (v: unknown, fallback = 'Pending'): string =>
   toLabel(MISSING_VEHICLE_STATUS, v, fallback);
+
+// ─── Price Suggestion Status (vpi_status) ──────────────────────
+
+export const PRICE_SUGGESTION_STATUS: Record<string, number> = {
+  Approve: 1,
+  Reject: 2,
+  'Edit & Approve': 3,
+  Pending: 4,
+};
+export const priceSuggestionStatusValue = (label: string): number | null =>
+  toValue(PRICE_SUGGESTION_STATUS, label);
+export const priceSuggestionStatusLabel = (v: unknown, fallback = 'Pending'): string =>
+  toLabel(PRICE_SUGGESTION_STATUS, v, fallback);

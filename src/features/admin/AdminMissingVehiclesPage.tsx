@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useMissingVehicleRequests, useUpdateMissingVehicleRequestStatus } from '@hooks';
+import { useMissingVehicleRequests, useUpdateMissingVehicleRequestStatus, useApproveMissingVehicleRequest } from '@hooks';
 import { Button, Dialog, SkeletonTable } from '@components/ui';
 import { motion } from 'framer-motion';
 import {
@@ -73,14 +73,20 @@ function StatusBadge({ status }: { status: string | undefined }) {
 
 function StatusSelect({ request }: { request: MissingVehicleRequest }) {
   const updateStatus = useUpdateMissingVehicleRequestStatus();
+  const approveRequest = useApproveMissingVehicleRequest();
   const [open, setOpen] = useState(false);
+  const isPending = updateStatus.isPending || approveRequest.isPending;
 
   const handleSelect = useCallback(
     (newStatus: string) => {
       setOpen(false);
-      updateStatus.mutate({ id: request.id, status: newStatus });
+      if (newStatus === 'Approved') {
+        approveRequest.mutate(request);
+      } else {
+        updateStatus.mutate({ id: request.id, status: newStatus });
+      }
     },
-    [request.id, updateStatus],
+    [request.id, updateStatus, approveRequest, request],
   );
 
   const currentCfg = STATUS_CONFIG[request.status ?? ''] ?? STATUS_CONFIG['Pending']!;
@@ -89,7 +95,7 @@ function StatusSelect({ request }: { request: MissingVehicleRequest }) {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        disabled={updateStatus.isPending}
+        disabled={isPending}
         className={cn(
           'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all',
           'hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring',
@@ -227,7 +233,10 @@ function MissingVehicleDetailModal({
               { label: 'Cylinders', value: request.cylinders },
               { label: 'Fuel Type', value: request.fuelType },
               { label: 'Transmission', value: request.transmissionType },
+              { label: 'Drive Type', value: request.driveType },
               { label: 'Status', value: request.status },
+              { label: 'Requested By', value: request.contactName || request.contactEmail },
+              { label: 'Contact Email', value: request.contactEmail },
             ].map((item) => (
               <div key={item.label} className="rounded-xl border bg-card p-3.5">
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -424,6 +433,7 @@ export function AdminMissingVehiclesPage() {
                     <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Spec / Trim</th>
                     <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Body Type</th>
                     <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Requested By</th>
                     <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Requested</th>
                     <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
                   </tr>
@@ -464,6 +474,14 @@ export function AdminMissingVehiclesPage() {
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <StatusBadge status={req.status} />
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <p className="text-xs text-foreground truncate max-w-[140px]" title={req.contactName || req.contactEmail || ''}>
+                          {req.contactName || req.contactEmail || '—'}
+                        </p>
+                        {req.contactName && req.contactEmail && req.contactEmail !== req.contactName && (
+                          <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">{req.contactEmail}</p>
+                        )}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex flex-col">
