@@ -1,9 +1,11 @@
 # Phase 3 Revised Plan — Vehicle Pricing Intelligence Platform
 
-> **Date:** 2026-07-09
-> **Status:** Planning Complete — Ready for Implementation
+> **Date:** 2026-07-09 (Updated 2026-07-13)
+> **Status:** Path B (Puppeteer) ❌ Abandoned — Pivoting to Power Automate Desktop
 > **Previous Plan:** `docs/PHASE-3-PLAN.md` (original, superseded by this revision)
 > **Key Change:** Simplified flow, real-time scraping replaces mock, user price suggestions merged into missing vehicle flow
+>
+> **⚠️ Update 2026-07-13:** The Puppeteer microservice (Path B) has been **abandoned** due to YallaMotor Cloudflare protection. The `scraper-service/` code has been removed from the repo. A full postmortem is at `docs/path-b-scraper-microservice-postmortem.md`. The new approach is **Power Automate Desktop (RPA)**, which uses a real Chrome browser on a Windows machine to bypass Cloudflare naturally. See [Section 14](#14-new-approach-power-automate-desktop-rpa).
 
 ---
 
@@ -430,17 +432,25 @@ This way we keep moving forward without either of us getting blocked.
 
 ## 9. Implementation Phases
 
-### Phase 3A — Scraper Service (Days 1-3)
+### Phase 3A — Scraper Service ❌ BLOCKED (Cloudflare)
 
-| Day | Task | Deliverable |
-|---|---|---|
-| 1 | Scaffold Express + Puppeteer + IScraperProvider interface | Working endpoint |
-| 1-2 | Build YallaMotor provider | 1 source working |
-| 2 | Build Dubizzle provider | 2 sources working |
-| 2 | Build Drive Arabia provider | 3 sources working |
-| 3 | Build aggregator (dedup, min/max/avg) | Reliable aggregation |
+| Day | Task | Status | Notes |
+|---|---|---|---|
+| 1 | Scaffold Express + Puppeteer + IScraperProvider interface | ✅ Done | |
+| 1-2 | Build YallaMotor provider | ✅ Done | Debug mode + dual-URL fallback |
+| 2 | Build Dubizzle provider | ❌ Blocked | Would face same Cloudflare issue |
+| 2 | Build Drive Arabia provider | ❌ Blocked | Would face same Cloudflare issue |
+| 3 | Build aggregator (dedup, min/max/avg) | ✅ Done | |
+| — | Debug mode (screenshots + HTML dumps on failure) | ✅ Done | |
+| — | Dockerfile with Chromium deps + health check | ✅ Done | 12 deploy cycles to get Chrome running |
+| — | Railway deployment guide in README | ✅ Done | |
+| — | **Cloudflare bypass** | ❌ **Blocked** | YallaMotor returns "Just a moment..." security page. Puppeteer + stealth plugin cannot bypass Cloudflare. All 12 Docker/Chrome fixes were wasted — the scraper runs but can't access the page. |
 
-### Phase 3B — Frontend Integration (Days 4-5)
+**Status:** The microservice is fully built and deployed at `vehicle-pricing-app-production-f262.up.railway.app`, but YallaMotor's Cloudflare protection blocks Puppeteer from loading actual listings. The service returns `listingsCount: 0`.
+
+**Next step:** Replace Puppeteer approach with Power Automate Desktop (RPA) which controls a real Chrome browser on a Windows machine, bypassing Cloudflare naturally.
+
+### Phase 3B — Frontend Integration (On Hold pending Phase 3A resolution)
 
 | Day | Task | Deliverable |
 |---|---|---|
@@ -527,6 +537,89 @@ After evaluating all three paths:
    - Clean separation of concerns
    - Well-understood technology stack (Node.js + Puppeteer + Express)
 
-**Estimated cost:** $5-15/month for hosting
-**Estimated build:** 5-7 days total, first end-to-end working version in 3 days
-**Next step:** Build scraper service scaffold + YallaMotor provider
+**Outcome:** Built and deployed, but **blocked by YallaMotor Cloudflare** — returned 0 listings because the browser could not bypass the JS challenge. After 12 deploy cycles and extensive anti-detection efforts, Puppeteer from a datacenter IP (Railway) cannot defeat Cloudflare's multi-layered bot detection.
+
+> **Full postmortem:** `docs/path-b-scraper-microservice-postmortem.md`
+
+**🚫 Abandoned 2026-07-13.** The `scraper-service/` code has been removed from the repo. The mock scraper (`src/lib/yallaMotorScraper.ts`) is retained and will be repurposed to read from wherever Power Automate Desktop writes data.
+
+---
+
+## 14. New Approach: Power Automate Desktop (RPA)
+
+### Why Power Automate Desktop?
+
+After Path B (Puppeteer) failed, we evaluated the remaining option:
+
+| Approach | Can bypass Cloudflare? | Cost | Complexity |
+|---|---|---|---|
+| Puppeteer / Playwright | ❌ No — datacenter IPs always flagged | $5-15/mo | Medium |
+| **Power Automate Desktop** | ✅ Yes — real Chrome on Windows | Included with Microsoft 365 | Low |
+| Residential proxy service (BrightData) | ❌ Maybe — still detectable as headless | $20-50/mo | High |
+
+**Power Automate Desktop wins because:**
+- Runs a **real Chrome browser** installed on your actual Windows machine
+- Cloudflare trusts it — it looks like a normal user browsing
+- No special anti-detection needed — it IS a real user's browser
+- Included free with Microsoft 365 / Windows 11
+- Can scrape on a schedule or on-demand
+- Can write results directly to Dataverse via Power Automate HTTP actions
+- No deployment cost — runs on your own PC
+
+### How It Would Work
+
+```
+┌───────────────────────────────────────────────────────────┐
+│  Power Automate Desktop (runs on your Windows PC)         │
+│                                                           │
+│  1. Launch Chrome → navigate to YallaMotor                │
+│  2. Search for vehicle (Toyota Camry 2025)               │
+│  3. Wait for page to load naturally                      │
+│  4. Extract listings: title, price, mileage, source URL   │
+│  5. Write results to a local file (JSON/CSV)              │
+│  6. OR push directly to Dataverse via HTTP action         │
+│                                                           │
+└───────────────────────────────────────────────────────────┘
+          │
+          ▼
+┌───────────────────────────────────────────────────────────┐
+│  Main App (React)                                         │
+│                                                           │
+│  src/lib/yallaMotorScraper.ts                             │
+│    → Repurposed to read from the Power Automate output    │
+│    → Or call a lightweight endpoint that serves the data  │
+│                                                           │
+└───────────────────────────────────────────────────────────┘
+```
+
+### Two Possible Integration Approaches
+
+#### Approach A: Read Scraped Files (Simpler)
+1. Power Automate Desktop scrapes on a schedule and writes results to a JSON/CSV file
+2. The file is synced to a shared location (OneDrive, SharePoint, or Dataverse)
+3. `yallaMotorScraper.ts` reads from that source when the user submits a request
+4. **Pros:** Simple, no extra infrastructure
+5. **Cons:** Not real-time — data could be hours/days old
+
+#### Approach B: Triggered on Request (More Complex)
+1. User submits Missing Vehicle Request → MVR saved to Dataverse
+2. A Power Automate **cloud flow** detects the new MVR record
+3. The cloud flow triggers **Power Automate Desktop** on your Windows machine
+4. The desktop flow scrapes YallaMotor for the vehicle
+5. Results are written back to the Dataverse MVR record
+6. The user's browser polls for completion and displays results
+7. **Pros:** Near real-time
+8. **Cons:** Requires your Windows PC to be on
+
+### What's Needed to Proceed
+
+| Task | Who Does It | Details |
+|---|---|---|
+| Create Power Automate Desktop flow | You (or Claude can guide) | Step-by-step instructions for the scraper flow |
+| Test against YallaMotor from your PC | You | Verify that YallaMotor loads normally in your Chrome |
+| Repurpose `yallaMotorScraper.ts` | Claude | Change the mock to read from the Power Automate output |
+| Define output format | Both | What fields, what file format, where it's stored |
+
+### Status: 🆕 Ready to Begin
+
+The Puppeteer approach has been fully documented and closed. The path forward is Power Automate Desktop. See `docs/path-b-scraper-microservice-postmortem.md` for the full retrospective on what we learned from Path B.

@@ -7,6 +7,13 @@ metadata:
 
 # Cleanup History
 
+## 2026-07-13 — Scraper Service Removal (Abandoned Path B)
+
+### Removed — Puppeteer Scraping Microservice
+- **`scraper-service/`** — Entire directory removed. Reason: YallaMotor Cloudflare protection blocks all automated browsers from datacenter IPs. After 12 Docker/Chrome deploy cycles and extensive anti-detection efforts, Puppeteer proved unable to bypass Cloudflare. Pivoting to Power Automate Desktop (RPA with real Chrome browser on Windows).
+- Full postmortem documented in `docs/path-b-scraper-microservice-postmortem.md`
+- The mock scraper (`src/lib/yallaMotorScraper.ts`) was **kept** — it's still used by the Step3Result UI and will be repurposed to read from Power Automate output
+
 ## 2026-06-17 — Full Project Cleanup
 
 ### Removed — API Work

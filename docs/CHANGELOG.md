@@ -1,5 +1,42 @@
 # Changelog
 
+## 2026-07-13
+
+### Added — Path B Scraper Microservice Postmortem
+- **`docs/path-b-scraper-microservice-postmortem.md`** (new) — Comprehensive retrospective documenting the scraper microservice
+
+### Removed — Scraper Service (Path B: Puppeteer) — Abandoned due to Cloudflare
+- **`scraper-service/`** — Entire directory removed. Puppeteer approach blocked by YallaMotor Cloudflare. Pivoting to Power Automate Desktop.
+- **`src/lib/yallaMotorScraper.ts`** — Kept (mock scraper still used by Step3Result.tsx UI, will be repurposed later to read Power Automate data).
+- **`.env.example`** — `VITE_SCRAPER_API_URL` entry kept as a harmless placeholder.: what we were trying to achieve, full architecture, the 12 Docker/Chrome deploy cycles, YallaMotor Cloudflare blocker, anti-detection arsenal attempted, why Cloudflare cannot be beaten by automated browsers from datacenter IPs, lessons learned, reusable components, and the pivot to Power Automate Desktop. Serves as both reference and closure on the Puppeteer approach.
+
+## 2026-07-10
+
+### Added — Scraper Microservice (Path B: Dedicated Puppeteer Service)
+- **`scraper-service/`** (new) — Full Node.js + Express + Puppeteer microservice for real-time UAE auto marketplace scraping:
+  - **`src/index.ts`** — Express server with `POST /api/scrape` and `GET /health` endpoints, Puppeteer browser lifecycle (auto-relaunch on disconnect), stealth plugin, resource blocking, CORS, graceful shutdown
+  - **`src/types.ts`** — Shared types: `ScrapeRequest`, `ScrapedListing`, `ScrapeResult`, `IScraperProvider` interface, `ProviderResult`
+  - **`src/providers/yallaMotorProvider.ts`** — YallaMotor UAE headless scraper with dual-URL fallback, multi-selector card extraction, smooth scrolling, randomised delays, debug mode
+  - **`src/aggregator.ts`** — Combines providers, filters bad prices, sorts by price, limits to 50 listings, computes min/max
+  - **`src/utils.ts`** — `parsePrice`, `parseMileage`, `normaliseUrlSegment`, `delay`, `randomInt` helpers
+  - **`Dockerfile`** — Single-stage build, Google Chrome Stable from official apt repo, non-root scraper user with home directory, health check
+  - **`README.md`** — Full docs: architecture, API contract, Railway deployment guide, anti-detection, fallback strategy
+  - **`package.json`** — Express 4, Puppeteer 23, puppeteer-extra + stealth, cheerio, TypeScript 5, tsx for dev
+- **`.env.example`** — Added `VITE_SCRAPER_API_URL` (commented out, reserved for future frontend integration)
+
+### Fixed — Scraper Docker/Chrome Deployment (12 commits to production)
+- **`Dockerfile`** — Switched from multi-stage build (losing Chrome) to single-stage build with Google Chrome Stable from official apt repo
+- **`Dockerfile`** — Fixed Debian 12 package names (removed `t64` suffixed names from Debian 13)
+- **`Dockerfile`** — Added `package-lock.json` to COPY instruction for `npm ci` to succeed
+- **`Dockerfile`** — Switched from `ghcr.io/puppeteer/puppeteer` image (ENTRYPOINT conflict) to `node:22-slim` with manual Chrome install
+- **`Dockerfile`** — Changed port from 3001 to 8080 (Railway default), created home directory for non-root `scraper` user with `useradd -m`
+- **`src/index.ts`** — Added `--disable-blink-features=AutomationControlled` launch arg and `evaluateOnNewDocument` webdriver overrides for anti-detection
+
+### Blocked — YallaMotor Cloudflare Protection
+- **YallaMotor uses Cloudflare** (JS challenge/bot detection) — Puppeteer with stealth plugin cannot bypass it. The scraper service deploys and runs successfully on Railway, Chrome launches, but YallaMotor returns a "Just a moment... Performing security verification" page.
+- Added temporary `/api/debug-html` endpoint to inspect page HTML — confirmed Cloudflare is the blocker (not CSS selectors).
+- **Decision:** Puppeteer approach abandoned for YallaMotor. Exploring Power Automate Desktop (RPA) as an alternative — it controls a real Chrome browser on a Windows machine, which can pass Cloudflare challenges naturally.
+
 ## 2026-07-09
 
 ### Documentation — Phase 3 Revised Plan
