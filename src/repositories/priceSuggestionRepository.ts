@@ -19,6 +19,11 @@ export class PriceSuggestionRepository {
     return ds.getPriceSuggestions();
   }
 
+  async update(id: string, minPrice: number | null, maxPrice: number | null): Promise<void> {
+    const ds = getDataSource();
+    return ds.updatePriceSuggestion(id, minPrice, maxPrice);
+  }
+
   async updateStatus(id: string, statusValue: number): Promise<void> {
     const ds = getDataSource();
     return ds.updatePriceSuggestionStatus(id, statusValue);

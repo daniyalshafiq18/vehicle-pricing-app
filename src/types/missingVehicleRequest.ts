@@ -10,6 +10,8 @@ export interface MissingVehicleRequest {
   transmissionType?: string;
   driveType?: string;
   status?: string;
+  minPrice?: number;
+  maxPrice?: number;
   minMileage?: number;
   maxMileage?: number;
   createdOn?: Date;

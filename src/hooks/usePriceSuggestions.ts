@@ -34,6 +34,22 @@ export function useUpsertPriceSuggestion() {
   });
 }
 
+export function useUpdatePriceSuggestion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, minPrice, maxPrice }: { id: string; minPrice: number | null; maxPrice: number | null }) =>
+      priceSuggestionRepository.update(id, minPrice, maxPrice),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [PRICE_SUGGESTIONS_KEY] });
+      toast.success('Price suggestion updated');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update price suggestion');
+    },
+  });
+}
+
 export function useUpdatePriceSuggestionStatus() {
   const queryClient = useQueryClient();
 

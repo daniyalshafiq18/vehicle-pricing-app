@@ -23,6 +23,11 @@ export const ENTITIES = {
   CONTACT: 'contacts',
   INQUIRY: 'vpi_vehicleinquiries',
   MISSING_VEHICLE_REQUEST: 'vpi_missingvehiclerequestses',
+  PRICE_SUGGESTION: 'vpi_pricesuggestionses',
+} as const;
+
+/** Entity logical names for use with EntityDefinitions metadata API. */
+export const ENTITY_LOGICAL_NAMES = {
   PRICE_SUGGESTION: 'vpi_pricesuggestions',
 } as const;
 
@@ -101,6 +106,8 @@ export const MISSING_VEHICLE_REQUEST_FIELDS = {
   CONTACT_LOOKUP: 'vpi_Contact',
   MISSING_VEHICLE_LOOKUP: 'vpi_MissingVehicle',
   STATUS: 'vpi_status',
+  MIN_PRICE: 'vpi_minprice',
+  MAX_PRICE: 'vpi_maxprice',
   MIN_MILEAGE: 'vpi_minmilage',
   MAX_MILEAGE: 'vpi_maxmilage',
   CREATED_ON: 'createdon',
@@ -110,13 +117,14 @@ export const MISSING_VEHICLE_REQUEST_SELECT_FIELDS = Object.values(MISSING_VEHIC
 
 // ─── Price Suggestion Field Logical Names ────────────────────
 export const PRICE_SUGGESTION_FIELDS = {
-  ID: 'vpi_pricesuggestionid',
+  ID: 'vpi_pricesuggestionsid',
   COMMENT: 'vpi_comment',
   MIN_PRICE: 'vpi_minprice',
   MAX_PRICE: 'vpi_maxprice',
   SOURCE_URL: 'vpi_sourceurl',
   SUBMITTED_BY: 'vpi_submittedby',
   VEHICLE_LOOKUP: 'vpi_Vehicle',
+  VEHICLE_LOOKUP_REF: '_vpi_vehicle_value',
   STATUS: 'vpi_status',
   CREATED_ON: 'createdon',
 } as const;

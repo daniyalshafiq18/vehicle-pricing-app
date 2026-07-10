@@ -44,7 +44,7 @@ export function AdminLayout() {
   const { data: priceSuggestions } = usePriceSuggestions();
   const pendingCount = inquiries?.filter((i) => i.status === 'pending').length ?? 0;
   const pendingMissingCount = missingRequests?.filter((r) => r.status === 'Pending' || !r.status).length ?? 0;
-  const pendingPriceSuggestionsCount = priceSuggestions?.filter((s) => !s.status || s.status === 'Approve').length ?? 0;
+  const pendingPriceSuggestionsCount = priceSuggestions?.filter((s) => s.statusValue === 4 || s.statusValue == null).length ?? 0;
   const [hovered, setHovered] = useState(false);
 
   const collapsed = isSidebarCollapsed && !hovered;

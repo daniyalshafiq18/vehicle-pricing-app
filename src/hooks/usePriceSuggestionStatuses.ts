@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchPicklistOptions, type PicklistOption } from '@lib/optionSetApi';
-import { ENTITIES, PRICE_SUGGESTION_FIELDS } from '@data/dataverseConfig';
+import { ENTITY_LOGICAL_NAMES, PRICE_SUGGESTION_FIELDS } from '@data/dataverseConfig';
 import { PRICE_SUGGESTION_STATUS } from '@data/dataverseOptionSets';
 
 /** Hard-coded fallback in case the metadata endpoint is unavailable. */
@@ -20,7 +20,7 @@ export function usePriceSuggestionStatusOptions() {
     queryKey: ['price-suggestion-statuses', 'options'],
     queryFn: async (): Promise<PicklistOption[]> => {
       const fromApi = await fetchPicklistOptions(
-        ENTITIES.PRICE_SUGGESTION,
+        ENTITY_LOGICAL_NAMES.PRICE_SUGGESTION,
         PRICE_SUGGESTION_FIELDS.STATUS,
       );
       return fromApi.length > 0 ? fromApi : FALLBACK;

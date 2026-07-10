@@ -14,6 +14,8 @@ export class MissingVehicleRepository {
     driveType?: string;
     contactEmail?: string;
     contactName?: string;
+    minPrice?: number;
+    maxPrice?: number;
     minMileage?: number;
     maxMileage?: number;
   }): Promise<string> {
@@ -29,6 +31,11 @@ export class MissingVehicleRepository {
   async updateStatus(id: string, status: string): Promise<void> {
     const ds = getDataSource();
     return ds.updateMissingVehicleRequestStatus(id, status);
+  }
+
+  async update(id: string, fields: { minPrice?: number; maxPrice?: number }): Promise<void> {
+    const ds = getDataSource();
+    return ds.updateMissingVehicleRequest(id, fields);
   }
 
   async approve(mvr: MissingVehicleRequest): Promise<void> {

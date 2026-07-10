@@ -1,6 +1,48 @@
 # Changelog
 
+## 2026-07-09
+
+### Documentation — Phase 3 Revised Plan
+- **`docs/PHASE-3-REVISED-PLAN.md`** (new) — Full revised Phase 3 plan documenting the simplified flow: real-time scraping replaces mock, user price suggestions merged into missing vehicle flow, admin review → push-to-master pipeline, and email notification future work. Includes 3 architectural paths evaluated (Power Pages proxy rejected, Hybrid rejected, Dedicated Microservice recommended). All conversation decisions captured so the user can resume from any shutdown point.
+
 ## 2026-07-06
+
+### Changed — MVR Scrape + Correction Now Saves Prices to Dataverse
+- **`src/features/valuation/Step3Result.tsx`** — Restructured `handleSubmitRequest` to sequential flow: scrape YallaMotor first → use estimated prices in MVR creation with `minPrice`/`maxPrice` → persist MVR ID for corrections. Updated `handleSubmitCorrection` to PATCH correction prices to the MVR record via `updateMissingVehicleRequest()`, so user-entered prices are saved back to Dataverse.
+- **`src/features/admin/AdminMissingVehiclesPage.tsx`** — Added Min Price / Max Price columns to the table (right-aligned, formatted currency), and Price cards to the detail modal, so admins can see both scraped and user-corrected prices.
+
+### Added — Application Splash / Loading Screen
+- **`src/app/SplashScreen.tsx`** (new) — Full-screen branded loading splash with animated background grid, gradient orbs, Car logo icon with pulsing ring, shimmer-text title, animated gradient loading bar, and step indicators. Fades out via Framer Motion `AnimatePresence` exit animation (600ms).
+- **`src/app/App.tsx`** — Added `SplashGate` component that coordinates three parallel conditions: (1) Dataverse data source initialization, (2) pre-fetching of Missing Vehicle Requests and Price Suggestions into React Query cache, (3) a strict 3-second minimum timer. The app only renders when all three complete, ensuring smooth loading animations.
+
+### Added — YallaMotor Scraper Mock Service
+- **`src/lib/yallaMotorScraper.ts`** (new) — Simulated scraper service that generates realistic price estimates based on vehicle parameters. Uses seeded pseudo-random data for deterministic output per vehicle. Returns `ScrapeResult` with `estimatedMinPrice`, `estimatedMaxPrice`, `averagePrice`, and `listings[]` (title, price, mileage, source). Simulates 2–3.5s network delay. Ready for replacement with a real scraping microservice endpoint.
+
+### Changed — Missing Vehicle Request Dialog to Multi-Step Scrape + Correction Flow
+- **`src/features/valuation/Step3Result.tsx`** — Replaced the single-step request dialog with a 3-phase wizard:
+  1. **Details** — Existing metadata form (Cylinders, Fuel, Transmission, Drive, Mileage) with "Submit Request & Scrape" button
+  2. **Scraping** — Loading state with spinner animation showing "Searching YallaMotor, Dubizzle..."
+  3. **Results** — Scraped price estimate card (min/max price, listing count, mini listings list) + price correction section where the user can enter their own suggested price range. Skip button dismisses without correction.
+- On form submit: fires MVR creation (Dataverse) and YallaMotor scraper in parallel via `Promise.all`. When both resolve, transitions to results.
+- On price correction submit: creates a Price Suggestion record (with null vehicle lookup since the vehicle doesn't exist yet) and transitions to success.
+- **Success state** — Now shows "Request Submitted! We'll send you a message on {email} once this vehicle is available." with the scraped price summary card when available.
+- Dialog close is blocked while scraping is in progress to prevent accidental dismissal.
+- **`src/features/admin/AdminPriceSuggestionsPage.tsx`** — Rewrote `PriceSuggestionDetailModal` with editable min/max price inputs pre-filled from current values, and a "Save Changes" button wired to `useUpdatePriceSuggestion` mutation. Fields reset when the suggestion changes. Footer has Cancel/Save buttons with loading spinner state.
+- **`src/hooks/usePriceSuggestions.ts`** — Added `useUpdatePriceSuggestion` mutation hook (was already present from prior session preparation).
+
+### Added — Vehicle Column in Price Suggestions Table + Modal
+- **`src/types/priceSuggestion.ts`** — Added `vehicleName?: string` field to store the human-readable vehicle name.
+- **`src/lib/priceSuggestionApi.ts`** — Added `$expand=vpi_Vehicle($select=vpi_name,vpi_make,vpi_model,vpi_year)` to fetch price suggestions, and parses the vehicle name from the expanded lookup. Falls back to building `"Year Make Model"` from fields, or shows vehicle GUID if no name is available.
+- **`src/features/admin/AdminPriceSuggestionsPage.tsx`** — Added "Vehicle" column to the table (with blue icon and truncated name with tooltip), vehicle info card in the detail modal, and vehicle name to the search filter.
+
+### Changed — Save Edits Auto-Sets Status to "Edit & Approve"
+- **`src/features/admin/AdminPriceSuggestionsPage.tsx`** — When clicking "Save Changes" in the price suggestion modal, the mutation now chains a status update to "Edit & Approve" (value 3) after the prices are saved, so editing prices automatically marks the suggestion as reviewed.
+
+### Fixed — Price Suggestion Creation (Wrong Entity Name + Missing Status)
+- **`src/data/dataverseConfig.ts`** — Changed `PRICE_SUGGESTION` entity from `'vpi_pricesuggestions'` to `'vpi_pricesuggestionses'` to match the actual Dataverse entity collection name. The wrong URL was causing a 500 error (`9004010A`).
+- **`src/data/dataverseConfig.ts`** — Added `VEHICLE_LOOKUP_REF: '_vpi_vehicle_value'` to `PRICE_SUGGESTION_FIELDS` for the lookup reference field.
+- **`src/lib/priceSuggestionApi.ts`** — `upsertPriceSuggestion` wasn't sending `vpi_status` in the POST body, causing a 400 Bad Request. Added `vpi_status = 4` (Pending). Now matches the working snippet exactly.
+- **`src/lib/priceSuggestionApi.ts`** — `fetchPriceSuggestions` now uses explicit `$select` with all fields including `_vpi_vehicle_value`, and parses `vehicleId` from the lookup ref.
 
 ### Changed — Price Suggestion Status Now Fetched Dynamically from Dataverse
 - **`src/lib/optionSetApi.ts`** (new) — Generic `fetchPicklistOptions()` function that queries the Dataverse `EntityDefinitions` metadata API for picklist options, returning `{value, label}` pairs. Falls back gracefully when the metadata endpoint is unavailable.

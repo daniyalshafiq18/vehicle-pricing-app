@@ -68,11 +68,14 @@ export interface IDataSource {
     driveType?: string;
     contactEmail?: string;
     contactName?: string;
+    minPrice?: number;
+    maxPrice?: number;
     minMileage?: number;
     maxMileage?: number;
   }): Promise<string>;
   getMissingVehicleRequests(): Promise<MissingVehicleRequest[]>;
   updateMissingVehicleRequestStatus(id: string, status: string): Promise<void>;
+  updateMissingVehicleRequest(id: string, fields: { minPrice?: number; maxPrice?: number }): Promise<void>;
   approveAndCreateVehicle(mvr: MissingVehicleRequest): Promise<void>;
 
   // ─── Price Suggestions ────────────────────────────
@@ -85,5 +88,6 @@ export interface IDataSource {
     vehicleId: string;
   }): Promise<string>;
   getPriceSuggestions(): Promise<PriceSuggestion[]>;
+  updatePriceSuggestion(id: string, minPrice: number | null, maxPrice: number | null): Promise<void>;
   updatePriceSuggestionStatus(id: string, statusValue: number): Promise<void>;
 }

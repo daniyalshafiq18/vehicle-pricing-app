@@ -19,7 +19,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import type { MissingVehicleRequest } from '@types';
-import { cn } from '@utils';
+import { cn, formatCurrency } from '@utils';
 
 // ─── Status helpers ────────────────────────────────────────────
 
@@ -234,6 +234,8 @@ function MissingVehicleDetailModal({
               { label: 'Fuel Type', value: request.fuelType },
               { label: 'Transmission', value: request.transmissionType },
               { label: 'Drive Type', value: request.driveType },
+              { label: 'Min Price', value: request.minPrice != null ? formatCurrency(request.minPrice) : null },
+              { label: 'Max Price', value: request.maxPrice != null ? formatCurrency(request.maxPrice) : null },
               { label: 'Status', value: request.status },
               { label: 'Requested By', value: request.contactName || request.contactEmail },
               { label: 'Contact Email', value: request.contactEmail },
@@ -432,6 +434,8 @@ export function AdminMissingVehiclesPage() {
                     <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Year</th>
                     <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Spec / Trim</th>
                     <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Body Type</th>
+                    <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Min Price</th>
+                    <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Max Price</th>
                     <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
                     <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Requested By</th>
                     <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Requested</th>
@@ -471,6 +475,16 @@ export function AdminMissingVehiclesPage() {
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-xs text-foreground/80">{req.bodyType || '—'}</span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-right">
+                        <span className="text-xs font-medium text-foreground">
+                          {req.minPrice != null ? formatCurrency(req.minPrice) : '—'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-right">
+                        <span className="text-xs font-medium text-foreground">
+                          {req.maxPrice != null ? formatCurrency(req.maxPrice) : '—'}
+                        </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <StatusBadge status={req.status} />

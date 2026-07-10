@@ -29,6 +29,8 @@ export function useUpsertMissingVehicleRequest() {
       driveType?: string;
       contactEmail?: string;
       contactName?: string;
+      minPrice?: number;
+      maxPrice?: number;
       minMileage?: number;
       maxMileage?: number;
     }) => missingVehicleRepository.upsert(payload),

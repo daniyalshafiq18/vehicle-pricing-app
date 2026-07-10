@@ -14,8 +14,8 @@ import { fetchAllVehicles } from '@lib/vehicleApi';
 import { createContact } from '@lib/contactApi';
 import { createInquiry } from '@lib/inquiryApi';
 import type { CreateInquiryPayload } from '@lib/inquiryApi';
-import { upsertMissingVehicleRequest, fetchMissingVehicleRequests, updateMissingVehicleRequestStatus, approveAndCreateVehicle } from '@lib/missingVehicleApi';
-import { upsertPriceSuggestion, fetchPriceSuggestions, updatePriceSuggestionStatus } from '@lib/priceSuggestionApi';
+import { upsertMissingVehicleRequest, fetchMissingVehicleRequests, updateMissingVehicleRequest, updateMissingVehicleRequestStatus, approveAndCreateVehicle } from '@lib/missingVehicleApi';
+import { upsertPriceSuggestion, fetchPriceSuggestions, updatePriceSuggestion, updatePriceSuggestionStatus } from '@lib/priceSuggestionApi';
 import { memoize } from '@utils';
 import type {
   IDataSource,
@@ -818,6 +818,8 @@ export class DataverseDataSource implements IDataSource {
     driveType?: string;
     contactEmail?: string;
     contactName?: string;
+    minPrice?: number;
+    maxPrice?: number;
     minMileage?: number;
     maxMileage?: number;
   }): Promise<string> {
@@ -830,6 +832,10 @@ export class DataverseDataSource implements IDataSource {
 
   async updateMissingVehicleRequestStatus(id: string, status: string): Promise<void> {
     return updateMissingVehicleRequestStatus(id, status);
+  }
+
+  async updateMissingVehicleRequest(id: string, fields: { minPrice?: number; maxPrice?: number }): Promise<void> {
+    return updateMissingVehicleRequest(id, fields);
   }
 
   async approveAndCreateVehicle(mvr: MissingVehicleRequest): Promise<void> {
@@ -850,6 +856,10 @@ export class DataverseDataSource implements IDataSource {
 
   async getPriceSuggestions(): Promise<PriceSuggestion[]> {
     return fetchPriceSuggestions();
+  }
+
+  async updatePriceSuggestion(id: string, minPrice: number | null, maxPrice: number | null): Promise<void> {
+    return updatePriceSuggestion(id, minPrice, maxPrice);
   }
 
   async updatePriceSuggestionStatus(id: string, statusValue: number): Promise<void> {

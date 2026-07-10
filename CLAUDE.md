@@ -122,6 +122,7 @@ All docs live in `docs/`:
 - `context.md` — full project context reference
 - `CHANGELOG.md` — change log
 - `dataverse-schema.md` — Dataverse schema reference
+- `PHASE-3-REVISED-PLAN.md` — Phase 3 scraper plan (Path B: Dedicated Microservice)
 
 ## Environment Variables
 Defined in `.env.example`. All vars are reserved for future configuration — Dataverse is the hard-coded default.

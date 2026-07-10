@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
-import { usePriceSuggestions, useUpdatePriceSuggestionStatus, usePriceSuggestionStatusOptions } from '@hooks';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { usePriceSuggestions, useUpdatePriceSuggestion, useUpdatePriceSuggestionStatus, usePriceSuggestionStatusOptions } from '@hooks';
 import { Button, Dialog, SkeletonTable } from '@components/ui';
 import { motion } from 'framer-motion';
 import {
@@ -179,6 +179,36 @@ function PriceSuggestionDetailModal({
   onClose: () => void;
   statusOptions: PicklistOption[];
 }) {
+  const [editMinPrice, setEditMinPrice] = useState(suggestion.minPrice ?? 0);
+  const [editMaxPrice, setEditMaxPrice] = useState(suggestion.maxPrice ?? 0);
+  const updateMutation = useUpdatePriceSuggestion();
+  const updateStatusMutation = useUpdatePriceSuggestionStatus();
+
+  // Reset fields when suggestion changes
+  useEffect(() => {
+    setEditMinPrice(suggestion.minPrice ?? 0);
+    setEditMaxPrice(suggestion.maxPrice ?? 0);
+  }, [suggestion]);
+
+  const handleSave = () => {
+    const minChanged = editMinPrice !== (suggestion.minPrice ?? 0);
+    const maxChanged = editMaxPrice !== (suggestion.maxPrice ?? 0);
+    const pricesChanged = minChanged || maxChanged;
+
+    updateMutation.mutate(
+      { id: suggestion.id, minPrice: editMinPrice || 0, maxPrice: editMaxPrice || 0 },
+      {
+        onSuccess: () => {
+          // Only auto-set status to "Edit & Approve" (value 3) when prices actually changed
+          if (pricesChanged) {
+            updateStatusMutation.mutate({ id: suggestion.id, statusValue: 3 });
+          }
+          onClose();
+        },
+      },
+    );
+  };
+
   return (
     <Dialog
       isOpen={isOpen}
@@ -220,43 +250,110 @@ function PriceSuggestionDetailModal({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
+          {/* Vehicle info */}
+          {suggestion.vehicleName && (
+            <div className="mb-4 rounded-xl border bg-gradient-to-r from-blue-500/5 to-transparent p-3.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Vehicle</p>
+              <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-foreground">
+                <DollarSign className="h-4 w-4 text-blue-500" />
+                {suggestion.vehicleName}
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'Min Price', value: suggestion.minPrice ? formatCurrency(suggestion.minPrice) : undefined },
-              { label: 'Max Price', value: suggestion.maxPrice ? formatCurrency(suggestion.maxPrice) : undefined },
-              { label: 'Submitted By', value: suggestion.submittedBy },
-              { label: 'Status', value: suggestion.status },
-              { label: 'Source URL', value: suggestion.sourceUrl, isUrl: true },
-            ].map((item) => (
-              <div key={item.label} className={cn('rounded-xl border bg-card p-3.5', item.isUrl && 'col-span-2')}>
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {item.label}
-                </p>
-                {item.isUrl && item.value ? (
-                  <a
-                    href={item.value}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-1 flex items-center gap-1.5 text-sm font-medium text-primary break-words hover:underline"
-                  >
-                    {item.value}
-                    <ExternalLink className="h-3 w-3 shrink-0" />
-                  </a>
-                ) : (
-                  <p className="mt-1 text-sm font-medium text-foreground break-words">
-                    {item.value ? String(item.value) : '—'}
-                  </p>
-                )}
+            {/* Submitted By (read-only) */}
+            <div className="rounded-xl border bg-card p-3.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Submitted By</p>
+              <p className="mt-1 text-sm font-medium text-foreground break-words">{suggestion.submittedBy || '—'}</p>
+            </div>
+
+            {/* Status (read-only) */}
+            <div className="rounded-xl border bg-card p-3.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Status</p>
+              <p className="mt-1 text-sm font-medium text-foreground">{suggestion.status || 'Pending'}</p>
+            </div>
+
+            {/* Min Price (editable) */}
+            <div className="rounded-xl border bg-card p-3.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Min Price</p>
+              <div className="relative mt-1">
+                <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground/50">AED</span>
+                <input
+                  type="number"
+                  value={editMinPrice}
+                  onChange={(e) => setEditMinPrice(Number(e.target.value))}
+                  className="h-9 w-full rounded-lg border bg-background pl-10 pr-3 text-sm font-medium text-foreground outline-none transition-colors focus:border-primary/50"
+                />
               </div>
-            ))}
+            </div>
+
+            {/* Max Price (editable) */}
+            <div className="rounded-xl border bg-card p-3.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Max Price</p>
+              <div className="relative mt-1">
+                <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground/50">AED</span>
+                <input
+                  type="number"
+                  value={editMaxPrice}
+                  onChange={(e) => setEditMaxPrice(Number(e.target.value))}
+                  className="h-9 w-full rounded-lg border bg-background pl-10 pr-3 text-sm font-medium text-foreground outline-none transition-colors focus:border-primary/50"
+                />
+              </div>
+            </div>
+
+            {/* Source URL (read-only) */}
+            <div className="rounded-xl border bg-card p-3.5 col-span-2">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Source URL</p>
+              {suggestion.sourceUrl ? (
+                <a
+                  href={suggestion.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 flex items-center gap-1.5 text-sm font-medium text-primary break-words hover:underline"
+                >
+                  {suggestion.sourceUrl}
+                  <ExternalLink className="h-3 w-3 shrink-0" />
+                </a>
+              ) : (
+                <p className="mt-1 text-sm font-medium text-foreground break-words">—</p>
+              )}
+            </div>
           </div>
 
+          {/* Comment (read-only) */}
           {suggestion.comment && (
             <div className="mt-3 rounded-xl border bg-card p-3.5">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Comment</p>
               <p className="mt-1 text-sm font-medium text-foreground">{suggestion.comment}</p>
             </div>
           )}
+        </div>
+
+        {/* Footer */}
+        <div className="shrink-0 -mx-6 -mb-6 border-t bg-muted/20 px-6 py-4">
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              variant="gradient"
+              onClick={handleSave}
+              disabled={updateMutation.isPending}
+            >
+              {updateMutation.isPending ? (
+                <>
+                  <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </Dialog>
@@ -283,8 +380,11 @@ export function AdminPriceSuggestionsPage() {
   const [statusFilterValue, setStatusFilterValue] = useState<number | 'all'>('all');
   const pageSize = 15;
 
-  const { data: suggestions, isLoading } = usePriceSuggestions();
-  const { data: statusOptions = [] } = usePriceSuggestionStatusOptions();
+  const { data: suggestions, isLoading: suggestionsLoading, error: fetchError } = usePriceSuggestions();
+  const { data: statusOptions = [], isLoading: statusOptionsLoading } = usePriceSuggestionStatusOptions();
+
+  // Wait for ALL data to load before showing content
+  const isLoading = suggestionsLoading || statusOptionsLoading;
 
   // Build filter tabs dynamically from fetched Dataverse options
   const filterTabs = useMemo(() => {
@@ -307,6 +407,7 @@ export function AdminPriceSuggestionsPage() {
     const q = search.toLowerCase();
     return (
       (s.submittedBy ?? '').toLowerCase().includes(q) ||
+      (s.vehicleName ?? '').toLowerCase().includes(q) ||
       (s.comment ?? '').toLowerCase().includes(q) ||
       String(s.minPrice ?? '').includes(q) ||
       String(s.maxPrice ?? '').includes(q)
@@ -435,12 +536,32 @@ export function AdminPriceSuggestionsPage() {
             <div className="p-6">
               <SkeletonTable rows={8} cols={5} />
             </div>
+          ) : fetchError ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-red-500/10">
+                <XCircle className="h-10 w-10 text-red-500" />
+              </div>
+              <p className="text-lg font-medium text-foreground">Failed to load suggestions</p>
+              <p className="mt-1 text-sm text-muted-foreground text-center max-w-sm">
+                {fetchError.message || 'An unexpected error occurred. Check the console for details.'}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.reload()}
+                className="mt-4"
+              >
+                <RotateCcw className="mr-1.5 h-3 w-3" />
+                Refresh page
+              </Button>
+            </div>
           ) : paginated.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/20">
                     <th className="w-10 px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</th>
+                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Vehicle</th>
                     <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Submitted By</th>
                     <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Min Price</th>
                     <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Max Price</th>
@@ -459,13 +580,18 @@ export function AdminPriceSuggestionsPage() {
                       <td className="px-4 py-3 text-xs text-muted-foreground">
                         {(page - 1) * pageSize + i + 1}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
-                            <DollarSign className="h-4 w-4 text-amber-500" />
+                      <td className="px-4 py-3 whitespace-nowrap max-w-[200px]">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
+                            <DollarSign className="h-4 w-4 text-blue-500" />
                           </div>
-                          <span className="font-medium text-foreground">{s.submittedBy || '—'}</span>
+                          <span className="truncate text-sm font-medium text-foreground" title={s.vehicleName || s.vehicleId}>
+                            {s.vehicleName || s.vehicleId || '—'}
+                          </span>
                         </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-sm font-medium text-foreground">{s.submittedBy || '—'}</span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-sm font-semibold text-foreground">

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useInquiryStore } from '@stores';
 import { useValuation, useSaveInquiry, useUpsertMissingVehicleRequest, useUpsertPriceSuggestion } from '@hooks';
@@ -25,11 +25,16 @@ import {
   Tag,
   SearchX,
   Send,
-  CheckCircle2,
   DollarSign,
   ExternalLink,
+  Sparkles,
+  MessageSquare,
+  Loader2,
+  Globe,
 } from 'lucide-react';
-import { formatCurrency } from '@utils';
+import { cn, formatCurrency } from '@utils';
+import { scrapeYallaMotor, type ScrapeResult } from '@lib/yallaMotorScraper';
+import { updateMissingVehicleRequest } from '@lib/missingVehicleApi';
 
 export function Step3Result() {
   const [searchParams] = useSearchParams();
@@ -44,6 +49,18 @@ export function Step3Result() {
 
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [requestSubmitted, setRequestSubmitted] = useState(false);
+
+  /** Dialog phase: 'form' → 'scraping' → 'results' */
+  const [dialogPhase, setDialogPhase] = useState<'form' | 'scraping' | 'results'>('form');
+  const [scrapeResult, setScrapeResult] = useState<ScrapeResult | null>(null);
+  const [scrapeError, setScrapeError] = useState<string | null>(null);
+  /** ID of the MVR created during step 1, used to patch correction prices. */
+  const [mvrCreatedId, setMvrCreatedId] = useState<string | null>(null);
+
+  /** Price correction (step 2 inside dialog) */
+  const [correctionMinPrice, setCorrectionMinPrice] = useState('');
+  const [correctionMaxPrice, setCorrectionMaxPrice] = useState('');
+  const [correctionSourceUrl, setCorrectionSourceUrl] = useState('');
 
   const [showSuggestDialog, setShowSuggestDialog] = useState(false);
   const [suggestMinPrice, setSuggestMinPrice] = useState('');
@@ -102,9 +119,27 @@ export function Step3Result() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [valuation, isFetched]);
 
-  const handleSubmitRequest = () => {
-    upsertRequest.mutate(
-      {
+  const handleSubmitRequest = useCallback(async () => {
+    setDialogPhase('scraping');
+    setScrapeError(null);
+
+    try {
+      // 1. Scrape YallaMotor first to get the estimated prices
+      const result = await scrapeYallaMotor({
+        make: vehicleSelection.make,
+        model: vehicleSelection.model,
+        spec: vehicleSelection.spec,
+        year: vehicleSelection.year ?? new Date().getFullYear(),
+        bodyType: vehicleSelection.bodyType || undefined,
+        cylinders: requestCylinders || undefined,
+        fuelType: requestFuelType || undefined,
+        transmissionType: requestTransmissionType || undefined,
+        driveType: requestDriveType || undefined,
+      });
+      setScrapeResult(result);
+
+      // 2. Create the MVR with scraped prices included
+      const mvrId = await upsertRequest.mutateAsync({
         make: vehicleSelection.make,
         model: vehicleSelection.model,
         bodyType: vehicleSelection.bodyType,
@@ -118,17 +153,45 @@ export function Step3Result() {
         contactName: personalInfo.firstName && personalInfo.lastName
           ? `${personalInfo.firstName} ${personalInfo.lastName}`
           : personalInfo.firstName || undefined,
+        minPrice: result.estimatedMinPrice,
+        maxPrice: result.estimatedMaxPrice,
         minMileage: requestMinMileage ? Number(requestMinMileage) : undefined,
         maxMileage: requestMaxMileage ? Number(requestMaxMileage) : undefined,
-      },
-      {
-        onSuccess: () => {
-          setShowRequestDialog(false);
-          setRequestSubmitted(true);
-        },
-      },
-    );
-  };
+      });
+      setMvrCreatedId(mvrId);
+
+      setDialogPhase('results');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to process request';
+      setScrapeError(message);
+      setDialogPhase('results');
+    }
+  }, [
+    vehicleSelection, requestCylinders, requestFuelType,
+    requestTransmissionType, requestDriveType, requestMinMileage,
+    requestMaxMileage, personalInfo, upsertRequest,
+  ]);
+
+  /** Submit the user's price correction from the scraped-results step. */
+  const handleSubmitCorrection = useCallback(async () => {
+    const hasPrices = correctionMinPrice || correctionMaxPrice;
+
+    // If there's a valid MVR ID and prices to correct, PATCH them to Dataverse
+    if (mvrCreatedId && hasPrices) {
+      try {
+        await updateMissingVehicleRequest(mvrCreatedId, {
+          minPrice: correctionMinPrice ? Number(correctionMinPrice) : undefined,
+          maxPrice: correctionMaxPrice ? Number(correctionMaxPrice) : undefined,
+        });
+      } catch {
+        // Correction PATCH failed — still show success to the user.
+        // The admin can correct prices manually.
+      }
+    }
+
+    setShowRequestDialog(false);
+    setRequestSubmitted(true);
+  }, [correctionMinPrice, correctionMaxPrice, correctionSourceUrl, mvrCreatedId]);
 
   const handleSubmitSuggestion = () => {
     const vehicleId = valuationResult?.vehicle.id;
@@ -185,16 +248,31 @@ export function Step3Result() {
               className="text-center"
             >
               <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10">
-                <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+                <MessageSquare className="h-10 w-10 text-emerald-500" />
               </div>
-              <h2 className="mb-2 text-2xl font-bold tracking-tight">Thanks!</h2>
+              <h2 className="mb-2 text-2xl font-bold tracking-tight">Request Submitted!</h2>
               <p className="mb-2 text-muted-foreground">
-                This vehicle has been added to our review queue.
+                We'll send you a message on{' '}
+                <span className="font-semibold text-foreground">
+                  {personalInfo.email || 'your email'}
+                </span>{' '}
+                once this vehicle is available.
               </p>
-              <p className="mb-8 text-sm text-muted-foreground/70">
-                We'll prioritize vehicles requested by multiple users.
-              </p>
-              <div className="flex justify-center gap-3">
+              {/* Show scraped result summary if available */}
+              {scrapeResult && (
+                <div className="mx-auto mt-4 mb-6 max-w-xs rounded-xl border bg-card p-4">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Scraped Market Price
+                  </p>
+                  <p className="mt-1 text-lg font-bold text-primary">
+                    {formatCurrency(scrapeResult.estimatedMinPrice)} — {formatCurrency(scrapeResult.estimatedMaxPrice)}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Based on {scrapeResult.listingsCount} listings
+                  </p>
+                </div>
+              )}
+              <div className="mt-6 flex justify-center gap-3">
                 <Button variant="outline" size="lg" onClick={prevStep}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
@@ -268,145 +346,323 @@ export function Step3Result() {
           )}
         </AnimatePresence>
 
-        {/* ── Request Dialog ── */}
+        {/* ── Multi-Step Request Dialog ── */}
         <Dialog
           isOpen={showRequestDialog}
-          onClose={() => setShowRequestDialog(false)}
-          title="Request This Vehicle"
-          description="We'll add it to our review queue."
+          onClose={() => {
+            if (dialogPhase === 'scraping') return; // block close while scraping
+            setShowRequestDialog(false);
+            setDialogPhase('form');
+          }}
+          title=""
+          description=""
           size="md"
+          hideCloseButton
         >
-          <div className="space-y-5">
-            {/* Prefilled summary */}
-            <div className="rounded-xl border bg-muted/30 p-4">
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: 'Make', value: vehicleSelection.make },
-                  { label: 'Model', value: vehicleSelection.model },
-                  { label: 'Year', value: vehicleSelection.year },
-                  { label: 'Body Type', value: vehicleSelection.bodyType },
-                  { label: 'Spec', value: vehicleSelection.spec },
-                ]
-                  .filter((item) => item.value)
-                  .map((item) => (
-                    <div key={item.label}>
-                      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                        {item.label}
-                      </p>
-                      <p className="text-sm font-semibold text-foreground">{String(item.value)}</p>
-                    </div>
-                  ))}
-              </div>
-            </div>
-
-            {/* Additional details */}
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Additional Details
-              </p>
-              <div className="grid grid-cols-4 gap-3">
-                <select
-                  value={requestCylinders}
-                  onChange={(e) => setRequestCylinders(e.target.value)}
-                  className="h-9 rounded-lg border bg-background px-3 text-xs outline-none focus:border-primary/50"
-                >
-                  <option value="">Cylinders</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                  <option value="5">5</option>
-                  <option value="6">6</option>
-                  <option value="8">8</option>
-                  <option value="10">10</option>
-                  <option value="12">12</option>
-                  <option value="16">16</option>
-                </select>
-                <select
-                  value={requestFuelType}
-                  onChange={(e) => setRequestFuelType(e.target.value)}
-                  className="h-9 rounded-lg border bg-background px-3 text-xs outline-none focus:border-primary/50"
-                >
-                  <option value="">Fuel Type</option>
-                  <option value="Electric">Electric</option>
-                  <option value="Hybrid">Hybrid</option>
-                  <option value="Petrol/Diesel">Petrol/Diesel</option>
-                </select>
-                <select
-                  value={requestTransmissionType}
-                  onChange={(e) => setRequestTransmissionType(e.target.value)}
-                  className="h-9 rounded-lg border bg-background px-3 text-xs outline-none focus:border-primary/50"
-                >
-                  <option value="">Transmission</option>
-                  <option value="Automatic">Automatic</option>
-                  <option value="Manual">Manual</option>
-                  <option value="CVT">CVT</option>
-                </select>
-                <select
-                  value={requestDriveType}
-                  onChange={(e) => setRequestDriveType(e.target.value)}
-                  className="h-9 rounded-lg border bg-background px-3 text-xs outline-none focus:border-primary/50"
-                >
-                  <option value="">Drive Type</option>
-                  <option value="4X4">4X4</option>
-                  <option value="AWD">AWD</option>
-                  <option value="FWD">FWD</option>
-                  <option value="RWD">RWD</option>
-                  <option value="Unknown">Unknown</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Mileage range */}
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Mileage Range (km)
-              </p>
-              <div className="flex items-center gap-3">
-                <input
-                  type="number"
-                  placeholder="Min"
-                  value={requestMinMileage}
-                  onChange={(e) => setRequestMinMileage(e.target.value)}
-                  className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
-                />
-                <span className="text-muted-foreground/40">—</span>
-                <input
-                  type="number"
-                  placeholder="Max"
-                  value={requestMaxMileage}
-                  onChange={(e) => setRequestMaxMileage(e.target.value)}
-                  className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowRequestDialog(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="gradient"
-                onClick={handleSubmitRequest}
-                disabled={upsertRequest.isPending}
-                className="flex-1"
-              >
-                {upsertRequest.isPending ? (
-                  <>
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <Send className="mr-2 h-4 w-4" />
-                    Submit Request
-                  </>
-                )}
-              </Button>
-            </div>
+          {/* Step indicator */}
+          <div className="flex items-center gap-2 px-6 pt-5 pb-3">
+            {[
+              { phase: 'form', label: 'Details', icon: Car },
+              { phase: 'scraping', label: 'Scrape', icon: Globe },
+              { phase: 'results', label: 'Results', icon: Sparkles },
+            ].map((step, i) => {
+              const Icon = step.icon;
+              const isActive = dialogPhase === step.phase || (dialogPhase === 'results' && step.phase === 'results') || (dialogPhase === 'scraping' && step.phase === 'scraping') || (dialogPhase === 'results' && (step.phase === 'form' || step.phase === 'scraping'));
+              const isPast = (dialogPhase === 'scraping' && step.phase === 'form') ||
+                (dialogPhase === 'results' && step.phase !== 'results');
+              return (
+                <div key={step.phase} className="flex items-center gap-2">
+                  {i > 0 && <div className={cn('h-px w-6', isPast ? 'bg-primary/40' : 'bg-border')} />}
+                  <div className={cn(
+                    'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors',
+                    isPast ? 'bg-primary/10 text-primary' :
+                    isActive ? 'bg-primary/10 text-primary' :
+                    'text-muted-foreground bg-muted/30',
+                  )}>
+                    <Icon className="h-3 w-3" />
+                    {step.label}
+                  </div>
+                </div>
+              );
+            })}
           </div>
+
+          {/* ── Phase 1: Form ── */}
+          {dialogPhase === 'form' && (
+            <div className="space-y-5 px-6 pb-6">
+              {/* Prefilled summary */}
+              <div className="rounded-xl border bg-muted/30 p-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: 'Make', value: vehicleSelection.make },
+                    { label: 'Model', value: vehicleSelection.model },
+                    { label: 'Year', value: vehicleSelection.year },
+                    { label: 'Body Type', value: vehicleSelection.bodyType },
+                    { label: 'Spec', value: vehicleSelection.spec },
+                  ]
+                    .filter((item) => item.value)
+                    .map((item) => (
+                      <div key={item.label}>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                          {item.label}
+                        </p>
+                        <p className="text-sm font-semibold text-foreground">{String(item.value)}</p>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* Additional details */}
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Additional Details
+                </p>
+                <div className="grid grid-cols-4 gap-3">
+                  <select
+                    value={requestCylinders}
+                    onChange={(e) => setRequestCylinders(e.target.value)}
+                    className="h-9 rounded-lg border bg-background px-3 text-xs outline-none focus:border-primary/50"
+                  >
+                    <option value="">Cylinders</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="8">8</option>
+                    <option value="10">10</option>
+                    <option value="12">12</option>
+                    <option value="16">16</option>
+                  </select>
+                  <select
+                    value={requestFuelType}
+                    onChange={(e) => setRequestFuelType(e.target.value)}
+                    className="h-9 rounded-lg border bg-background px-3 text-xs outline-none focus:border-primary/50"
+                  >
+                    <option value="">Fuel Type</option>
+                    <option value="Electric">Electric</option>
+                    <option value="Hybrid">Hybrid</option>
+                    <option value="Petrol/Diesel">Petrol/Diesel</option>
+                  </select>
+                  <select
+                    value={requestTransmissionType}
+                    onChange={(e) => setRequestTransmissionType(e.target.value)}
+                    className="h-9 rounded-lg border bg-background px-3 text-xs outline-none focus:border-primary/50"
+                  >
+                    <option value="">Transmission</option>
+                    <option value="Automatic">Automatic</option>
+                    <option value="Manual">Manual</option>
+                    <option value="CVT">CVT</option>
+                  </select>
+                  <select
+                    value={requestDriveType}
+                    onChange={(e) => setRequestDriveType(e.target.value)}
+                    className="h-9 rounded-lg border bg-background px-3 text-xs outline-none focus:border-primary/50"
+                  >
+                    <option value="">Drive Type</option>
+                    <option value="4X4">4X4</option>
+                    <option value="AWD">AWD</option>
+                    <option value="FWD">FWD</option>
+                    <option value="RWD">RWD</option>
+                    <option value="Unknown">Unknown</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Mileage range */}
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Mileage Range (km)
+                </p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    value={requestMinMileage}
+                    onChange={(e) => setRequestMinMileage(e.target.value)}
+                    className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                  />
+                  <span className="text-muted-foreground/40">—</span>
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    value={requestMaxMileage}
+                    onChange={(e) => setRequestMaxMileage(e.target.value)}
+                    className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowRequestDialog(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="gradient"
+                  onClick={handleSubmitRequest}
+                  disabled={upsertRequest.isPending}
+                  className="flex-1"
+                >
+                  {upsertRequest.isPending ? (
+                    <>
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="mr-2 h-4 w-4" />
+                      Submit Request &amp; Scrape
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Phase 2: Scraping ── */}
+          {dialogPhase === 'scraping' && (
+            <div className="flex flex-col items-center justify-center px-6 pb-8 pt-4">
+              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+              <p className="text-lg font-semibold text-foreground">Scraping Listings</p>
+              <p className="mt-1.5 text-center text-sm text-muted-foreground max-w-xs">
+                Searching YallaMotor, Dubizzle, and other UAE marketplaces for{' '}
+                {vehicleSelection.year} {vehicleSelection.make} {vehicleSelection.model}...
+              </p>
+            </div>
+          )}
+
+          {/* ── Phase 3: Results ── */}
+          {dialogPhase === 'results' && (
+            <div className="space-y-5 px-6 pb-6">
+              {scrapeError && !scrapeResult ? (
+                /* Error state */
+                <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5 text-center">
+                  <p className="text-sm font-medium text-red-600 dark:text-red-400">
+                    {scrapeError}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setDialogPhase('form');
+                      setScrapeError(null);
+                    }}
+                    className="mt-3"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              ) : scrapeResult ? (
+                <>
+                  {/* Scraped Price Estimate */}
+                  <div className="rounded-xl border bg-gradient-to-br from-primary/5 to-transparent p-5 text-center">
+                    <div className="mb-2 flex items-center justify-center gap-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                        Scraped Market Price
+                      </p>
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">
+                      {formatCurrency(scrapeResult.estimatedMinPrice)} — {formatCurrency(scrapeResult.estimatedMaxPrice)}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {scrapeResult.currency} · Based on {scrapeResult.listingsCount} listings
+                    </p>
+                    {/* Mini listings list */}
+                    <div className="mt-4 max-h-24 space-y-1.5 overflow-y-auto">
+                      {scrapeResult.listings.slice(0, 5).map((listing, i) => (
+                        <div key={i} className="flex items-center justify-between rounded-lg bg-background/50 px-3 py-1.5 text-xs">
+                          <span className="text-muted-foreground truncate">
+                            {listing.source} · {listing.mileage.toLocaleString()} km
+                          </span>
+                          <span className="ml-2 font-semibold text-foreground">
+                            {formatCurrency(listing.price)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Price Correction */}
+                  <div className="rounded-xl border bg-muted/20 p-4">
+                    <div className="mb-3 flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-amber-500" />
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Not satisfied with the estimate?
+                      </p>
+                    </div>
+                    <p className="mb-3 text-xs text-muted-foreground">
+                      Enter your own suggested price range for this vehicle.
+                    </p>
+                    <div className="flex items-center gap-3 mb-3">
+                      <input
+                        type="number"
+                        placeholder="Min Price"
+                        value={correctionMinPrice}
+                        onChange={(e) => setCorrectionMinPrice(e.target.value)}
+                        className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                      />
+                      <span className="text-muted-foreground/40">—</span>
+                      <input
+                        type="number"
+                        placeholder="Max Price"
+                        value={correctionMaxPrice}
+                        onChange={(e) => setCorrectionMaxPrice(e.target.value)}
+                        className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                      />
+                    </div>
+                    <div className="relative">
+                      <ExternalLink className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
+                      <input
+                        type="url"
+                        placeholder="Source URL (optional)"
+                        value={correctionSourceUrl}
+                        onChange={(e) => setCorrectionSourceUrl(e.target.value)}
+                        className="h-9 w-full rounded-lg border bg-background pl-9 pr-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowRequestDialog(false);
+                        setRequestSubmitted(true);
+                      }}
+                      className="flex-1"
+                    >
+                      Skip
+                    </Button>
+                    <Button
+                      variant="gradient"
+                      onClick={handleSubmitCorrection}
+                      disabled={upsertSuggestion.isPending || (!correctionMinPrice && !correctionMaxPrice)}
+                      className="flex-1"
+                    >
+                      {upsertSuggestion.isPending ? (
+                        <>
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <DollarSign className="mr-2 h-4 w-4" />
+                          Submit Price
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          )}
         </Dialog>
       </div>
     );

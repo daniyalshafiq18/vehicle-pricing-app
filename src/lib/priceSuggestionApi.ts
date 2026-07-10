@@ -8,8 +8,8 @@
  * @see ../data/dataverseOptionSets.ts for choice field mappings
  */
 
-import { API_BASE, ENTITIES, PRICE_SUGGESTION_FIELDS } from '@data/dataverseConfig';
-import { priceSuggestionStatusLabel } from '@data/dataverseOptionSets';
+import { API_BASE, ENTITIES, PRICE_SUGGESTION_FIELDS, VEHICLE_FIELDS } from '@data/dataverseConfig';
+import { priceSuggestionStatusLabel, priceSuggestionStatusValue } from '@data/dataverseOptionSets';
 import type { PriceSuggestion } from '@types';
 import { safeFetch, safeFetchWithMeta } from './safeAjax';
 
@@ -47,6 +47,7 @@ export async function upsertPriceSuggestion(payload: {
   record.vpi_name = payload.submittedBy
     ? `Suggestion from ${payload.submittedBy}`
     : 'Price suggestion';
+  record[PRICE_SUGGESTION_FIELDS.STATUS] = priceSuggestionStatusValue('Pending') ?? 4;
 
   const { meta } = await safeFetchWithMeta<Record<string, unknown>>({
     url: baseUrl,
@@ -69,24 +70,49 @@ export async function upsertPriceSuggestion(payload: {
 export async function fetchPriceSuggestions(): Promise<PriceSuggestion[]> {
   const baseUrl = `${API_BASE}/${ENTITIES.PRICE_SUGGESTION}`;
 
+  const select = [
+    PRICE_SUGGESTION_FIELDS.ID,
+    PRICE_SUGGESTION_FIELDS.COMMENT,
+    PRICE_SUGGESTION_FIELDS.MIN_PRICE,
+    PRICE_SUGGESTION_FIELDS.MAX_PRICE,
+    PRICE_SUGGESTION_FIELDS.SOURCE_URL,
+    PRICE_SUGGESTION_FIELDS.STATUS,
+    PRICE_SUGGESTION_FIELDS.SUBMITTED_BY,
+    PRICE_SUGGESTION_FIELDS.VEHICLE_LOOKUP_REF,
+    PRICE_SUGGESTION_FIELDS.CREATED_ON,
+  ].join(',');
+
   const resp: ODataResponse = await safeFetchWithMeta<ODataResponse>({
-    url: `${baseUrl}?$orderby=createdon desc`,
+    url: `${baseUrl}?$select=${select}&$expand=${PRICE_SUGGESTION_FIELDS.VEHICLE_LOOKUP}($select=${VEHICLE_FIELDS.NAME},${VEHICLE_FIELDS.MAKE},${VEHICLE_FIELDS.MODEL},${VEHICLE_FIELDS.YEAR})&$orderby=createdon desc`,
     headers: { Prefer: 'odata.include-annotations=*' },
   }).then((r) => r.data);
 
-  return (resp.value ?? []).map((raw) => ({
-    id: (raw[PRICE_SUGGESTION_FIELDS.ID] as string) ?? '',
-    comment: (raw[PRICE_SUGGESTION_FIELDS.COMMENT] as string) ?? undefined,
-    minPrice: raw[PRICE_SUGGESTION_FIELDS.MIN_PRICE] as number | undefined,
-    maxPrice: raw[PRICE_SUGGESTION_FIELDS.MAX_PRICE] as number | undefined,
-    sourceUrl: (raw[PRICE_SUGGESTION_FIELDS.SOURCE_URL] as string) ?? undefined,
-    submittedBy: (raw[PRICE_SUGGESTION_FIELDS.SUBMITTED_BY] as string) ?? undefined,
-    status: (raw[`${PRICE_SUGGESTION_FIELDS.STATUS}@OData.Community.Display.V1.FormattedValue`] as string | undefined) ?? priceSuggestionStatusLabel(raw[PRICE_SUGGESTION_FIELDS.STATUS]),
-    statusValue: (raw[PRICE_SUGGESTION_FIELDS.STATUS] as number | null) ?? undefined,
-    createdOn: raw[PRICE_SUGGESTION_FIELDS.CREATED_ON]
-      ? new Date(raw[PRICE_SUGGESTION_FIELDS.CREATED_ON] as string)
-      : undefined,
-  }));
+  return (resp.value ?? []).map((raw) => {
+    const vehicleRaw = raw[PRICE_SUGGESTION_FIELDS.VEHICLE_LOOKUP] as Record<string, unknown> | undefined;
+    const vehicleMake = vehicleRaw?.[VEHICLE_FIELDS.MAKE] as string | undefined;
+    const vehicleModel = vehicleRaw?.[VEHICLE_FIELDS.MODEL] as string | undefined;
+    const vehicleYear = vehicleRaw?.[VEHICLE_FIELDS.YEAR] as number | undefined;
+    const vehicleNameRaw = vehicleRaw?.[VEHICLE_FIELDS.NAME] as string | undefined;
+    const vehicleName = vehicleNameRaw
+      ?? [vehicleYear, vehicleMake, vehicleModel].filter(Boolean).join(' ')
+      ?? undefined;
+
+    return {
+      id: (raw[PRICE_SUGGESTION_FIELDS.ID] as string) ?? '',
+      comment: (raw[PRICE_SUGGESTION_FIELDS.COMMENT] as string) ?? undefined,
+      minPrice: raw[PRICE_SUGGESTION_FIELDS.MIN_PRICE] as number | undefined,
+      maxPrice: raw[PRICE_SUGGESTION_FIELDS.MAX_PRICE] as number | undefined,
+      sourceUrl: (raw[PRICE_SUGGESTION_FIELDS.SOURCE_URL] as string) ?? undefined,
+      submittedBy: (raw[PRICE_SUGGESTION_FIELDS.SUBMITTED_BY] as string) ?? undefined,
+      vehicleId: (raw[PRICE_SUGGESTION_FIELDS.VEHICLE_LOOKUP_REF] as string) ?? undefined,
+      vehicleName,
+      status: (raw[`${PRICE_SUGGESTION_FIELDS.STATUS}@OData.Community.Display.V1.FormattedValue`] as string | undefined) ?? priceSuggestionStatusLabel(raw[PRICE_SUGGESTION_FIELDS.STATUS]),
+      statusValue: (raw[PRICE_SUGGESTION_FIELDS.STATUS] as number | null) ?? undefined,
+      createdOn: raw[PRICE_SUGGESTION_FIELDS.CREATED_ON]
+        ? new Date(raw[PRICE_SUGGESTION_FIELDS.CREATED_ON] as string)
+        : undefined,
+    };
+  });
 }
 
 /**
@@ -109,5 +135,34 @@ export async function updatePriceSuggestionStatus(
       'If-Match': '*',
     },
     body: JSON.stringify({ [PRICE_SUGGESTION_FIELDS.STATUS]: statusValue }),
+  });
+}
+
+/**
+ * Update the min/max price of a price suggestion.
+ *
+ * @param id       - Record GUID
+ * @param minPrice - New min price (or null to clear)
+ * @param maxPrice - New max price (or null to clear)
+ */
+export async function updatePriceSuggestion(
+  id: string,
+  minPrice: number | null,
+  maxPrice: number | null,
+): Promise<void> {
+  const baseUrl = `${API_BASE}/${ENTITIES.PRICE_SUGGESTION}`;
+
+  const body: Record<string, unknown> = {};
+  body[PRICE_SUGGESTION_FIELDS.MIN_PRICE] = minPrice;
+  body[PRICE_SUGGESTION_FIELDS.MAX_PRICE] = maxPrice;
+
+  await safeFetch<void>({
+    url: `${baseUrl}(${id})`,
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'If-Match': '*',
+    },
+    body: JSON.stringify(body),
   });
 }

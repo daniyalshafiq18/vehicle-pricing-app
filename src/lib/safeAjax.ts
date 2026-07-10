@@ -95,6 +95,7 @@ export async function safeFetch<T = unknown>({
         type: method,
         url,
         contentType: headers['Content-Type'] || 'application/json',
+        headers: Object.keys(headers).length > 0 ? headers : undefined,
         data: body, // Raw JSON string — matches the working API pattern
         success: (data) => resolve(data as T),
         error: (xhr, _textStatus, errorThrown) => {
@@ -185,6 +186,7 @@ export async function safeFetchWithMeta<T = unknown>({
         type: method,
         url,
         contentType: headers['Content-Type'] || 'application/json',
+        headers: Object.keys(headers).length > 0 ? headers : undefined,
         data: body, // Raw JSON string — matches the working API pattern
         success: (data, _textStatus, xhr) => {
           const xhr_ = xhr as XMLHttpRequest;

@@ -63,6 +63,8 @@ function parseRawRecord(raw: Record<string, unknown>): MissingVehicleRequest {
     transmissionType: missingVehicleTransmissionTypeLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.TRANSMISSION_TYPE]),
     driveType: missingVehicleDriveTypeLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.DRIVE_TYPE]),
     status: missingVehicleStatusLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.STATUS]),
+    minPrice: raw[MISSING_VEHICLE_REQUEST_FIELDS.MIN_PRICE] as number | undefined,
+    maxPrice: raw[MISSING_VEHICLE_REQUEST_FIELDS.MAX_PRICE] as number | undefined,
     minMileage: raw[MISSING_VEHICLE_REQUEST_FIELDS.MIN_MILEAGE] as number | undefined,
     maxMileage: raw[MISSING_VEHICLE_REQUEST_FIELDS.MAX_MILEAGE] as number | undefined,
     createdOn: raw[MISSING_VEHICLE_REQUEST_FIELDS.CREATED_ON]
@@ -90,6 +92,8 @@ export async function upsertMissingVehicleRequest(payload: {
   driveType?: string;
   contactEmail?: string;
   contactName?: string;
+  minPrice?: number;
+  maxPrice?: number;
   minMileage?: number;
   maxMileage?: number;
 }): Promise<string> {
@@ -101,6 +105,14 @@ export async function upsertMissingVehicleRequest(payload: {
     [MISSING_VEHICLE_REQUEST_FIELDS.TRIM]: payload.trim,
     [MISSING_VEHICLE_REQUEST_FIELDS.MODEL_YEAR]: payload.modelYear,
   };
+
+  // Price fields
+  if (payload.minPrice !== undefined) {
+    record[MISSING_VEHICLE_REQUEST_FIELDS.MIN_PRICE] = payload.minPrice;
+  }
+  if (payload.maxPrice !== undefined) {
+    record[MISSING_VEHICLE_REQUEST_FIELDS.MAX_PRICE] = payload.maxPrice;
+  }
 
   // Optional choice fields — only send if provided
   const bodyTypeInt = payload.bodyType
@@ -189,8 +201,27 @@ export async function upsertMissingVehicleRequest(payload: {
 export async function fetchMissingVehicleRequests(): Promise<MissingVehicleRequest[]> {
   const baseUrl = `${API_BASE}/${ENTITIES.MISSING_VEHICLE_REQUEST}`;
 
+  const select = [
+    MISSING_VEHICLE_REQUEST_FIELDS.ID,
+    MISSING_VEHICLE_REQUEST_FIELDS.MAKE,
+    MISSING_VEHICLE_REQUEST_FIELDS.MODEL,
+    MISSING_VEHICLE_REQUEST_FIELDS.TRIM,
+    MISSING_VEHICLE_REQUEST_FIELDS.MODEL_YEAR,
+    MISSING_VEHICLE_REQUEST_FIELDS.BODY_TYPE,
+    MISSING_VEHICLE_REQUEST_FIELDS.CYLINDERS,
+    MISSING_VEHICLE_REQUEST_FIELDS.FUEL_TYPE,
+    MISSING_VEHICLE_REQUEST_FIELDS.TRANSMISSION_TYPE,
+    MISSING_VEHICLE_REQUEST_FIELDS.DRIVE_TYPE,
+    MISSING_VEHICLE_REQUEST_FIELDS.STATUS,
+    MISSING_VEHICLE_REQUEST_FIELDS.MIN_PRICE,
+    MISSING_VEHICLE_REQUEST_FIELDS.MAX_PRICE,
+    MISSING_VEHICLE_REQUEST_FIELDS.MIN_MILEAGE,
+    MISSING_VEHICLE_REQUEST_FIELDS.MAX_MILEAGE,
+    MISSING_VEHICLE_REQUEST_FIELDS.CREATED_ON,
+  ].join(',');
+
   const resp: ODataResponse = await safeFetchWithMeta<ODataResponse>({
-    url: `${baseUrl}?$expand=vpi_Contact($select=firstname,lastname,emailaddress1)&$orderby=createdon desc`,
+    url: `${baseUrl}?$select=${select}&$expand=vpi_Contact($select=firstname,lastname,emailaddress1)&$orderby=createdon desc`,
     headers: { Prefer: 'odata.include-annotations=*' },
   }).then((r) => r.data);
 
@@ -217,6 +248,37 @@ export async function updateMissingVehicleRequestStatus(
       'If-Match': '*',
     },
     body: JSON.stringify({ [MISSING_VEHICLE_REQUEST_FIELDS.STATUS]: statusValue }),
+  });
+}
+
+/**
+ * Update an existing missing vehicle request (PATCH).
+ * Used to save scraped or user-corrected prices after creation.
+ */
+export async function updateMissingVehicleRequest(
+  id: string,
+  fields: { minPrice?: number; maxPrice?: number },
+): Promise<void> {
+  const baseUrl = `${API_BASE}/${ENTITIES.MISSING_VEHICLE_REQUEST}`;
+
+  const body: Record<string, unknown> = {};
+  if (fields.minPrice !== undefined) {
+    body[MISSING_VEHICLE_REQUEST_FIELDS.MIN_PRICE] = fields.minPrice;
+  }
+  if (fields.maxPrice !== undefined) {
+    body[MISSING_VEHICLE_REQUEST_FIELDS.MAX_PRICE] = fields.maxPrice;
+  }
+
+  if (Object.keys(body).length === 0) return;
+
+  await safeFetch<void>({
+    url: `${baseUrl}(${id})`,
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'If-Match': '*',
+    },
+    body: JSON.stringify(body),
   });
 }
 
