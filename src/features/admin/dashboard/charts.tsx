@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, PieChart, Pie, Cell, Legend,
@@ -22,6 +22,22 @@ const tooltipStyle = {
   fontSize: '12px',
 };
 
+// ─── Custom comparator for React.memo on chart components ──
+// Skips function props (callbacks which are often inline in the parent)
+// and reference-compares everything else (data arrays stay stable via React Query).
+function chartPropsAreEqual(
+  prevProps: Record<string, unknown>,
+  nextProps: Record<string, unknown>,
+): boolean {
+  const keys = Object.keys(prevProps);
+  if (keys.length !== Object.keys(nextProps).length) return false;
+  for (const key of keys) {
+    if (typeof prevProps[key] === 'function' && typeof nextProps[key] === 'function') continue;
+    if (prevProps[key] !== nextProps[key]) return false;
+  }
+  return true;
+}
+
 // ─── Make all charts clickable ─────────────────────────
 
 interface ChartClickProps {
@@ -37,7 +53,7 @@ interface TopMakesChartProps extends ChartClickProps {
   onBarClick?: (make: string) => void;
 }
 
-export function TopMakesChart({ data, onBarClick, height = CHART_HEIGHT }: TopMakesChartProps & { height?: number }) {
+export const TopMakesChart = memo(function TopMakesChart({ data, onBarClick, height = CHART_HEIGHT }: TopMakesChartProps & { height?: number }) {
   if (!data || data.length === 0) {
     return <EmptyState />;
   }
@@ -62,7 +78,7 @@ export function TopMakesChart({ data, onBarClick, height = CHART_HEIGHT }: TopMa
       </BarChart>
     </ResponsiveContainer>
   );
-}
+}, chartPropsAreEqual);
 
 // ═══════════════════════════════════════════════════════
 // SECTION 2 — Price Distribution
@@ -73,7 +89,7 @@ interface PriceDistributionChartProps extends ChartClickProps {
   onBarClick?: (range: string) => void;
 }
 
-export function PriceDistributionChart({ data, onBarClick, height = CHART_HEIGHT }: PriceDistributionChartProps & { height?: number }) {
+export const PriceDistributionChart = memo(function PriceDistributionChart({ data, onBarClick, height = CHART_HEIGHT }: PriceDistributionChartProps & { height?: number }) {
   if (!data || data.length === 0) {
     return <EmptyState />;
   }
@@ -97,7 +113,7 @@ export function PriceDistributionChart({ data, onBarClick, height = CHART_HEIGHT
       </BarChart>
     </ResponsiveContainer>
   );
-}
+}, chartPropsAreEqual);
 
 // ═══════════════════════════════════════════════════════
 // SECTION 3 — Vehicle Value Trend (Line Chart)
@@ -108,7 +124,7 @@ interface ValueTrendChartProps extends ChartClickProps {
   onDotClick?: (year: number) => void;
 }
 
-export function ValueTrendChart({ data, onDotClick, height = CHART_HEIGHT }: ValueTrendChartProps & { height?: number }) {
+export const ValueTrendChart = memo(function ValueTrendChart({ data, onDotClick, height = CHART_HEIGHT }: ValueTrendChartProps & { height?: number }) {
   if (!data || data.length === 0) {
     return <EmptyState />;
   }
@@ -139,13 +155,13 @@ export function ValueTrendChart({ data, onDotClick, height = CHART_HEIGHT }: Val
       </AreaChart>
     </ResponsiveContainer>
   );
-}
+}, chartPropsAreEqual);
 
 // ═══════════════════════════════════════════════════════
 // SECTION 4 — Powertrain Composition (Donut)
 // ═══════════════════════════════════════════════════════
 
-export function PowertrainDonutChart({
+export const PowertrainDonutChart = memo(function PowertrainDonutChart({
   data,
   height = CHART_HEIGHT,
 }: {
@@ -182,7 +198,7 @@ export function PowertrainDonutChart({
       </PieChart>
     </ResponsiveContainer>
   );
-}
+}, chartPropsAreEqual);
 
 // ═══════════════════════════════════════════════════════
 // SECTION 5 — Performance vs Value (Scatter)
@@ -193,7 +209,7 @@ interface PerformanceScatterChartProps extends ChartClickProps {
   onDotClick?: (vehicleId: string) => void;
 }
 
-export function PerformanceScatterChart({ data, onDotClick, height = CHART_HEIGHT }: PerformanceScatterChartProps & { height?: number }) {
+export const PerformanceScatterChart = memo(function PerformanceScatterChart({ data, onDotClick, height = CHART_HEIGHT }: PerformanceScatterChartProps & { height?: number }) {
   if (!data || data.length === 0) {
     return <EmptyState />;
   }
@@ -248,13 +264,13 @@ export function PerformanceScatterChart({ data, onDotClick, height = CHART_HEIGH
       </ScatterChart>
     </ResponsiveContainer>
   );
-}
+}, chartPropsAreEqual);
 
 // ═══════════════════════════════════════════════════════
 // SECTION 6 — Vehicle Category Distribution (Body Type)
 // ═══════════════════════════════════════════════════════
 
-export function BodyTypeBarChart({
+export const BodyTypeBarChart = memo(function BodyTypeBarChart({
   data,
   height = CHART_HEIGHT,
 }: {
@@ -279,7 +295,7 @@ export function BodyTypeBarChart({
       </BarChart>
     </ResponsiveContainer>
   );
-}
+}, chartPropsAreEqual);
 
 // ═══════════════════════════════════════════════════════
 // SECTION 7 — Vehicle Age Distribution (Area Chart)
@@ -290,7 +306,7 @@ interface AgeDistributionChartProps extends ChartClickProps {
   onDotClick?: (year: number) => void;
 }
 
-export function AgeDistributionChart({ data, onDotClick, height = CHART_HEIGHT }: AgeDistributionChartProps & { height?: number }) {
+export const AgeDistributionChart = memo(function AgeDistributionChart({ data, onDotClick, height = CHART_HEIGHT }: AgeDistributionChartProps & { height?: number }) {
   if (!data || data.length === 0) {
     return <EmptyState />;
   }
@@ -321,13 +337,13 @@ export function AgeDistributionChart({ data, onDotClick, height = CHART_HEIGHT }
       </AreaChart>
     </ResponsiveContainer>
   );
-}
+}, chartPropsAreEqual);
 
 // ═══════════════════════════════════════════════════════
 // SECTION 8 — Price Volatility Analysis (Box Plot style)
 // ═══════════════════════════════════════════════════════
 
-export function VolatilityBoxChart({
+export const VolatilityBoxChart = memo(function VolatilityBoxChart({
   data,
   height = CHART_HEIGHT,
 }: {
@@ -364,7 +380,7 @@ export function VolatilityBoxChart({
       </BarChart>
     </ResponsiveContainer>
   );
-}
+}, chartPropsAreEqual);
 
 // ═══════════════════════════════════════════════════════
 // SECTION 9 — Top Vehicle Models
@@ -375,7 +391,7 @@ interface TopModelsChartProps extends ChartClickProps {
   onBarClick?: (model: string) => void;
 }
 
-export function TopModelsChart({ data, onBarClick, height = CHART_HEIGHT }: TopModelsChartProps & { height?: number }) {
+export const TopModelsChart = memo(function TopModelsChart({ data, onBarClick, height = CHART_HEIGHT }: TopModelsChartProps & { height?: number }) {
   if (!data || data.length === 0) {
     return <EmptyState />;
   }
@@ -401,7 +417,7 @@ export function TopModelsChart({ data, onBarClick, height = CHART_HEIGHT }: TopM
       </BarChart>
     </ResponsiveContainer>
   );
-}
+}, chartPropsAreEqual);
 
 // ─── Empty State ───────────────────────────────────────
 function EmptyState() {

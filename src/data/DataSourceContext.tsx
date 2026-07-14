@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
 import type { IDataSource } from '@types';
 import { DataverseDataSource } from './dataverseDataSource';
 
@@ -7,6 +7,7 @@ interface DataSourceContextValue {
   isInitialized: boolean;
   isInitializing: boolean;
   error: string | null;
+  triggerInit: () => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -30,10 +31,15 @@ export function DataSourceProvider({ children }: DataSourceProviderProps) {
     isInitialized: boolean;
     isInitializing: boolean;
     error: string | null;
-  }>({ isInitialized: false, isInitializing: true, error: null });
+  }>({ isInitialized: false, isInitializing: false, error: null });
   const dsRef = useRef<IDataSource | null>(null);
+  const initStarted = useRef(false);
 
   const initialize = useCallback(async () => {
+    // Prevent concurrent or duplicate init calls
+    if (initStarted.current) return;
+    initStarted.current = true;
+
     setState((s) => ({ ...s, isInitializing: true, error: null }));
     try {
       const ds = new DataverseDataSource();
@@ -48,15 +54,12 @@ export function DataSourceProvider({ children }: DataSourceProviderProps) {
     }
   }, []);
 
-  useEffect(() => {
-    initialize();
-  }, [initialize]);
-
   const value: DataSourceContextValue = {
     dataSource: dsRef.current,
     isInitialized: state.isInitialized,
     isInitializing: state.isInitializing,
     error: state.error,
+    triggerInit: initialize,
     refresh: initialize,
   };
 

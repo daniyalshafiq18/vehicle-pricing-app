@@ -1,4 +1,4 @@
-# CLAUDE.md — Vehicle Pricing Intelligence Platform
+# AGENTS.md — Vehicle Pricing Intelligence Platform
 
 ## Project Overview
 A React/TypeScript app for automotive valuation and analytics. Users complete a 3-step valuation wizard. Administrators manage inquiries and view analytics. Data is sourced from Microsoft Dataverse via the Power Pages Web API.
@@ -11,13 +11,13 @@ Every time you make a change, you MUST update the relevant documentation **in th
 
 | If you change... | Update these files |
 |---|---|
-| Project structure, add/remove files/dirs | `CLAUDE.md` (Project Structure section) |
+| Project structure, add/remove files/dirs | `AGENTS.md` (Project Structure section) |
 | Architecture, data flow, patterns | `docs/context.md`, `docs/DEVELOPMENT.md` |
-| Setup steps, dependencies, commands | `docs/SETUP.md`, `CLAUDE.md` (Commands section) |
+| Setup steps, dependencies, commands | `docs/SETUP.md`, `AGENTS.md` (Commands section) |
 | Any new file, feature, or fix | `docs/CHANGELOG.md` — add dated entry |
 | A recurring bug pattern or lesson learned | `memory/learned-conventions.md` |
 | Remove or add significant code | `memory/cleanup-history.md` |
-| Path aliases, tsconfig, vite config | `CLAUDE.md` (Path Aliases section) |
+| Path aliases, tsconfig, vite config | `AGENTS.md` (Path Aliases section) |
 | Deprecate or change a convention | `memory/learned-conventions.md` |
 
 ### Changelog format

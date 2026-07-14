@@ -1,0 +1,697 @@
+# Power Automate Cloud Flow — Step-by-Step Build Guide
+
+> **Date:** 2026-07-13
+> **Status:** Flow 1 ✅ Built & Tested | Flow 2 ⏳ Not yet built
+> **Platform:** https://make.powerautomate.com
+> **Connectors needed:** HTTP (premium), Microsoft Dataverse, Office 365 Outlook (optional)
+
+---
+
+## Status Summary
+
+| Flow | Status | Notes |
+|---|---|---|
+| **Flow 1: YallaMotor Accessibility Test** | ✅ **Built & Tested** | Confirmed YallaMotor returns HTTP 200 with real content from Microsoft cloud IPs. JSON-LD structured data found in HTML. |
+| **Flow 2: MVR Automated Scraper** | ⏳ Design ready, not built | Parses JSON-LD structured data from YallaMotor HTML. See full design below. |
+
+### Key Findings from Flow 1 Test
+
+| Finding | Detail |
+|---|---|
+| **YallaMotor accessible?** | ✅ Yes — HTTP 200, real page content returned |
+| **Cloudflare blocking?** | ❌ No — Cloudflare did NOT block the Power Automate HTTP request |
+| **Page title** | `Used Toyota Camry for Sale in UAE — From AED 120` |
+| **JSON-LD available?** | ✅ Yes — `<script type="application/ld+json">` blocks present in HTML with complete vehicle listings |
+| **YallaMotor architecture** | Next.js (server-side rendered) — HTML contains full listing data, no client-side JS rendering needed |
+| **Why it works (vs Puppeteer failure)** | Power Automate HTTP requests come from Microsoft datacenter IPs which are not blocked. Previous Puppeteer scraper on Railway/Render used datacenter IPs that YallaMotor's Cloudflare flagged. |
+
+### ⚠️ Practical Learnings
+
+1. **Manual trigger input names** — Power Automate uses generic keys (`text`, `text_1`) instead of the display names you set. Access values as `triggerBody()['text']` and `triggerBody()['text_1']`, NOT `triggerBody()['Make']` or `triggerBody()['Model']`.
+2. **Simplified Cloudflare detection** — Only 2 checks are sufficient: (a) title contains "Just a moment" OR (b) status code != 200. The other Cloudflare signatures are redundant.
+3. **JSON-LD is the parsing target** — YallaMotor embeds structured listing data in `<script type="application/ld+json">` blocks within the HTML. Use Power Automate's `json()` function to parse these directly rather than HTML DOM parsing.
+4. **MVR column schema** — Only these scrape-related columns exist: `vpi_scrapestatus`, `vpi_scraped_listings`, `vpi_scraped_minprice`, `vpi_scraped_maxprice`, `vpi_scraped_sources`.
+
+---
+
+## FLOW 1: YallaMotor Accessibility Test (Instant / Manual Trigger)
+
+**Purpose:** Test if YallaMotor responds to HTTP requests from the Microsoft cloud.
+
+### Create the Flow
+
+1. Go to https://make.powerautomate.com
+2. Click **Create** → **Instant cloud flow**
+3. Flow name: `MVR - Test YallaMotor Accessibility`
+4. Trigger: **Manually trigger a flow**
+5. Click **Create**
+
+### Add Input Fields
+
+6. Click **Manually trigger a flow** → **Add an input** → **Text**
+   - Input name: `Make`
+   - ⚠️ Power Automate stores this as `text` in the trigger body. Reference it as `triggerBody()['text']`.
+7. Click **Add an input** → **Text**
+   - Input name: `Model`
+   - ⚠️ Power Automate stores this as `text_1`. Reference it as `triggerBody()['text_1']`.
+
+### Step 2: Initialize Variable — TestedURL
+
+8. Click **+ New step** → search "Initialize variable"
+9. Name: `Initialize TestedURL`
+10. Configure:
+    - Name: `TestedURL`
+    - Type: **String**
+    - Value: click inside → **Expression** tab → paste:
+      ```
+      concat('https://uae.yallamotor.com/used-cars/', toLower(triggerBody()['text']), '/', toLower(triggerBody()['text_1']))
+      ```
+
+### Step 3: Initialize Variable — IsAccessible
+
+11. Click **+ New step** → **Initialize variable**
+12. Configure:
+    - Name: `IsAccessible`
+    - Type: **Boolean**
+    - Value: `false`
+
+### Step 4: Initialize Variable — ErrorMessage
+
+13. Click **+ New step** → **Initialize variable**
+14. Configure:
+    - Name: `ErrorMessage`
+    - Type: **String**
+    - Value: (leave empty)
+
+### Step 5: HTTP Request to YallaMotor
+
+15. Click **+ New step** → search "HTTP" → select **HTTP** (premium connector, icon has a globe)
+16. Configure:
+    - Method: **GET**
+    - URI: click inside → **Expression** tab → `variables('TestedURL')`
+    - Headers: click inside → paste this exact JSON:
+      ```json
+      {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Upgrade-Insecure-Requests": "1",
+        "Referer": "https://www.google.com/"
+      }
+      ```
+17. Click **...** (settings) on the HTTP step → **Retry Policy** → **Default**
+
+### Step 6: Compose — Extract Page Title
+
+18. Click **+ New step** → search "Compose"
+19. Name: `Extract Page Title`
+20. Input: click inside → **Expression** tab → paste:
+    ```
+    if(contains(body('HTTP'), '<title>'), first(split(first(skip(split(body('HTTP'), '<title>'), 1)), '</title>')), 'No title found')
+    ```
+
+### Step 7: Compose — Check HTTP Status Code
+
+21. Click **+ New step** → **Compose**
+22. Name: `HTTP Status Code`
+23. Input: click inside → **Expression** → `outputs('HTTP')['statusCode']`
+
+### Step 8: Compose — Extract Price from `<bdi>` DOM Element
+
+24. Click **+ New step** → **Compose**
+25. Name: `Extract BDI Price`
+26. Input: click inside → **Expression** tab → paste:
+    ```
+    if(contains(body('HTTP'), '<bdi class="tabular-nums" dir="ltr">'), trim(first(split(first(skip(split(body('HTTP'), '<bdi class="tabular-nums" dir="ltr">'), 1)), '</bdi>'))), 'No bdi price found')
+    ```
+
+    **How this works:**
+    - `split(body('HTTP'), '<bdi class="tabular-nums" dir="ltr">')` — splits the HTML at the opening tag
+    - `skip(..., 1)` — takes everything after the first split (i.e. the part that contains the price)
+    - `first(...)` — gets the first match
+    - `split(..., '</bdi>')` — splits at the closing tag
+    - `first(...)` — takes what's before `</bdi>` → that's `42,900`
+    - `trim(...)` — removes whitespace
+    - `if(contains(...), ..., 'No bdi price found')` — handles the case where the tag doesn't exist
+
+### Step 9: Find the Listing Card Container (4-step pipeline)
+
+27. Click **+ New step** → **Compose**
+28. Name: `Find BDI Position`
+29. Input: click **Expression** → paste:
+    ```
+    indexOf(body('HTTP'), '<bdi class="tabular-nums" dir="ltr">')
+    ```
+
+30. Click **+ New step** → **Compose**
+31. Name: `Find Article Start`
+32. Input: click **Expression** → paste:
+    ```
+    lastIndexOf(substring(body('HTTP'), 0, outputs('Find_BDI_Position')), '<article')
+    ```
+
+33. Click **+ New step** → **Compose**
+34. Name: `Find Article End`
+35. Input: click **Expression** → paste:
+    ```
+    indexOf(body('HTTP'), '</article>')
+    ```
+
+36. Click **+ New step** → **Compose**
+37. Name: `Extract Full Listing Record`
+38. Input: click **Expression** → paste:
+    ```
+    if(and(and(greater(outputs('Find_BDI_Position'), 0), greater(outputs('Find_Article_Start'), 0)), greater(outputs('Find_Article_End'), 0)),
+      substring(body('HTTP'), outputs('Find_Article_Start'), sub(add(outputs('Find_Article_End'), 10), outputs('Find_Article_Start'))),
+      'Could not find <article> container around the price')
+    ```
+
+    **How this works (4-step pipeline):**
+    1. `Find BDI Position` — finds where `42,900` sits in the HTML
+    2. `Find Article Start` — looks backwards from that position for the nearest `<article` tag (the start of the listing card)
+    3. `Find Article End` — looks forward for the closing `</article>` tag
+    4. `Extract Full Listing Record` — extracts the raw HTML between them — the **entire vehicle record** with title, price, mileage, year, specs, and link
+
+### Step 10: Condition — Check if Cloudflare Blocked
+
+39. Click **+ New step** → **Condition**
+40. Name: `Check if YallaMotor is Accessible`
+41. Configure the condition:
+
+    **OR** — add multiple rows:
+    
+    Row 1:
+    - Left: click inside → **Expression**: `outputs('Extract_Page_Title')`
+    - Operator: `contains`
+    - Right: `Just a moment`
+    
+    Click **Add** → **Add row**:
+    - Left: `outputs('Extract_Page_Title')`
+    - Operator: `contains`
+    - Right: `Attention Required`
+    
+    Click **Add** → **Add row**:
+    - Left: click → **Expression**: `body('HTTP')`
+    - Operator: `contains`
+    - Right: `cdn-cgi/challenge-platform`
+    
+    Click **Add** → **Add row**:
+    - Left: `body('HTTP')`
+    - Operator: `contains`
+    - Right: `cf_chl_opt`
+    
+    Click **Add** → **Add row**:
+    - Left: `body('HTTP')`
+    - Operator: `contains`
+    - Right: `Checking your browser`
+    
+    Click **Add** → **Add row**:
+    - Left: `outputs('HTTP_Status_Code')`
+    - Operator: `not equals`
+    - Right: `200`
+
+### Step 11: If Blocked (True branch)
+
+42. In the **If yes** branch, click **Add an action**:
+    - Search **Set variable**
+    - Name: `Set IsAccessible to false`
+    - Name: `IsAccessible`
+    - Value: `false`
+
+43. Click **Add an action** (still in True branch):
+    - Search **Set variable**
+    - Name: `Set ErrorMessage`
+    - Name: `ErrorMessage`
+    - Value: click **Expression**:
+      ```
+      concat('Blocked. Status: ', outputs('HTTP_Status_Code'), '. Page title: ', outputs('Extract_Page_Title'))
+      ```
+
+### Step 12: If Not Blocked (False branch)
+
+44. In the **If no** branch, click **Add an action**:
+    - Search **Set variable**
+    - Name: `Set IsAccessible to true`
+    - Name: `IsAccessible`
+    - Value: `true`
+
+### Step 13: Send Email Notification (Optional)
+
+45. After the Cloudflare condition ends, click **+ New step** → **Send an email (V2)** (Office 365 Outlook)
+46. Configure:
+    - To: `[your email address]`
+    - Subject: click **Expression**:
+      ```
+      concat('YallaMotor Test: ', if(variables('IsAccessible'), '✅ Accessible', '❌ Blocked'), ' — ', triggerBody()['text'], ' ', triggerBody()['text_1'])
+      ```
+    - Body: switch to **HTML** mode → paste:
+      ```html
+      <h2>YallaMotor Accessibility Test</h2>
+      <table border="1" cellpadding="8" style="border-collapse:collapse">
+      <tr><td><b>Make/Model</b></td><td>@{triggerBody()['text']} @{triggerBody()['text_1']}</td></tr>
+      <tr><td><b>URL Tested</b></td><td>@{variables('TestedURL')}</td></tr>
+      <tr><td><b>Accessible</b></td><td>@{variables('IsAccessible')}</td></tr>
+      <tr><td><b>Page Title</b></td><td>@{outputs('Extract_Page_Title')}</td></tr>
+      <tr><td><b>HTTP Status</b></td><td>@{outputs('HTTP_Status_Code')}</td></tr>
+      <tr><td><b>💰 BDI Price</b></td><td>@{outputs('Extract_BDI_Price')}</td></tr>
+      <tr><td><b>Error</b></td><td>@{variables('ErrorMessage')}</td></tr>
+      </table>
+      <hr/>
+      <h3>🚗 Full Vehicle Record (from DOM)</h3>
+      <pre style="background:#f5f5f5;padding:10px;word-wrap:break-word;white-space:pre-wrap;font-size:12px;">@{outputs('Extract_Full_Listing_Record')}</pre>
+      <hr/>
+      <p><b>First 2000 chars of response:</b></p>
+      <pre style="background:#f5f5f5;padding:10px;word-wrap:break-word;white-space:pre-wrap">@{substring(body('HTTP'), 0, min(2000, length(body('HTTP'))))}</pre>
+      ```
+
+### Save and Test
+
+47. Click **Save** (top-left)
+48. Click **Test** → **Manually** → **Run**
+49. Enter: Make = `Toyota`, Model = `Camry`, Year = `2025`
+
+### ✅ Actual Test Result (2026-07-13)
+
+```
+HTTP 200 — ✅ Accessible = True
+Page Title: "Used Toyota Camry for Sale in UAE — From AED 120"
+JSON-LD: Present in HTML
+```
+
+---
+
+## FLOW 2: Production Scraper — Auto-Trigger on New MVR (Automated)
+
+**Purpose:** When a user submits a Missing Vehicle Request, automatically scrape YallaMotor and save aggregate price results (min, max, listing count) back to the MVR record.
+
+**Key Design Decisions (from Flow 1 learnings):**
+
+| Decision | Why |
+|---|---|
+| Extract **heading** (`<div class="heading-h2-content">`) for aggregate data | The heading gives count + min + max in one line — no need to parse individual cards |
+| URL includes **year filter** (`yr_{year}_{year}`) | Narrows results to the user's vehicle year — more accurate pricing |
+| Simplified **Cloudflare check** (title + status only) | Body-content checks caused false positives in Flow 1 |
+| JSON-LD retained as **fallback** only | Already confirmed present in HTML, but heading is simpler |
+| Fuel/transmission URL filters **optional** | Choice field mapping in Dataverse triggers needs special handling |
+
+### Create the Flow
+
+1. Go to https://make.powerautomate.com
+2. Click **Create** → **Automated cloud flow**
+3. Flow name: `MVR - Scrape YallaMotor (Automated)`
+4. Search and select trigger: **When a row is added, modified or deleted** (Dataverse)
+5. Click **Create**
+
+### Configure Trigger
+
+6. Click the trigger step → configure:
+    - Change type: **Added**
+    - Table name: search → **Missing Vehicle Requests**
+    - Scope: **Organization**
+
+### Step 2: Initialize Variable — ResponseBody
+
+7. Click **+ New step** → **Initialize variable**
+8. Configure:
+    - Name: `ResponseBody`
+    - Type: **String**
+    - Value: (leave empty)
+
+### Step 3: Initialize Variable — IsAccessible
+
+9. Click **+ New step** → **Initialize variable**
+10. Configure:
+    - Name: `IsAccessible`
+    - Type: **Boolean**
+    - Value: `false`
+
+### Step 4: Initialize Variable — ErrorMessage
+
+11. Click **+ New step** → **Initialize variable**
+12. Configure:
+    - Name: `ErrorMessage`
+    - Type: **String**
+    - Value: (leave empty)
+
+### Step 5: Initialize Variable — HeadingText
+
+13. Click **+ New step** → **Initialize variable**
+14. Configure:
+    - Name: `HeadingText`
+    - Type: **String**
+    - Value: (leave empty)
+
+### Step 6: Build Search URL (with Year Filter)
+
+15. Click **+ New step** → **Compose**
+16. Name: `Build Search URL`
+17. Input: click **Expression** → paste:
+    ```
+    concat('https://uae.yallamotor.com/used-cars/', toLower(triggerOutputs()?['body/vpi_make']), '/', toLower(triggerOutputs()?['body/vpi_model']), '/yr_', triggerOutputs()?['body/vpi_modelyear'], '_', triggerOutputs()?['body/vpi_modelyear'])
+    ```
+
+    **Example output:**
+    ```
+    https://uae.yallamotor.com/used-cars/toyota/camry/yr_2022_2022
+    ```
+
+### Step 7: Update MVR → In Progress
+
+18. Click **+ New step** → **Update a row** (Dataverse)
+19. Configure:
+    - Table name: **Missing Vehicle Requests**
+    - Row ID: click → **Expression**: `triggerOutputs()?['body/vpi_missingvehiclerequestid']`
+    - Click **Add all columns** → set:
+      - `vpi_scrapestatus`: enter `3` (In Progress)
+
+### Step 8: HTTP Request to YallaMotor
+
+20. Click **+ New step** → search **HTTP**
+21. Configure:
+    - Method: **GET**
+    - URI: click → **Expression**: `outputs('Build_Search_URL')`
+    - Headers: paste the same JSON headers from Flow 1 Step 5:
+      ```json
+      {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,...",
+        "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Cache-Control": "no-cache",
+        "Referer": "https://www.google.com/"
+      }
+      ```
+
+### Step 9: Store Response Body
+
+22. Click **+ New step** → **Set variable**
+23. Configure:
+    - Name: `ResponseBody`
+    - Value: click → **Expression**: `body('HTTP')`
+
+### Step 10: Extract Page Title
+
+24. Click **+ New step** → **Compose**
+25. Name: `Extract Page Title`
+26. Input: click → **Expression**:
+    ```
+    if(contains(body('HTTP'), '<title>'), first(split(first(skip(split(body('HTTP'), '<title>'), 1)), '</title>')), 'No title found')
+    ```
+
+### Step 11: Check HTTP Status Code
+
+27. Click **+ New step** → **Compose**
+28. Name: `HTTP Status Code`
+29. Input: click → **Expression**: `outputs('HTTP')['statusCode']`
+
+### Step 12: Simplified Cloudflare Check
+
+30. Click **+ New step** → **Condition**
+31. Name: `Cloudflare Check`
+32. Add rows (**OR** — only 3 checks, no body-content checks):
+
+| Left | Operator | Right |
+|---|---|---|
+| `outputs('Extract_Page_Title')` | contains | `Just a moment` |
+| `outputs('Extract_Page_Title')` | contains | `Attention Required` |
+| `outputs('HTTP_Status_Code')` | not equals | `200` |
+
+### Step 13: If Blocked — Mark Unreachable and Stop
+
+**In If yes (blocked):**
+
+33. Click **Add an action** → **Set variable**
+    - Name: `IsAccessible`
+    - Value: `false`
+
+34. Click **Add an action** → **Set variable**
+    - Name: `ErrorMessage`
+    - Value: click **Expression**:
+      ```
+      concat('Cloudflare blocked. Status: ', outputs('HTTP_Status_Code'), '. Title: ', outputs('Extract_Page_Title'))
+      ```
+
+35. Click **Add an action** → **Update a row** (Dataverse)
+    - Table: **Missing Vehicle Requests**
+    - Row ID: `triggerOutputs()?['body/vpi_missingvehiclerequestid']`
+    - Columns:
+      - `vpi_scrapestatus`: `6` (Unreachable)
+      - `vpi_scraped_listings`: `variables('ErrorMessage')`
+
+36. Click **Add an action** → **Terminate**
+    - Status: **Failed**
+    - Reason: `YallaMotor not accessible`
+
+### Step 14: If Accessible — Set Variable
+
+**In If no (accessible):**
+
+37. Click **Add an action** → **Set variable**
+    - Name: `IsAccessible`
+    - Value: `true`
+
+### Step 15: Extract Heading — Aggregate Data (PRIMARY approach)
+
+Place this **after** the Cloudflare condition ends. This is the primary extraction method. Only runs if accessible.
+
+38. Click **+ New step** → **Compose**
+39. Name: `Extract Heading`
+40. Input: click **Expression** → paste:
+    ```
+    if(contains(variables('ResponseBody'), 'heading-h2-content'), trim(first(split(first(skip(split(variables('ResponseBody'), 'heading-h2-content'), 1)), '</div>'))), 'No heading found')
+    ```
+
+    **Example output:**
+    ```
+    15 listings · AED 30,000 – 110,000 · 2022–2022 · updated 14 July 2026
+    ```
+
+41. Click **+ New step** → **Set variable**
+    - Name: `HeadingText`
+    - Value: click → **Expression**: `outputs('Extract_Heading')`
+
+### Step 16: Condition — Heading Found?
+
+42. Click **+ New step** → **Condition**
+43. Name: `Heading Available?`
+44. Row:
+    - Left: `outputs('Extract_Heading')`
+    - Operator: `is not equal to`
+    - Right: `No heading found`
+
+### Step 17: Parse Heading — Extract Prices (If yes — primary path)
+
+**In If yes (heading found):**
+
+45. Click **Add an action** → **Compose**
+46. Name: `Extract After AED`
+47. Input: click **Expression**:
+    ```
+    trim(first(skip(split(outputs('Extract_Heading'), 'AED '), 1)))
+    ```
+    → Captures: `30,000 – 110,000 · 2022–2022 · updated 14 July 2026`
+
+48. Click **Add an action** → **Compose**
+49. Name: `Extract Min Price`
+50. Input: click **Expression**:
+    ```
+    trim(first(split(outputs('Extract_After_AED'), ' –')))
+    ```
+    → Captures: `30,000`
+
+51. Click **Add an action** → **Compose**
+52. Name: `Extract Max Price`
+53. Input: click **Expression**:
+    ```
+    trim(first(split(first(skip(split(outputs('Extract_After_AED'), '– '), 1)), ' ·')))
+    ```
+    → Captures: `110,000`
+
+54. Click **Add an action** → **Compose**
+55. Name: `Extract Listing Count`
+56. Input: click **Expression**:
+    ```
+    trim(first(split(outputs('Extract_Heading'), ' listings')))
+    ```
+    → Captures: `15`
+
+57. Click **Add an action** → **Compose**
+58. Name: `Build Scraped Listings JSON`
+59. Input: click **Expression**:
+    ```
+    concat('{"count": ', outputs('Extract_Listing_Count'), ', "minPrice": ', outputs('Extract_Min_Price'), ', "maxPrice": ', outputs('Extract_Max_Price'), ', "source": "YallaMotor", "url": "', outputs('Build_Search_URL'), '", "heading": "', outputs('Extract_Heading'), '"}')
+    ```
+    → Produces: `{"count": 15, "minPrice": 30000, "maxPrice": 110000, "source": "YallaMotor", ...}`
+
+### Step 18: Fallback — JSON-LD Parsing (If heading not found)
+
+**In If no (no heading):**
+
+60. Click **Add an action** → **Compose**
+61. Name: `Fallback: Check JSON-LD`
+62. Input: click **Expression**:
+    ```
+    if(contains(variables('ResponseBody'), '<script type="application/ld+json">'), 'jsonld-found', 'no-jsonld')
+    ```
+
+63. Click **Add an action** → **Condition**
+64. Name: `JSON-LD Fallback Available?`
+65. Row:
+    - Left: `outputs('Fallback_Check_JSON_LD')`
+    - Operator: `is equal to`
+    - Right: `jsonld-found`
+
+**In If yes (JSON-LD exists):**
+
+66. Click **Add an action** → **Compose**
+67. Name: `Fallback: Parse First JSON-LD Block`
+68. Input: click **Expression**:
+    ```
+    json(first(split(first(skip(split(variables('ResponseBody'), '<script type="application/ld+json">'), 1)), '</script>')))
+    ```
+
+69. Click **Add an action** → **Compose**
+70. Name: `Fallback: Extract Min Price from LD`
+71. Input: click **Expression**:
+    ```
+    if(contains(outputs('Fallback_Parse_First_JSON_LD_Block'), 'offers'), if(contains(outputs('Fallback_Parse_First_JSON_LD_Block')['offers'], 'lowPrice'), outputs('Fallback_Parse_First_JSON_LD_Block')['offers']['lowPrice'], 0), 0)
+    ```
+
+72. Click **Add an action** → **Compose**
+73. Name: `Fallback: Extract Max Price from LD`
+74. Input: click **Expression**:
+    ```
+    if(contains(outputs('Fallback_Parse_First_JSON_LD_Block'), 'offers'), if(contains(outputs('Fallback_Parse_First_JSON_LD_Block')['offers'], 'highPrice'), outputs('Fallback_Parse_First_JSON_LD_Block')['offers']['highPrice'], 0), 0)
+    ```
+
+**In If no (no JSON-LD either — last resort):**
+
+75. Click **Add an action** → **Compose**
+76. Name: `Fallback: Extract First BDI Price`
+77. Input: click **Expression**:
+    ```
+    if(contains(variables('ResponseBody'), '<bdi class="tabular-nums" dir="ltr">'), trim(first(split(first(skip(split(variables('ResponseBody'), '<bdi class="tabular-nums" dir="ltr">'), 1)), '</bdi>'))), '0')
+    ```
+
+### Step 19: Update MVR with Results
+
+After both branches of the "Heading Available?" condition merge back:
+
+78. Click **+ New step** → **Update a row** (Dataverse)
+79. Configure:
+    - Table: **Missing Vehicle Requests**
+    - Row ID: `triggerOutputs()?['body/vpi_missingvehiclerequestid']`
+    - Columns:
+
+| Field | Value (Expression) |
+|---|---|
+| `vpi_scrapestatus` | `4` (Scraped) |
+| `vpi_scraped_listings` | (see below — use the multi-branch expression) |
+| `vpi_scraped_minprice` | (see below — use the conditional expression) |
+| `vpi_scraped_maxprice` | (see below — use the conditional expression) |
+| `vpi_scraped_sources` | `outputs('Build_Search_URL')` |
+
+    **For `vpi_scraped_listings`**, use the expression:
+    ```
+    if(equals(outputs('Extract_Heading'), 'No heading found'), 
+      if(equals(outputs('Fallback_Check_JSON_LD'), 'jsonld-found'), 
+        string(outputs('Fallback_Parse_First_JSON_LD_Block')), 
+        concat('{"fallbackPrice": ', outputs('Fallback_Extract_First_BDI_Price'), '}')), 
+      outputs('Build_Scraped_Listings_JSON'))
+    ```
+
+    **For `vpi_scraped_minprice`**, use:
+    ```
+    if(equals(outputs('Extract_Heading'), 'No heading found'), 
+      outputs('Fallback_Extract_Min_Price_from_LD'), 
+      outputs('Extract_Min_Price'))
+    ```
+
+    **For `vpi_scraped_maxprice`**, use:
+    ```
+    if(equals(outputs('Extract_Heading'), 'No heading found'), 
+      outputs('Fallback_Extract_Max_Price_from_LD'), 
+      outputs('Extract_Max_Price'))
+    ```
+
+### Save and Test
+
+80. Click **Save** (top-left)
+81. Go to Dataverse → create a new Missing Vehicle Request with:
+    - Make: `Toyota`
+    - Model: `Camry`
+    - Model Year: `2022`
+82. The flow triggers automatically within a few minutes
+83. Check the MVR record → `vpi_scrapestatus` should show **Scraped** (4)
+
+### Visual Flow Summary
+
+```
+[User submits MVR]
+    │
+    ▼
+[Dataverse trigger: MVR Added]
+    │
+    ▼
+[vpi_scrapestatus → 3 (In Progress)]
+    │
+    ▼
+[HTTP GET → uae.yallamotor.com/used-cars/toyota/camry/yr_2022_2022]
+    │
+    ├── Blocked? → Mark 6 (Unreachable) → Stop
+    │
+    └── Success →
+           │
+           ▼
+         Extract heading:
+         "15 listings · AED 30,000 – 110,000 · 2022–2022"
+              │
+         ┌────┴────┐
+         ▼         ▼
+    Heading    No heading
+    found?     found?
+      │           │
+      ▼           ▼
+  Parse      Fallback to
+  min/max    JSON-LD or
+  from       BDI price
+  heading    extraction
+      │           │
+      └─────┬─────┘
+            ▼
+    Update MVR → vpi_scrapestatus=4 (Scraped)
+                  vpi_scraped_minprice=30000
+                  vpi_scraped_maxprice=110000
+                  vpi_scraped_listings={...}
+                  vpi_scraped_sources=URL
+
+    ✅ Results in Dataverse → visible in app
+```
+
+### Planned Enhancements
+
+| Enhancement | When |
+|---|---|
+| Add fuel type + transmission to URL | After verifying choice field label extraction in Dataverse triggers |
+| Email notification to user | After admin approval flow is built |
+| Dubizzle support | After YallaMotor flow is stable |
+
+---
+
+## MVR Schema Reference (Scrape Columns Only)
+
+For full schema, see `docs/dataverse-schema.md`.
+
+| Column | Type | Used In | Purpose |
+|---|---|---|---|
+| `vpi_scrapestatus` | Choice | Flow 1, Flow 2 | 1=Pending, 2=Testing, 3=In Progress, 4=Scraped, 5=Failed, 6=Unreachable |
+| `vpi_scraped_listings` | Multiple Lines of Text | Flow 2 | JSON array of scraped listing data |
+| `vpi_scraped_minprice` | Currency | Flow 2 | Minimum price from scraped listings |
+| `vpi_scraped_maxprice` | Currency | Flow 2 | Maximum price from scraped listings |
+| `vpi_scraped_sources` | Multiple Lines of Text | Flow 1, Flow 2 | Source URLs where scraped listings were found |

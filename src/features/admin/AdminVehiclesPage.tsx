@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useVehicles, useVehicleHierarchy, usePricing, useBatchPricing } from '@hooks';
 import { useVehicleStore } from '@stores';
+import { useDebounce } from '@utils';
 import {
   Button,
   Input,
@@ -562,6 +563,7 @@ function FilterBar({
 export function AdminVehiclesPage() {
   const { filters, sort, page, pageSize, setSort, setPage, setPageSize, resetFilters } = useVehicleStore();
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [localFilters, setLocalFilters] = useState<Record<string, string | undefined>>({
     year: filters.year ? String(filters.year) : undefined,
@@ -579,7 +581,7 @@ export function AdminVehiclesPage() {
 
   const queryFilters = useMemo(() => ({
     ...filters,
-    search: search || undefined,
+    search: debouncedSearch || undefined,
     year: localFilters.year ? Number(localFilters.year) : undefined,
     make: localFilters.make,
     model: localFilters.model,

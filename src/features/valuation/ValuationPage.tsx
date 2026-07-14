@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useInquiryStore } from '@stores';
 import { useDataSource } from '@data';
 import { LoadingScreen } from '@components/ui';
@@ -9,7 +10,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export function ValuationPage() {
   const { currentStep } = useInquiryStore();
-  const { isInitialized, isInitializing } = useDataSource();
+  const { isInitialized, isInitializing, triggerInit } = useDataSource();
+
+  // Trigger deferred DataSource init when the valuation page is first visited.
+  useEffect(() => {
+    if (!isInitialized && !isInitializing) {
+      triggerInit();
+    }
+  }, [isInitialized, isInitializing, triggerInit]);
 
   if (isInitializing) {
     return <LoadingScreen message="Loading vehicle data..." />;
