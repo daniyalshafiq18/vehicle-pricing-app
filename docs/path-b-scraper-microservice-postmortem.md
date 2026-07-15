@@ -3,7 +3,8 @@
 > **Date:** 2026-07-13
 > **Author:** Project Documentation
 > **Status:** ❌ Abandoned — blocked by YallaMotor Cloudflare protection
-> **Next approach:** Power Automate Desktop (RPA with real Chrome browser)
+> **Next approach (final):** Power Automate Cloud-only (discovered 2026-07-15 — Microsoft datacenter IPs are NOT blocked by Cloudflare; see `docs/power-automate-cloud-only-design.md`)
+> **Previous next approach (overtaken):** Power Automate Desktop (RPA) — initially planned but never needed
 
 ---
 

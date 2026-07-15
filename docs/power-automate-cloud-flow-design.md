@@ -1,8 +1,11 @@
-# Power Automate Cloud + Desktop Flow Design
+# ⚠️ DEPRECATED — Power Automate Cloud + Desktop Flow Design
 
-> **Date:** 2026-07-13
-> **Status:** 🆕 Design ready for implementation
-> **Purpose:** Replace the abandoned Puppeteer microservice with Power Automate Desktop (RPA) for YallaMotor scraping
+> **⚠️ This document is STALE. It predates the discovery that Power Automate Cloud flows (HTTP premium connector) work without Desktop (RPA).**
+>
+> **Refer to `docs/power-automate-cloud-only-design.md` for the current, tested design.**
+>
+> **Date:** 2026-07-13 (deprecated as of 2026-07-15)
+> **Status:** ❌ Superseded — Cloud-only flows work without Desktop RPA
 
 ---
 

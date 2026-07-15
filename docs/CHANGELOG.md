@@ -1,5 +1,41 @@
 # Changelog
 
+## 2026-07-15
+
+### Flow 1 — Full Test Outcome Confirmed (Modified Flow)
+
+- **`docs/power-automate-cloud-only-design.md`** — Updated test result section with the complete email output from the user's latest test run
+- **`docs/CHANGELOG.md`** — Added this entry
+- **`docs/power-automate-cloud-flow-design.md`** — Added deprecation banner pointing to `power-automate-cloud-only-design.md` (this was the older Desktop-era design file)
+- **`docs/PHASE-3-REVISED-PLAN.md`** — Updated status from "Pivoting to Power Automate Desktop" to "Pivoted to Power Automate Cloud-only (successful)"
+- **`memory/power-automate-flow-design.md`** — Updated with Flow 1 modified test outcome
+- **`memory/scraper-service-built.md`** — Updated "New approach" from Power Automate Desktop to Cloud-only flows (successful)
+
+### Detailed Test Output Confirmed
+
+The Flow 1 modified version was tested end-to-end with Toyota Camry and returned:
+
+| Field | Value |
+|---|---|
+| **URL** | `https://uae.yallamotor.com/used-cars/toyota/camry` |
+| **Accessible** | ✅ True |
+| **Page Title** | `Used Toyota Camry for Sale in UAE — From AED 120` |
+| **HTTP Status** | 200 |
+| **BDI Price** | 42,900 |
+| **Cloudflare** | ✅ No false positives |
+| **InvalidTemplate Error** | ✅ Fixed |
+
+**Full listing record extracted:**
+- **Car:** Used Toyota Camry 2.5 S 2019
+- **Price:** AED 42,900 (Fair Deal)
+- **Mileage:** 166,000 KM
+- **Fuel type:** Petrol
+- **Transmission:** Automatic
+- **Regional specs:** GCC Specs
+- **Location:** Sharjah
+- **Dealer:** Al Aram Used Cars (Ref#967)
+- **Installment:** 626 AED/month
+
 ## 2026-07-14
 
 ### Flow 2 — Complete Redesign (Heading-based extraction)

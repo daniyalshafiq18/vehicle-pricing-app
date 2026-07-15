@@ -1,7 +1,7 @@
 # Power Automate Cloud Flow — Step-by-Step Build Guide
 
-> **Date:** 2026-07-13
-> **Status:** Flow 1 ✅ Built & Tested | Flow 2 ⏳ Not yet built
+> **Date:** 2026-07-15 (Updated with modified Flow 1 test results)
+> **Status:** Flow 1 ✅ Built, Modified & Re-Tested | Flow 2 ⏳ Not yet built
 > **Platform:** https://make.powerautomate.com
 > **Connectors needed:** HTTP (premium), Microsoft Dataverse, Office 365 Outlook (optional)
 
@@ -11,18 +11,23 @@
 
 | Flow | Status | Notes |
 |---|---|---|
-| **Flow 1: YallaMotor Accessibility Test** | ✅ **Built & Tested** | Confirmed YallaMotor returns HTTP 200 with real content from Microsoft cloud IPs. JSON-LD structured data found in HTML. |
+| **Flow 1: YallaMotor Accessibility Test** | ✅ **Built, Modified & Re-Tested** | Confirmed full listing record extraction (price, specs, dealer). Heading extraction confirmed for aggregate pricing. |
 | **Flow 2: MVR Automated Scraper** | ⏳ Design ready, not built | Parses JSON-LD structured data from YallaMotor HTML. See full design below. |
 
-### Key Findings from Flow 1 Test
+### Key Findings from Flow 1 Test (Original + Modified)
 
 | Finding | Detail |
 |---|---|
 | **YallaMotor accessible?** | ✅ Yes — HTTP 200, real page content returned |
 | **Cloudflare blocking?** | ❌ No — Cloudflare did NOT block the Power Automate HTTP request |
+| **Cloudflare false positives?** | ✅ Fixed — removed 3 body-content checks that incorrectly flagged normal content |
+| **InvalidTemplate error?** | ✅ Fixed — removed non-existent text_2/text_3 trigger inputs |
 | **Page title** | `Used Toyota Camry for Sale in UAE — From AED 120` |
-| **JSON-LD available?** | ✅ Yes — `<script type="application/ld+json">` blocks present in HTML with complete vehicle listings |
-| **YallaMotor architecture** | Next.js (server-side rendered) — HTML contains full listing data, no client-side JS rendering needed |
+| **BDI Price extracted** | ✅ **42,900 AED** — via `<bdi class="tabular-nums" dir="ltr">` extraction |
+| **Full listing record extracted** | ✅ Complete article card: 166,000 KM, Petrol, Automatic, GCC Specs, Sharjah, **Al Aram Used Cars** |
+| **Heading pattern confirmed** | `15 listings · AED 30,000 – 110,000 · 2022–2022` from `<div class="heading-h2-content">` |
+| **JSON-LD available?** | ✅ Yes — `<script type="application/ld+json">` blocks present in HTML |
+| **YallaMotor architecture** | Next.js (server-side rendered) — HTML contains full listing data |
 | **Why it works (vs Puppeteer failure)** | Power Automate HTTP requests come from Microsoft datacenter IPs which are not blocked. Previous Puppeteer scraper on Railway/Render used datacenter IPs that YallaMotor's Cloudflare flagged. |
 
 ### ⚠️ Practical Learnings
@@ -276,12 +281,61 @@
 48. Click **Test** → **Manually** → **Run**
 49. Enter: Make = `Toyota`, Model = `Camry`, Year = `2025`
 
-### ✅ Actual Test Result (2026-07-13)
+### ✅ Actual Test Result — Original (2026-07-13)
 
 ```
 HTTP 200 — ✅ Accessible = True
 Page Title: "Used Toyota Camry for Sale in UAE — From AED 120"
 JSON-LD: Present in HTML
+```
+
+### ✅ Actual Test Result — Modified Flow (2026-07-15)
+
+After the DOM extraction enhancements and Cloudflare fix, the flow was re-tested with **Toyota Camry** and returned the following email output:
+
+```
+YallaMotor Test: ✅ Accessible — Toyota Camry
+
+YallaMotor Accessibility Test
+┌──────────────────────────┬──────────────────────────────────────────────────┐
+│ Make/Model               │ Toyota Camry                                     │
+│ URL Tested               │ https://uae.yallamotor.com/used-cars/toyota/camry│
+│ Accessible               │ True                                             │
+│ Page Title               │ Used Toyota Camry for Sale in UAE — From AED 120 │
+│ HTTP Status              │ 200                                              │
+│ 💰 BDI Price             │ 42,900                                           │
+│ Error                    │ (empty — no errors)                              │
+└──────────────────────────┴──────────────────────────────────────────────────┘
+
+🚗 Full Vehicle Record (from DOM)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[/used-cars/toyota/camry/2019/used-toyota-camry-2019-sharjah-2083869]
+Used Toyota Camry 2.5 S 2019
+💰 Price: 42,900 AED — "Fair Deal" badge
+💳 Installment: 626 AED/month
+
+📋 Specifications:
+  • Year: 2019
+  • Mileage: 166,000 KM
+  • Fuel type: Petrol
+  • Transmission: Automatic
+  • Regional specs: GCC Specs
+  • Location: Sharjah
+
+🏪 Dealer: Al Aram Used Cars (Ref#967)
+  • Address: Sharjah - Souq Al Haraj
+  • Showroom: Main Branch 34, Branch 2: 357, Branch 3: 332
+  • Hours: Sat-Thu 9:00 AM - 9:00 PM, Friday 4:00 PM - 9:00 PM
+  • Website: www.alaramcars.com
+  • Instagram: alaramcars | Facebook: alaramusedcars | TikTok: alaramcars
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Status Summary:
+  • Cloudflare detection: No false positives (correctly identified as accessible)
+  • InvalidTemplate error: Fixed (no more text_2/text_3 references)
+  • BDI price extraction: Working (42,900 AED)
+  • Full listing extraction: Working (complete article card with specs + dealer)
+  • Heading pattern confirmed: "15 listings · AED 30,000 – 110,000 · 2022–2022"
 ```
 
 ---
@@ -479,7 +533,7 @@ Place this **after** the Cloudflare condition ends. This is the primary extracti
 ### Step 16: Condition — Heading Found?
 
 42. Click **+ New step** → **Condition**
-43. Name: `Heading Available?`
+43. Name: `Is Heading Available`
 44. Row:
     - Left: `outputs('Extract_Heading')`
     - Operator: `is not equal to`
@@ -534,14 +588,14 @@ Place this **after** the Cloudflare condition ends. This is the primary extracti
 **In If no (no heading):**
 
 60. Click **Add an action** → **Compose**
-61. Name: `Fallback: Check JSON-LD`
+61. Name: `Fallback Check JSON LD`
 62. Input: click **Expression**:
     ```
     if(contains(variables('ResponseBody'), '<script type="application/ld+json">'), 'jsonld-found', 'no-jsonld')
     ```
 
 63. Click **Add an action** → **Condition**
-64. Name: `JSON-LD Fallback Available?`
+64. Name: `JSON LD Fallback Available`
 65. Row:
     - Left: `outputs('Fallback_Check_JSON_LD')`
     - Operator: `is equal to`
@@ -550,21 +604,21 @@ Place this **after** the Cloudflare condition ends. This is the primary extracti
 **In If yes (JSON-LD exists):**
 
 66. Click **Add an action** → **Compose**
-67. Name: `Fallback: Parse First JSON-LD Block`
+67. Name: `Fallback Parse First JSON-LD Block`
 68. Input: click **Expression**:
     ```
     json(first(split(first(skip(split(variables('ResponseBody'), '<script type="application/ld+json">'), 1)), '</script>')))
     ```
 
 69. Click **Add an action** → **Compose**
-70. Name: `Fallback: Extract Min Price from LD`
+70. Name: `Fallback Extract Min Price from LD`
 71. Input: click **Expression**:
     ```
     if(contains(outputs('Fallback_Parse_First_JSON_LD_Block'), 'offers'), if(contains(outputs('Fallback_Parse_First_JSON_LD_Block')['offers'], 'lowPrice'), outputs('Fallback_Parse_First_JSON_LD_Block')['offers']['lowPrice'], 0), 0)
     ```
 
 72. Click **Add an action** → **Compose**
-73. Name: `Fallback: Extract Max Price from LD`
+73. Name: `Fallback Extract Max Price from LD`
 74. Input: click **Expression**:
     ```
     if(contains(outputs('Fallback_Parse_First_JSON_LD_Block'), 'offers'), if(contains(outputs('Fallback_Parse_First_JSON_LD_Block')['offers'], 'highPrice'), outputs('Fallback_Parse_First_JSON_LD_Block')['offers']['highPrice'], 0), 0)
@@ -573,7 +627,7 @@ Place this **after** the Cloudflare condition ends. This is the primary extracti
 **In If no (no JSON-LD either — last resort):**
 
 75. Click **Add an action** → **Compose**
-76. Name: `Fallback: Extract First BDI Price`
+76. Name: `Fallback Extract First BDI Price`
 77. Input: click **Expression**:
     ```
     if(contains(variables('ResponseBody'), '<bdi class="tabular-nums" dir="ltr">'), trim(first(split(first(skip(split(variables('ResponseBody'), '<bdi class="tabular-nums" dir="ltr">'), 1)), '</bdi>'))), '0')
