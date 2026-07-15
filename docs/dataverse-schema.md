@@ -429,13 +429,30 @@ This table records vehicles that users searched for but do not currently exist i
 |---|---|---|---|
 | Make | `vpi_make` | Single Line Text | Vehicle make/brand searched by user |
 | Model | `vpi_model` | Single Line Text | Vehicle model searched by user |
-| Body Type | `vpi_bodytype` | Choice | Same shared optionset as Vehicle Data |
-| Trim | `vpi_trim` | Single Line Text | Vehicle trim / variant |
 | Model Year | `vpi_modelyear` | Whole Number | Model year of the searched vehicle |
-| Min Price | `vpi_minprice` | Currency | Estimated minimum market price |
-| Max Price | `vpi_maxprice` | Currency | Estimated maximum market price |
-| Min Mileage | `vpi_minmileage` | Whole Number | Minimum mileage supplied by user |
-| Max Mileage | `vpi_maxmileage` | Whole Number | Maximum mileage supplied by user |
+| Trim | `vpi_trim` | Single Line Text | Vehicle trim / variant |
+| Body Type | `vpi_bodytype` | Choice | Body type (Sedan, SUV, etc.) |
+| Cylinders | `vpi_cylinders` | Choice | Number of cylinders |
+| Doors | `vpi_doors` | Choice | Number of doors |
+| Drive Type | `vpi_drivetype` | Choice | FWD, RWD, AWD, 4x4 |
+| Engine Size | `vpi_enginesize` | Decimal | Engine displacement |
+| Fuel Type | `vpi_fueltype` | Choice | Petrol, Diesel, Hybrid, Electric |
+| Horsepower | `vpi_horsepower` | Whole Number | Engine horsepower |
+| Seats | `vpi_seats` | Choice | Number of seats |
+| Transmission Type | `vpi_transmissiontype` | Choice | Automatic, Manual, CVT, etc. |
+| Min Price | `vpi_minprice` | Currency | Estimated minimum market price (user or scraped) |
+| Max Price | `vpi_maxprice` | Currency | Estimated maximum market price (user or scraped) |
+| Min Mileage | `vpi_minmilage` | Decimal | Minimum mileage supplied by user |
+| Max Mileage | `vpi_maxmilage` | Decimal | Maximum mileage supplied by user |
+| Comments | `vpi_user_comment` | Single Line Text | User's comment or note about the vehicle |
+| Source URL | `vpi_user_sourceurl` | Single Line Text | URL the user provided as a reference |
+| Contact | `vpi_contact` | Lookup | Lookup to Contact table |
+| Missing Vehicle | `vpi_missingvehicle` | Lookup | Lookup to Vehicle Data table |
+| **Scrape Status** | `vpi_scrapestatus` | Choice | Pending / Testing / In Progress / Scraped / Failed / Unreachable |
+| **Scraped Listings** | `vpi_scraped_listings` | Multiple Lines of Text | JSON array of scraped listing data |
+| **Scraped Min Price** | `vpi_scraped_minprice` | Currency | Minimum price from scraped listings |
+| **Scraped Max Price** | `vpi_scraped_maxprice` | Currency | Maximum price from scraped listings |
+| **Scraped Sources** | `vpi_scraped_sources` | Multiple Lines of Text | Source URLs where scraped listings were found |
 
 #### Currency Base Fields (auto-maintained by Dataverse)
 
@@ -443,12 +460,25 @@ This table records vehicles that users searched for but do not currently exist i
 |---|---|---|
 | Min Price (Base) | `vpi_minprice_base` | Not used by application |
 | Max Price (Base) | `vpi_maxprice_base` | Not used by application |
+| Scraped Min Price (Base) | `vpi_scraped_minprice_base` | Not used by application |
+| Scraped Max Price (Base) | `vpi_scraped_maxprice_base` | Not used by application |
 
 ### Choice Fields
 
 #### Body Type (`vpi_bodytype`)
 
 Shares the same global optionset as [Vehicle Data Body Type](#body-type-vpi_bodytype) — identical labels and values. Refer to that section for the full list (Bus = 1, Sedan = 46, SUV = 55, etc.).
+
+#### Scrape Status (`vpi_scrapestatus`)
+
+| Label | Value | Meaning |
+|---|---|---|
+| Pending | 1 | Waiting to be scraped |
+| Testing | 2 | Running accessibility test |
+| In Progress | 3 | Scraping in progress |
+| Scraped | 4 | Completed successfully |
+| Failed | 5 | Scrape error |
+| Unreachable | 6 | YallaMotor blocked / not accessible |
 
 ---
 

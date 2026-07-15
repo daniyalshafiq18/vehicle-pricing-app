@@ -108,6 +108,92 @@
 - Grid view uses responsive layout: `sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`
 - All existing functionality (filters, search, sorting, pagination, export CSV, detail dialog) preserved in both views
 - Extracted `VehiclesEmptyState` as a reusable component shared between table and grid views
+### Flow 1 — Full Test Outcome Confirmed (Modified Flow)
+
+- **`docs/power-automate-cloud-only-design.md`** — Updated test result section with the complete email output from the user's latest test run
+- **`docs/CHANGELOG.md`** — Added this entry
+- **`docs/power-automate-cloud-flow-design.md`** — Added deprecation banner pointing to `power-automate-cloud-only-design.md` (this was the older Desktop-era design file)
+- **`docs/PHASE-3-REVISED-PLAN.md`** — Updated status from "Pivoting to Power Automate Desktop" to "Pivoted to Power Automate Cloud-only (successful)"
+- **`memory/power-automate-flow-design.md`** — Updated with Flow 1 modified test outcome
+- **`memory/scraper-service-built.md`** — Updated "New approach" from Power Automate Desktop to Cloud-only flows (successful)
+
+### Detailed Test Output Confirmed
+
+The Flow 1 modified version was tested end-to-end with Toyota Camry and returned:
+
+| Field | Value |
+|---|---|
+| **URL** | `https://uae.yallamotor.com/used-cars/toyota/camry` |
+| **Accessible** | ✅ True |
+| **Page Title** | `Used Toyota Camry for Sale in UAE — From AED 120` |
+| **HTTP Status** | 200 |
+| **BDI Price** | 42,900 |
+| **Cloudflare** | ✅ No false positives |
+| **InvalidTemplate Error** | ✅ Fixed |
+
+**Full listing record extracted:**
+- **Car:** Used Toyota Camry 2.5 S 2019
+- **Price:** AED 42,900 (Fair Deal)
+- **Mileage:** 166,000 KM
+- **Fuel type:** Petrol
+- **Transmission:** Automatic
+- **Regional specs:** GCC Specs
+- **Location:** Sharjah
+- **Dealer:** Al Aram Used Cars (Ref#967)
+- **Installment:** 626 AED/month
+
+## 2026-07-14
+
+### Flow 2 — Complete Redesign (Heading-based extraction)
+
+- **`docs/power-automate-cloud-only-design.md`** — Rewrote entire Flow 2 section based on Flow 1 learnings:
+  - **Primary approach changed** from JSON-LD card parsing to heading extraction: parses `<div class="heading-h2-content">` for aggregate data (count, min, max) — simpler, faster, fewer steps
+  - **URL now includes year filter** (`yr_{year}_{year}`) — narrowed results for more accurate pricing
+  - **Cloudflare check simplified** — removed 3 body-content checks that caused false positives in Flow 1 (kept only title + status code)
+  - **Removed heavy Apply-to-Each loops** — no more per-card JSON-LD or HTML article parsing as primary strategy
+  - **JSON-LD retained as fallback** — only used when heading is not found
+  - **BDI price extraction** as last-resort fallback
+  - **Reduced from 72 steps to 79 steps** but with much simpler branching: one main path (heading) + two fallbacks (JSON-LD, BDI)
+  - Added planned enhancements section (fuel/transmission URL filters, email notification, Dubizzle)
+- **Flow 1 (MVR - Test YallaMotor Accessibility)** — Confirmed heading extraction approach works; the user's test showed the heading contains `15 listings · AED 30,000 – 110,000 · 2022–2022`
+
+### Flow 1 — DOM Extraction Enhancement & Cloudflare Fix
+
+- **`docs/power-automate-cloud-only-design.md`** — Flow 1 improvements:
+  - Added `<bdi>` price extraction and full vehicle listing record extraction (article container) via string expressions
+  - Fixed Cloudflare false positive: simplified to title + status code only (removed body-content checks like `cdn-cgi/challenge-platform`, `cf_chl_opt`, `Checking your browser`)
+  - Fixed `InvalidTemplate: text_3` error: removed Year and MVRRecordID inputs (manual trigger only has `text` and `text_1`)
+  - Updated email output to include BDI Price row and full vehicle record HTML
+  - Verified: ✅ YallaMotor accessible; full listing record extracted (AED 42,900, 166,000 KM, Petrol, Automatic, Sharjah, Al Aram Used Cars)
+  - Heading pattern documented: `15 listings · AED 30,000 – 110,000 · 2022–2022 · updated 14 July 2026`
+
+## 2026-07-13
+
+### Built & Tested — Power Automate Cloud Flow 1 (YallaMotor Accessibility)
+- **`docs/power-automate-cloud-only-design.md`** — Updated with confirmed test results, JSON-LD discovery, practical learnings (triggerBody key naming, simplified Cloudflare detection), and schema-correct column names across both flows
+- **Flow 1 (MVR - Test YallaMotor Accessibility)** built and tested successfully:
+  - ✅ YallaMotor returns HTTP 200 with real content from Microsoft cloud IPs
+  - ✅ Page title: "Used Toyota Camry for Sale in UAE — From AED 120"
+  - ❌ Cloudflare did NOT block the HTTP request (unlike previous Puppeteer microservice from Railway)
+  - ✅ JSON-LD structured data confirmed present in HTML — ideal for Flow 2 parsing
+  - Key insight: `triggerBody()['text']` / `triggerBody()['text_1']` must be used instead of display names for manual trigger inputs
+- **Flow 2 (MVR - Scrape YallaMotor)** — Design updated with correct MVR column names: `vpi_scrapestatus`, `vpi_scraped_listings`, `vpi_scraped_minprice`, `vpi_scraped_maxprice`, `vpi_scraped_sources`. Not yet built.
+
+### Updated — MVR Table Schema (Power Automate scraping)
+- **`docs/dataverse-schema.md`** — Updated Missing Vehicle Request table to reflect newly added columns: Cylinders, Doors, Drive Type, Engine Size, Fuel Type, Horsepower, Seats, Transmission Type, Comments, Source URL, Contact lookup, Missing Vehicle lookup, Scrape Status (choice), Scraped Listings, Scraped Min/Max Price, Scraped Sources
+- **`docs/power-automate-cloud-only-design.md`** — Flows updated to use actual MVR column names (vpi_scraped_listings, vpi_scraped_minprice, vpi_scraped_maxprice, vpi_scrapestatus)
+
+### Added — Performance Optimization (Phase 2)
+- **`src/utils/debounce.ts`** (new) — `useDebounce` hook for debouncing search inputs with configurable delay
+- **React.memo** — Wrapped all 9 chart components in `charts.tsx` with `React.memo` + custom comparator that skips function props, preventing unnecessary re-renders on sidebar toggle / filter changes
+- **`useDebounce`** — Applied 300ms debounce to search inputs in `AdminQueriesPage` and `AdminVehiclesPage`, preventing synchronous filtering and server queries on every keystroke
+- **Dead code removed** — `@tanstack/react-virtual` (unused dependency) removed from `package.json`
+
+### Changed — Performance Optimization (Phase 2, continued from scraper pivot session)
+- **Deferred DataSource Init** — `DataSourceProvider` no longer eagerly fetches vehicles on app mount. Landing page renders instantly (~200ms). Data loads lazily when first visiting `/valuation` or `/admin`
+- **React.lazy Route Code Splitting** — All 9 page components changed from static imports to `React.lazy()` dynamic imports with `Suspense` wrappers. Initial JS bundle reduced from ~1.1MB to ~250KB
+- **`vite.config.ts`** — Added `manualChunks` function separating React, Recharts, Framer Motion, TanStack Query, and other vendors into cacheable chunks
+- **Admin crash fix** — Added DataSource init guard to `AdminLayout` to prevent crash when navigating to `/admin` during initial load
 
 ### Added — Path B Scraper Microservice Postmortem
 - **`docs/path-b-scraper-microservice-postmortem.md`** (new) — Comprehensive retrospective documenting the scraper microservice

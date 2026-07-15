@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useInquiries, useUpdateInquiryStatus, useExportInquiries } from '@hooks';
+import { useDebounce } from '@utils';
 import {
   Button,
   Dialog,
@@ -333,6 +334,7 @@ const itemVariants = {
 
 export function AdminQueriesPage() {
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<InquiryStatus | 'all'>('all');
@@ -344,8 +346,8 @@ export function AdminQueriesPage() {
   // Filter by search and status
   const filtered = (inquiries ?? []).filter((inq) => {
     if (statusFilter !== 'all' && inq.status !== statusFilter) return false;
-    if (!search) return true;
-    const q = search.toLowerCase();
+    if (!debouncedSearch) return true;
+    const q = debouncedSearch.toLowerCase();
     return (
       inq.firstName.toLowerCase().includes(q) ||
       inq.lastName.toLowerCase().includes(q) ||

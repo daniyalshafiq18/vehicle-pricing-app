@@ -1,11 +1,13 @@
 # Phase 3 Revised Plan — Vehicle Pricing Intelligence Platform
 
-> **Date:** 2026-07-09 (Updated 2026-07-13)
-> **Status:** Path B (Puppeteer) ❌ Abandoned — Pivoting to Power Automate Desktop
+> **Date:** 2026-07-09 (Updated 2026-07-15)
+> **Status:** Path B (Puppeteer) ❌ Abandoned → Path C (Power Automate Cloud-only) ✅ Working
 > **Previous Plan:** `docs/PHASE-3-PLAN.md` (original, superseded by this revision)
 > **Key Change:** Simplified flow, real-time scraping replaces mock, user price suggestions merged into missing vehicle flow
 >
-> **⚠️ Update 2026-07-13:** The Puppeteer microservice (Path B) has been **abandoned** due to YallaMotor Cloudflare protection. The `scraper-service/` code has been removed from the repo. A full postmortem is at `docs/path-b-scraper-microservice-postmortem.md`. The new approach is **Power Automate Desktop (RPA)**, which uses a real Chrome browser on a Windows machine to bypass Cloudflare naturally. See [Section 14](#14-new-approach-power-automate-desktop-rpa).
+> **⚠️ Update 2026-07-15:** After initial pivot to Power Automate Desktop (RPA), we discovered that **Power Automate Cloud flows** (HTTP premium connector) work directly. Microsoft cloud IPs are **not blocked** by YallaMotor's Cloudflare (unlike Railway/Render datacenters). Flow 1 successfully extracts full listing records (price, specs, dealer). Flow 2 heading-based design is complete but not yet built. See `docs/power-automate-cloud-only-design.md` for the current design.
+>
+> **⚠️ Archived Update 2026-07-13:** The Puppeteer microservice (Path B) has been **abandoned** due to YallaMotor Cloudflare protection. Postmortem at `docs/path-b-scraper-microservice-postmortem.md`. The initial pivot to Power Automate Desktop (RPA) was overtaken on 2026-07-15 by the Cloud-only approach.
 
 ---
 
@@ -448,7 +450,7 @@ This way we keep moving forward without either of us getting blocked.
 
 **Status:** The microservice is fully built and deployed at `vehicle-pricing-app-production-f262.up.railway.app`, but YallaMotor's Cloudflare protection blocks Puppeteer from loading actual listings. The service returns `listingsCount: 0`.
 
-**Next step:** Replace Puppeteer approach with Power Automate Desktop (RPA) which controls a real Chrome browser on a Windows machine, bypassing Cloudflare naturally.
+**Next step (overtaken):** The initial plan was Power Automate Desktop (RPA), but on 2026-07-15 we discovered Power Automate Cloud-only works — Microsoft IPs bypass Cloudflare. See `docs/power-automate-cloud-only-design.md`.
 
 ### Phase 3B — Frontend Integration (On Hold pending Phase 3A resolution)
 
@@ -541,30 +543,26 @@ After evaluating all three paths:
 
 > **Full postmortem:** `docs/path-b-scraper-microservice-postmortem.md`
 
-**🚫 Abandoned 2026-07-13.** The `scraper-service/` code has been removed from the repo. The mock scraper (`src/lib/yallaMotorScraper.ts`) is retained and will be repurposed to read from wherever Power Automate Desktop writes data.
+**🚫 Abandoned 2026-07-13.** The `scraper-service/` code has been removed from the repo. The mock scraper (`src/lib/yallaMotorScraper.ts`) is retained and will be repurposed to read from Power Automate scraped data (see `docs/power-automate-cloud-only-design.md` for the Cloud-only approach that replaced the Desktop plan).
 
 ---
 
-## 14. New Approach: Power Automate Desktop (RPA)
+## 14. New Approach: Power Automate Desktop (RPA) — Overtaken by Cloud-only
 
-### Why Power Automate Desktop?
+> **⚠️ Updated 2026-07-15:** This section is **archived**. On 2026-07-15 we discovered that **Power Automate Cloud flows** (HTTP premium connector) work directly — Microsoft cloud IPs are NOT blocked by YallaMotor's Cloudflare. Flow 1 has been built, modified, and tested successfully with full listing record extraction. The Desktop (RPA) approach was never needed. See `docs/power-automate-cloud-only-design.md` for the current design.
 
-After Path B (Puppeteer) failed, we evaluated the remaining option:
+### Why Power Automate Desktop was considered
 
 | Approach | Can bypass Cloudflare? | Cost | Complexity |
 |---|---|---|---|
 | Puppeteer / Playwright | ❌ No — datacenter IPs always flagged | $5-15/mo | Medium |
 | **Power Automate Desktop** | ✅ Yes — real Chrome on Windows | Included with Microsoft 365 | Low |
+| **Power Automate Cloud-only** ⭐ | **✅ Yes — MS datacenter IPs not flagged** | **Premium connector cost only** | **Low** |
 | Residential proxy service (BrightData) | ❌ Maybe — still detectable as headless | $20-50/mo | High |
 
-**Power Automate Desktop wins because:**
-- Runs a **real Chrome browser** installed on your actual Windows machine
-- Cloudflare trusts it — it looks like a normal user browsing
-- No special anti-detection needed — it IS a real user's browser
-- Included free with Microsoft 365 / Windows 11
-- Can scrape on a schedule or on-demand
-- Can write results directly to Dataverse via Power Automate HTTP actions
-- No deployment cost — runs on your own PC
+**But the actual winner (discovered 2026-07-15): Power Automate Cloud-only**
+
+Power Automate HTTP requests come from **Microsoft datacenter IPs** which YallaMotor's Cloudflare does **NOT** block — no Desktop/RPA needed. A simple HTTP GET with browser headers returns the full server-rendered HTML. Flow 1 has confirmed: HTTP 200, full listing record extraction (price, specs, dealer), and heading extraction for aggregate pricing.
 
 ### How It Would Work
 
@@ -611,15 +609,8 @@ After Path B (Puppeteer) failed, we evaluated the remaining option:
 7. **Pros:** Near real-time
 8. **Cons:** Requires your Windows PC to be on
 
-### What's Needed to Proceed
+### ⚠️ Overtaken by Cloud-only (2026-07-15)
 
-| Task | Who Does It | Details |
-|---|---|---|
-| Create Power Automate Desktop flow | You (or Claude can guide) | Step-by-step instructions for the scraper flow |
-| Test against YallaMotor from your PC | You | Verify that YallaMotor loads normally in your Chrome |
-| Repurpose `yallaMotorScraper.ts` | Claude | Change the mock to read from the Power Automate output |
-| Define output format | Both | What fields, what file format, where it's stored |
+This Desktop approach was **never built**. Instead, we discovered that **Power Automate Cloud flows** (HTTP premium connector) work directly — Microsoft IPs bypass YallaMotor's Cloudflare. See `docs/power-automate-cloud-only-design.md` for the current, tested design.
 
-### Status: 🆕 Ready to Begin
-
-The Puppeteer approach has been fully documented and closed. The path forward is Power Automate Desktop. See `docs/path-b-scraper-microservice-postmortem.md` for the full retrospective on what we learned from Path B.
+The Puppeteer approach has been fully documented and closed. The postmortem at `docs/path-b-scraper-microservice-postmortem.md` remains a valuable reference on why datacenter-based scraping fails against Cloudflare.

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useInquiryStore } from '@stores';
 import { useDataSource } from '@data';
 import { LoadingScreen } from '@components/ui';
@@ -10,6 +11,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 export function ValuationPage() {
   const { currentStep } = useInquiryStore();
   const { isInitialized, isInitializing, error } = useDataSource();
+  const { isInitialized, isInitializing, triggerInit } = useDataSource();
+
+  // Trigger deferred DataSource init when the valuation page is first visited.
+  useEffect(() => {
+    if (!isInitialized && !isInitializing) {
+      triggerInit();
+    }
+  }, [isInitialized, isInitializing, triggerInit]);
+
+  if (isInitializing) {
+    return <LoadingScreen message="Loading vehicle data..." />;
+  }
+
+  if (!isInitialized) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center">
+        <p className="text-destructive">Failed to load data source. Please try again.</p>
+      </div>
+    );
+  }
 
   const steps = [
     { num: 1, label: 'Personal Info' },

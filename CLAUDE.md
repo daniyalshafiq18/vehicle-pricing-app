@@ -100,7 +100,7 @@ src/
 ├── providers/      # Context providers
 ├── stores/         # Zustand stores
 ├── types/          # TypeScript interfaces
-├── utils/          # Helpers (formatters, validators, memoize)
+├── utils/          # Helpers (formatters, validators, memoize, debounce)
 ├── data/           # Data source context + DataverseDataSource + config
 ├── lib/            # Utility modules (safeAjax.ts — CSRF-authenticated fetch wrapper + vehicleApi/contactApi/inquiryApi)
 ├── styles/         # globals.css
@@ -126,7 +126,9 @@ All docs live in `docs/`:
 - `CHANGELOG.md` — change log
 - `dataverse-schema.md` — Dataverse schema reference
 - `PHASE-3-REVISED-PLAN.md` — Phase 3 plan with Path B postmortem and Power Automate Desktop pivot
+- `PHASE-2-PERFORMANCE-OPTIMIZATION.md` — Phase 2 performance optimization (code splitting, debounce, React.memo)
 - `path-b-scraper-microservice-postmortem.md` — Full retrospective on the abandoned Puppeteer approach
+- `power-automate-cloud-only-design.md` — Power Automate Cloud flow design for YallaMotor scraping (Flow 1 built & tested, Flow 2 designed)
 
 ## Environment Variables
 Defined in `.env.example`. All vars are reserved for future configuration — Dataverse is the hard-coded default.

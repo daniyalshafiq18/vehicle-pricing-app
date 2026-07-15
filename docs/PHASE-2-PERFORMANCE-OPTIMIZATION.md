@@ -1,6 +1,6 @@
 # Phase 2 — Performance & UX Polish
 
-> **Status:** Planned
+> **Status:** 5/7 items completed (P0, all P1, one P2, one P3)
 > **Theme:** Faster loads, smoother interactions, better caching
 > **Target:** Sub-2s initial interactive on landing page, instant page transitions, no chart jank
 
