@@ -91,6 +91,9 @@ src/
 │   ├── landing/    # Landing page
 │   ├── valuation/  # 3-step wizard (Personal Info → Vehicle → Result)
 │   └── admin/      # Dashboard, Vehicles, Queries, Settings
+│       └── dashboard/  # PremiumLeaderboard, VehicleIntelligenceModal, ChartCard +
+│                       # TopMakesChart, BodyTypeChart, PriceDistributionChart,
+│                       # ValueTrendChart, PowertrainChart, BoxPlotChart, ScatterChartView
 ├── layouts/        # MainLayout (public), AdminLayout (sidebar)
 ├── hooks/          # React Query hooks
 ├── repositories/   # Data access wrappers

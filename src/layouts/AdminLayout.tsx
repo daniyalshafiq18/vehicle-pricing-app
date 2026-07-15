@@ -1,6 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminStore } from '@stores';
-import { ThemeSwitcher } from '@components/ui';
+import { ThemeSwitcher, NotificationDropdown } from '@components/ui';
 import { cn } from '@utils';
 import { useInquiries, useMissingVehicleRequests, usePriceSuggestions } from '@hooks';
 import {
@@ -44,7 +44,7 @@ export function AdminLayout() {
   const { data: priceSuggestions } = usePriceSuggestions();
   const pendingCount = inquiries?.filter((i) => i.status === 'pending').length ?? 0;
   const pendingMissingCount = missingRequests?.filter((r) => r.status === 'Pending' || !r.status).length ?? 0;
-  const pendingPriceSuggestionsCount = priceSuggestions?.filter((s) => s.statusValue === 4 || s.statusValue == null).length ?? 0;
+  const pendingPriceSuggestionsCount = priceSuggestions?.filter((s) => s.statusValue === 4 || s.statusValue === undefined).length ?? 0;
   const [hovered, setHovered] = useState(false);
 
   const collapsed = isSidebarCollapsed && !hovered;
@@ -126,7 +126,7 @@ export function AdminLayout() {
                 )}
                 {(item.label === 'Missing Vehicles' && pendingMissingCount > 0) && (
                   <span className={cn(
-                    'ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white',
+                    'ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-white',
                     collapsed && 'hidden',
                   )}>
                     {pendingMissingCount > 99 ? '99+' : pendingMissingCount}
@@ -134,7 +134,7 @@ export function AdminLayout() {
                 )}
                 {(item.label === 'Price Suggestions' && pendingPriceSuggestionsCount > 0) && (
                   <span className={cn(
-                    'ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-white',
+                    'ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-500 px-1.5 text-[10px] font-bold text-white',
                     collapsed && 'hidden',
                   )}>
                     {pendingPriceSuggestionsCount > 99 ? '99+' : pendingPriceSuggestionsCount}
@@ -197,6 +197,8 @@ export function AdminLayout() {
                 className="h-9 w-48 rounded-lg border bg-background/50 pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary/50 focus:bg-background"
               />
             </div>
+            {/* Unified Notification Bell Dropdown */}
+            <NotificationDropdown />
             <ThemeSwitcher />
           </div>
         </header>

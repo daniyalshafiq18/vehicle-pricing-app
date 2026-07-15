@@ -1,25 +1,23 @@
 import { motion } from 'framer-motion';
-import { useDashboardAnalytics } from '@hooks';
+import { useNavigate } from 'react-router-dom';
+import { useDashboardAnalytics, useInquiries, useMissingVehicleRequests } from '@hooks';
 import { useDashboardStore } from '@stores';
-import { Card, CardContent, LazyChart } from '@components/ui';
-import { formatCurrency, formatNumber, cn } from '@utils';
+import { Card, CardContent, LazyChart, LoadingScreen } from '@components/ui';
+import { formatNumber, cn } from '@utils';
 import {
-  Car, BarChart3, DollarSign, ArrowUpRight, ArrowDownRight,
+  Car, BarChart3, ArrowDownRight,
   Activity, Clock, Sparkles,
+  Layers, MessageSquare, FileQuestion,
 } from 'lucide-react';
-import {
-  TopMakesChart,
-  PriceDistributionChart,
-  ValueTrendChart,
-  PowertrainDonutChart,
-  PerformanceScatterChart,
-  BodyTypeBarChart,
-  AgeDistributionChart,
-  VolatilityBoxChart,
-  TopModelsChart,
-} from './dashboard/charts';
 import { PremiumLeaderboard } from './dashboard/PremiumLeaderboard';
 import { VehicleIntelligenceModal } from './dashboard/VehicleIntelligenceModal';
+import {
+  TopMakesChart,
+  BodyTypeChart,
+  ValueTrendChart,
+  PowertrainChart,
+  TopModelsChart,
+} from './dashboard';
 
 // ─── KPI Config ──────────────────────────────────────
 interface KPICardStyle {
@@ -29,25 +27,6 @@ interface KPICardStyle {
   accent: string;
 }
 
-const kpiStyles: Record<string, KPICardStyle> = {
-  'TOTAL VEHICLES': { gradient: 'from-blue-500/20 to-blue-600/5', iconBg: 'bg-blue-500/10', iconColor: 'text-blue-600 dark:text-blue-400', accent: 'bg-blue-500' },
-  'TOTAL MAKES': { gradient: 'from-violet-500/20 to-violet-600/5', iconBg: 'bg-violet-500/10', iconColor: 'text-violet-600 dark:text-violet-400', accent: 'bg-violet-500' },
-  'TOTAL MODELS': { gradient: 'from-emerald-500/20 to-emerald-600/5', iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-600 dark:text-emerald-400', accent: 'bg-emerald-500' },
-  'HIGHEST VALUE': { gradient: 'from-amber-500/20 to-amber-600/5', iconBg: 'bg-amber-500/10', iconColor: 'text-amber-600 dark:text-amber-400', accent: 'bg-amber-500' },
-  'AVG MARKET PRICE': { gradient: 'from-rose-500/20 to-rose-600/5', iconBg: 'bg-rose-500/10', iconColor: 'text-rose-600 dark:text-rose-400', accent: 'bg-rose-500' },
-  'LOWEST VALUE': { gradient: 'from-teal-500/20 to-teal-600/5', iconBg: 'bg-teal-500/10', iconColor: 'text-teal-600 dark:text-teal-400', accent: 'bg-teal-500' },
-};
-
-const kpiConfig = [
-  { label: 'TOTAL VEHICLES', value: (o: any) => formatNumber(o.totalVehicles), icon: Car, subtitle: 'In database' },
-  { label: 'TOTAL MAKES', value: (o: any) => formatNumber(o.totalMakes), icon: BarChart3, subtitle: 'Manufacturers' },
-  { label: 'TOTAL MODELS', value: (o: any) => formatNumber(o.totalModels), icon: Activity, subtitle: 'Unique models' },
-  { label: 'HIGHEST VALUE', value: (o: any) => formatCurrency(o.highestVehicleValue), icon: ArrowUpRight, subtitle: 'Top market price' },
-  { label: 'AVG MARKET PRICE', value: (o: any) => formatCurrency(o.averageMarketPrice), icon: DollarSign, subtitle: 'Across all vehicles' },
-  { label: 'LOWEST VALUE', value: (o: any) => formatCurrency(o.lowestVehicleValue), icon: ArrowDownRight, subtitle: 'Bottom market price' },
-];
-
-// ─── Animations ──────────────────────────────────────
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.04 } },
@@ -57,83 +36,28 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-function KPICardSkeleton() {
-  return (
-    <div className="rounded-2xl border bg-card p-5">
-      <div className="animate-pulse space-y-3">
-        <div className="h-3 w-24 rounded bg-muted" />
-        <div className="h-7 w-20 rounded bg-muted" />
-      </div>
-    </div>
-  );
-}
-
-// ─── Section Wrapper ─────────────────────────────────
-function ChartSection({ title, subtitle, badge, children, className = '' }: {
-  title: string;
-  subtitle?: string;
-  badge?: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <motion.div variants={itemVariants} className={className}>
-      <Card className="overflow-hidden border h-full">
-        <div className="h-1 bg-gradient-to-r from-primary/60 to-accent/60" />
-        <CardContent className="p-5 flex flex-col h-full">
-          <div className="mb-4 flex items-center justify-between shrink-0">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-              {subtitle && <p className="text-[10px] text-muted-foreground mt-0.5">{subtitle}</p>}
-            </div>
-            {badge && (
-              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary">{badge}</span>
-            )}
-          </div>
-          <div className="flex-1 min-h-0">
-            {children}
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-}
-
 // ═════════════════════════════════════════════════════
 // DASHBOARD PAGE
 // ═════════════════════════════════════════════════════
 export function AdminDashboardPage() {
+  const navigate = useNavigate();
   const {
-    overview, topMakes, priceDistribution, valueTrend,
-    powertrainComposition, scatterData, bodyTypeDistribution,
-    ageDistribution, boxPlot, topModels, premiumLeaderboard,
+    overview, premiumLeaderboard,
+    topMakes, bodyTypeDistribution,
+    valueTrend,
+    powertrainComposition,
+    topModels,
     totalFiltered, totalUnfiltered,
     isLoading, error,
   } = useDashboardAnalytics();
 
+  const { data: inquiries } = useInquiries();
+  const { data: missingVehicles } = useMissingVehicleRequests();
+
   const openModal = useDashboardStore((s) => s.openModal);
-  const setFilter = useDashboardStore((s) => s.setFilter);
 
   if (isLoading) {
-    return (
-      <motion.div className="space-y-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-        <div className="animate-pulse space-y-2">
-          <div className="h-8 w-48 rounded-lg bg-muted" />
-          <div className="h-4 w-72 rounded bg-muted/50" />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {Array.from({ length: 6 }).map((_, i) => <KPICardSkeleton key={i} />)}
-        </div>
-        <div className="grid gap-6 lg:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="animate-pulse rounded-2xl border bg-card p-5">
-              <div className="mb-4 h-5 w-32 rounded bg-muted" />
-              <div className="h-72 rounded-lg bg-muted/50" />
-            </div>
-          ))}
-        </div>
-      </motion.div>
-    );
+    return <LoadingScreen message="Loading dashboard analytics..." />;
   }
 
   if (error || !overview) {
@@ -171,121 +95,108 @@ export function AdminDashboardPage() {
 
       {/* ── KPI Cards ──────────────────────────────── */}
       <motion.div variants={itemVariants}>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {kpiConfig.map((kpi) => {
-            const val = kpi.value(overview);
-            const style: KPICardStyle = kpiStyles[kpi.label] as KPICardStyle;
-            return (
-              <motion.div key={kpi.label} variants={itemVariants} className="group">
-                <Card className="relative h-full overflow-hidden border transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-                  {/* Top accent bar */}
-                  <div className={cn('h-1 bg-gradient-to-r', style.gradient)} />
-                  <CardContent className="relative flex h-full flex-col p-4 pt-3.5">
-                    {/* Decorative background */}
-                    <div className={cn('absolute right-0 top-0 h-24 w-24 -translate-y-6 translate-x-6 rounded-full opacity-[0.03] transition-transform duration-500 group-hover:scale-150', style.accent)} />
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-                        {kpi.label}
-                      </span>
-                      <div className={cn('flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-110 group-hover:shadow-sm', style.iconBg)}>
-                        <kpi.icon className={cn('h-4 w-4', style.iconColor)} />
-                      </div>
-                    </div>
-                    <div className="mt-3 flex items-baseline gap-2">
-                      <p className="text-xl font-bold tracking-tight text-foreground">{val}</p>
-                    </div>
-                    <p className="mt-0.5 text-[10px] text-muted-foreground/60">{kpi.subtitle}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </div>
+        {(() => {
+          const kpiStylesMap: Record<string, KPICardStyle> = {
+            'TOTAL VEHICLES': { gradient: 'from-blue-500/20 to-blue-600/5', iconBg: 'bg-blue-500/10', iconColor: 'text-blue-600 dark:text-blue-400', accent: 'bg-blue-500' },
+            'TOTAL MAKES': { gradient: 'from-violet-500/20 to-violet-600/5', iconBg: 'bg-violet-500/10', iconColor: 'text-violet-600 dark:text-violet-400', accent: 'bg-violet-500' },
+            'TOTAL MODELS': { gradient: 'from-emerald-500/20 to-emerald-600/5', iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-600 dark:text-emerald-400', accent: 'bg-emerald-500' },
+            'BODY TYPES': { gradient: 'from-pink-500/20 to-pink-600/5', iconBg: 'bg-pink-500/10', iconColor: 'text-pink-600 dark:text-pink-400', accent: 'bg-pink-500' },
+            'QUERIES': { gradient: 'from-sky-500/20 to-sky-600/5', iconBg: 'bg-sky-500/10', iconColor: 'text-sky-600 dark:text-sky-400', accent: 'bg-sky-500' },
+            'MISSING VEHICLES': { gradient: 'from-orange-500/20 to-orange-600/5', iconBg: 'bg-orange-500/10', iconColor: 'text-orange-600 dark:text-orange-400', accent: 'bg-orange-500' },
+          };
+          const bodyTypeNames = bodyTypeDistribution.map(b => b.bodyType).join(', ');
+          const inquiriesCount = inquiries?.length ?? 0;
+          const missingVehiclesCount = missingVehicles?.length ?? 0;
+
+          const kpiCards = [
+            { label: 'TOTAL VEHICLES', value: formatNumber(overview.totalVehicles), icon: Car, subtitle: 'In database', linkTo: '/admin/vehicles' },
+            { label: 'TOTAL MAKES', value: formatNumber(overview.totalMakes), icon: BarChart3, subtitle: 'Manufacturers', linkTo: '/admin/vehicles' },
+            { label: 'TOTAL MODELS', value: formatNumber(overview.totalModels), icon: Activity, subtitle: 'Unique models', linkTo: '/admin/vehicles' },
+            { label: 'BODY TYPES', value: formatNumber(bodyTypeDistribution.length), icon: Layers, subtitle: bodyTypeNames.length > 35 ? bodyTypeNames.slice(0, 35) + '...' : bodyTypeNames, linkTo: '/admin/vehicles' },
+            { label: 'QUERIES', value: formatNumber(inquiriesCount), icon: MessageSquare, subtitle: 'All inquiries', linkTo: '/admin/queries' },
+            { label: 'MISSING VEHICLES', value: formatNumber(missingVehiclesCount), icon: FileQuestion, subtitle: 'Vehicle requests', linkTo: '/admin/missing-vehicles' },
+          ];
+          return (
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+              {kpiCards.map((kpi) => {
+                const style = kpiStylesMap[kpi.label] as KPICardStyle;
+                return (
+                  <motion.div
+                    key={kpi.label}
+                    variants={itemVariants}
+                    className="group cursor-pointer"
+                    onClick={() => navigate(kpi.linkTo)}
+                    tabIndex={0}
+                    role="button"
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(kpi.linkTo); } }}
+                  >
+                    <Card className="relative h-full overflow-hidden border transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                      {/* Top accent bar */}
+                      <div className={cn('h-1 bg-gradient-to-r', style.gradient)} />
+                      <CardContent className="relative flex h-full flex-col p-4 pt-3.5">
+                        {/* Decorative background */}
+                        <div className={cn('absolute right-0 top-0 h-24 w-24 -translate-y-6 translate-x-6 rounded-full opacity-[0.03] transition-transform duration-500 group-hover:scale-150', style.accent)} />
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+                            {kpi.label}
+                          </span>
+                          <div className={cn('flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-110 group-hover:shadow-sm', style.iconBg)}>
+                            <kpi.icon className={cn('h-4 w-4', style.iconColor)} />
+                          </div>
+                        </div>
+                        <div className="mt-3 flex items-baseline gap-2">
+                          <p className="text-xl font-bold tracking-tight text-foreground">{kpi.value}</p>
+                        </div>
+                        <p className="mt-0.5 text-[10px] text-muted-foreground/60">{kpi.subtitle}</p>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </motion.div>
 
-      {/* ── Section 1: Top Makes + Section 2: Price Distribution ── */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ChartSection title="Top Vehicle Makes" subtitle="Highest inventory count by manufacturer" badge="Top 10">
-          <LazyChart immediate height={280}>
-            <TopMakesChart
-              data={topMakes}
-              onBarClick={(make) => setFilter('make', make)}
-            />
-          </LazyChart>
-        </ChartSection>
-        <ChartSection title="Price Distribution" subtitle="Vehicle count by market price range" badge="Histogram">
-          <LazyChart immediate height={280}>
-            <PriceDistributionChart data={priceDistribution} />
-          </LazyChart>
-        </ChartSection>
-      </div>
+      {/* ── Section 1: Top Makes + Top Models ──────── */}
+      <motion.div
+        variants={itemVariants}
+        className="grid gap-4 md:grid-cols-2"
+      >
+        <LazyChart height={320} rootMargin="200px">
+          <TopMakesChart data={topMakes} />
+        </LazyChart>
+        <LazyChart height={320} rootMargin="200px">
+          <TopModelsChart data={topModels} />
+        </LazyChart>
+      </motion.div>
 
-      {/* ── Section 3: Value Trend + Section 4: Powertrain Donut ── */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ChartSection title="Vehicle Value Trend" subtitle="Average price by model year" badge="Trend">
-          <LazyChart immediate height={280}>
-            <ValueTrendChart data={valueTrend} />
-          </LazyChart>
-        </ChartSection>
-        <ChartSection title="Powertrain Composition" subtitle="Market share by fuel/powertrain type" badge="Donut">
-          <LazyChart immediate height={280}>
-            <PowertrainDonutChart data={powertrainComposition} />
-          </LazyChart>
-        </ChartSection>
-      </div>
+      {/* ── Section 2: Body Types + Powertrain ──────── */}
+      <motion.div
+        variants={itemVariants}
+        className="grid gap-4 md:grid-cols-2"
+      >
+        <LazyChart height={320} rootMargin="200px">
+          <BodyTypeChart data={bodyTypeDistribution} />
+        </LazyChart>
+        <LazyChart height={320} rootMargin="200px">
+          <PowertrainChart data={powertrainComposition} />
+        </LazyChart>
+      </motion.div>
 
-      {/* ── Section 5: Performance vs Value (full width) ── */}
-      <div className="grid gap-6 lg:grid-cols-1">
-        <ChartSection title="Performance vs Value" subtitle="How horsepower relates to market price" badge="Scatter">
-          <LazyChart height={280}>
-            <PerformanceScatterChart
-              data={scatterData}
-              onDotClick={(vehicleId) => openModal(vehicleId)}
-            />
-          </LazyChart>
-        </ChartSection>
-      </div>
-
-      {/* ── Section 6: Category + Section 7: Age Distribution ── */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ChartSection title="Vehicle Category Distribution" subtitle="Inventory composition by body type" badge="Top 10">
-          <LazyChart height={280}>
-            <BodyTypeBarChart data={bodyTypeDistribution} />
-          </LazyChart>
-        </ChartSection>
-        <ChartSection title="Vehicle Age Distribution" subtitle="How old is the current inventory" badge="Area">
-          <LazyChart height={280}>
-            <AgeDistributionChart
-              data={ageDistribution}
-              onDotClick={(year) => setFilter('year', year)}
-            />
-          </LazyChart>
-        </ChartSection>
-      </div>
-
-      {/* ── Section 8: Price Volatility + Section 9: Top Models ── */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ChartSection title="Price Volatility Analysis" subtitle="Min, median, and max prices by category" badge="Range">
-          <LazyChart height={280}>
-            <VolatilityBoxChart data={boxPlot} />
-          </LazyChart>
-        </ChartSection>
-        <ChartSection title="Top Vehicle Models" subtitle="Most frequent models by inventory count" badge="Top 10">
-          <LazyChart height={280}>
-            <TopModelsChart
-              data={topModels}
-              onBarClick={(model) => setFilter('model', model)}
-            />
-          </LazyChart>
-        </ChartSection>
-      </div>
-
-      {/* ── Section 10: Premium Vehicle Leaderboard ── */}
+      {/* ── Section 3: Price by Model Year (full width) ── */}
       <motion.div variants={itemVariants}>
-        <LazyChart height={400} rootMargin="300px">
+        <LazyChart height={380} rootMargin="300px">
+          <ValueTrendChart data={valueTrend} />
+        </LazyChart>
+      </motion.div>
+
+      {/* ── Premium Vehicle Leaderboard ── */}
+      <motion.div variants={itemVariants}>
+        <LazyChart height={500} rootMargin="300px">
           <Card className="overflow-hidden border">
-            <div className="h-1 bg-gradient-to-r from-amber-500/60 to-amber-400/60" />
-            <CardContent className="p-5">
+            <div className="h-1 bg-gradient-to-r from-amber-500/60 to-orange-500/60" />
+            <CardContent className="p-6">
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">Premium Vehicle Leaderboard</h3>

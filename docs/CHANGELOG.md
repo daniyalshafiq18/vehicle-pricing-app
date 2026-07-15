@@ -1,6 +1,113 @@
 # Changelog
 
+## 2026-07-15
+
+### Changed — Layout reorder: Top Makes + Top Models side by side
+- Rearranged dashboard layout per user request: Section 1 = Top Makes + Top Models, Section 2 = Body Types + Powertrain, Section 3 = Price by Model Year (full-width), Section 4 = Premium Leaderboard
+
+### Changed — Unified brand-coordinated color palette across all charts
+- Replaced disparate rainbow palettes with a single, professionally curated 10-color palette anchored on the app's brand colors (indigo primary `#6366f1` and amber accent `#f59e0b`)
+- **Top Makes** / **Top Models** / **Body Types** bar charts now share the same unified color rotation (indigo → teal → amber → violet → cyan → orange → purple → emerald → sky → pink)
+- **Powertrain** donut updated: Petrol → brand indigo, Hybrid → teal, Electric → violet (was blue/green/purple)
+- **Value Trend** area chart: line/fill/gradient changed from orange `#f97316` to brand amber `#f59e0b`
+- Updated gradient accent bars on all ChartCards to match: Top Makes (indigo→violet), Top Models (indigo→cyan), Body Types (teal→emerald), Powertrain (indigo→amber), Value Trend (amber→orange)
+
+### Changed — Top Makes: top 10 + Y-axis fix + matching heights
+- **Top Makes** now shows top 10 (was 15) with Y-axis width 150px so all make names display fully; chart height adjusted to 320px to match Body Type
+- **Body Type** and **Top Makes** now use matching 320px chart heights for visual alignment
+
+### Fixed — Powertrain donut legend cropping
+- Restructured chart layout to flex column — donut SVG takes `flex-1`, legend sits below in `flex-shrink-0` so it's never cropped
+- Reduced donut size (outerRadius 120→105, innerRadius 70→60) for better proportions
+
+### Added — Top Models Chart
+- New **TopModelsChart** in the blank space next to Powertrain — horizontal bar chart showing the 10 most-represented vehicle models (e.g., "Toyota Camry") with per-bar gradient colors, vehicle count, and avg price tooltip
+
+### Removed
+- **PriceDistributionChart**, **BoxPlotChart**, **ScatterChartView** — orphaned chart files deleted from project directory
+
+### Changed — Dashboard Layout Refinements (from earlier session)
+
+- **7 new chart widgets** built with Recharts, organized into 3 sections:
+  - **Market Composition** (2-col grid): TopMakesChart (top 15 makes, horizontal bars with per-make gradient colors) + BodyTypeChart (body type breakdown)
+  - **Pricing Landscape** (2-col grid): PriceDistributionChart (10-bucket histogram with gradient fill) + ValueTrendChart (avg price by model year, area chart with gradient)
+  - **Technical Profiles** (2-col grid): PowertrainChart (Petrol/Diesel/Hybrid/Electric, horizontal bars) + BoxPlotChart (custom SVG box plot — min, Q1, median, Q3, max — for GCC/Non-GCC/Other price ranges)
+- **Full-width ScatterChartView** (Horsepower vs Price, 500 pts sampled, color-coded by make with legend)
+- **ChartCard** — consistent wrapper component for all chart widgets (gradient accent bar, title, subtitle, empty state, lazy loading)
+- **ChartTooltip** — shared premium tooltip component used across all charts
+- **compactNumber** formatter utility (`1.5M`, `55k`, `320`) for chart axis labels
+- All charts wrapped in `LazyChart` for IntersectionObserver-based deferred rendering
+- All charts fully responsive via Recharts `ResponsiveContainer`
+
+### Changed
+
+### Changed — Curated Dashboard: Summary-First Chart Layout
+- **Reduced from 10 charts → 4 core summary charts**: Top Makes, Price Distribution, Value Trend, Powertrain Composition + Premium Leaderboard
+- **Removed** Performance vs Scatter, Body Type Bar, Age Distribution, Volatility Box, Top Models — these were niche/redundant and added clutter
+- **Replaced BODY TYPES KPI** with AVG MARKET PRICE (uses `overview.averageMarketPrice`) for better summary value
+- **Tighter spacing**: grid gap reduced from 6 to 5 for a more compact, scannable layout
+- **Bundle savings**: ~17 KB removed via tree-shaking of unused chart imports
+- Cleaned up unused destructured analytics data and icon imports
+
+### Changed — Fully Cross-Constrained Vehicle Filters
+
+### Changed — Fully Cross-Constrained Vehicle Filters
+- **All 10 filter dimensions now cross-constrain each other** — selecting any filter (Year, Make, Model, Body Type, Transmission, Category, Drive Type, Spec, Powertrain, Vehicle Type) narrows the available options in ALL other filters to only compatible values
+- **Tuple-based constraint engine** — builds all valid (year, make, model) combinations from the hierarchy and filters them against every selected filter simultaneously, with each dropdown's available options computed by excluding its own filter (so it shows all compatible values, not just the one already picked)
+- **Case-insensitive matching** — all filter comparisons are case-insensitive to handle mixed-case hierarchy data
+- **Body Type handled specially** — correctly resolves both spec-qualified (`year-make-model-spec`) and unqualified hierarchy keys
+
+### Changed — Unified Premium Loading Screen & Dashboard Loading
+- **Enhanced `LoadingScreen` component** — upgraded to a premium glowing gradient (purple→orange) progress bar with stronger glow effects, purple/orange scanning rings, radial inner glow, and ambient orbs for a cohesive brand experience
+- **Replaced dashboard skeleton loading** — `AdminDashboardPage` now uses the `LoadingScreen` instead of inline skeleton/pulse animations, ensuring a consistent full-screen loader across Landing, Valuation, and Admin pages
+- **Removed unused `KPICardSkeleton`** — cleaned up dead code from the dashboard after the loading screen replacement
+- **Persistent lifecycle** — the `LoadingScreen` stays mounted without flickering until all initial API fetches resolve (analytics on landing, data source init on valuation, dashboard analytics on admin)
+
+### Changed — Vehicle Filter Bar: Independent Filters + Custom Styled Dropdowns
+- **All filters now independent** — Year/Make/Model no longer chain; users can select any filter in any order without being forced to pick a prerequisite first
+- **CustomSelect component** (`src/components/ui/custom-select.tsx`) — replaced native `<select>` with a fully styled dropdown: search input, animated panel, click-outside-close, keyboard navigation, dark-mode aware
+- All 10 filter dropdowns (Year, Make, Model, Body Type, Transmission, Category, Drive Type, Spec, Powertrain, Vehicle Type) now use the custom dropdown with matching rounded-xl borders and consistent styling
+- Price inputs matched to the new dropdown height (h-10) and rounded-xl style for visual consistency
+
+### Added — Table/Card View Toggle For Missing Vehicles & Price Suggestions
+- **AdminMissingVehiclesPage** — added `MissingVehicleCard` component with make/model header, spec grid, price range, requester info, and view toggle (`LayoutList`/`LayoutGrid`) between table and card grid modes
+- **AdminPriceSuggestionsPage** — added `PriceSuggestionCard` component with vehicle name, submitter, min/max price cards, source URL, comment preview, and view toggle between table and card grid modes
+- **Consistent pattern** — both pages follow the AdminVehiclesPage pattern: local `viewMode` state, segmented toggle, shared filters/pagination across views, identical loading/error/empty states in both modes
+- Removed summary metrics KPI cards from both pages (replaced by card view)
+- Removed unused imports (`AnimatePresence`, `Fuel`, `Cog`, `Shield`, `statusOptions` prop) to resolve TypeScript strict-mode errors
+
+## 2026-07-14
+
+### Changed — Replaced Header Notification Pills With Unified Bell Icon Dropdown
+- **New `NotificationDropdown` component** (`src/components/ui/notification-dropdown.tsx`) — a unified Bell icon dropdown that replaces the three separate notification pills in the admin header
+- **Bell icon** with a pulsing red dot when any unread/pending notifications exist across Queries, Missing Vehicles, or Price Suggestions
+- **Three-section dropdown** with distinct accent colors: Queries (blue), Missing Vehicles (amber), Price Suggestions (emerald)
+- Each section shows its icon, pending count badge, and a preview text
+- Click-outside-to-close and Escape key support, with smooth Framer Motion animation
+- Clicking a section redirects to the specific admin page (e.g., `/admin/queries`) and closes the popover
+- Sidebar badges preserved for persistent awareness
+
+### Changed — `MessageSquare` Icon Removed From AdminLayout Imports
+- Replaced with the new `NotificationDropdown` component in the header area
+
+### Fixed — Dashboard Chart Layout & Sizing
+- Added `w-full` to `LazyChart` wrapper div so `ResponsiveContainer` inside can properly calculate its parent width and fill the card
+- Reduced `TopMakesChart` right margin from 20 → 8 to eliminate wasted whitespace on the right
+- Reduced `PriceDistributionChart` right/left/bottom margins and increased X-axis label area (`height: 50 → 60`, `angle: -20 → -25`, `interval={0}`) so all rotated labels render without clipping
+- All other charts (6 remaining) untouched — no regressions
+
 ## 2026-07-13
+
+### Changed — KPI Cards On Dashboard Now Clickable
+- All 6 KPI cards (Total Vehicles, Makes, Models, Highest/Lowest Value, Avg Market Price) on the admin dashboard are now clickable and navigate to `/admin/vehicles`
+- Added `useNavigate`, `onClick` handlers, and keyboard accessibility (`tabIndex`, `role="button"`, `onKeyDown`)
+
+### Added — Table/Grid View Toggle On Vehicles Page
+- Added view toggle (Table / Grid) in the Vehicles page header using `LayoutList` / `LayoutGrid` icons
+- New `VehicleCard` component for the card/grid view showing: year badge, spec badge, make/model, engine, HP, transmission, drive type, body type, category, powertrain, and market price
+- Grid view uses responsive layout: `sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`
+- All existing functionality (filters, search, sorting, pagination, export CSV, detail dialog) preserved in both views
+- Extracted `VehiclesEmptyState` as a reusable component shared between table and grid views
 
 ### Added — Path B Scraper Microservice Postmortem
 - **`docs/path-b-scraper-microservice-postmortem.md`** (new) — Comprehensive retrospective documenting the scraper microservice

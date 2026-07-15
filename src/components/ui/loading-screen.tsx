@@ -1,59 +1,28 @@
-import { useState, useEffect } from 'react';
 import { cn } from '@utils';
 import { Car } from 'lucide-react';
 
 interface LoadingScreenProps {
   message?: string;
   className?: string;
-  onExited?: () => void;
 }
 
-export function LoadingScreen({ message = 'Loading...', className, onExited }: LoadingScreenProps) {
-  const [progress, setProgress] = useState(0);
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => {
-    const duration = 2500;
-    const interval = 30;
-    const step = 100 / (duration / interval);
-
-    const timer = setInterval(() => {
-      setProgress((prev) => {
-        const next = prev + step;
-        if (next >= 100) {
-          clearInterval(timer);
-          return 100;
-        }
-        return next;
-      });
-    }, interval);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    if (progress >= 100) {
-      const timeout = setTimeout(() => {
-        setVisible(false);
-        onExited?.();
-      }, 400);
-      return () => clearTimeout(timeout);
-    }
-  }, [progress, onExited]);
-
-  if (!visible) return null;
-
+/**
+ * LoadingScreen — Premium full-screen loading overlay.
+ *
+ * Features a glowing purple→orange gradient progress bar, animated
+ * scanning rings, ambient glow orbs, and the brand car icon.
+ */
+export function LoadingScreen({ message = 'Loading...', className }: LoadingScreenProps) {
   return (
     <div
       className={cn(
-        'fixed inset-0 z-50 flex flex-col items-center justify-center bg-background transition-opacity duration-500',
-        progress >= 100 && 'opacity-0',
+        'fixed inset-0 z-50 flex flex-col items-center justify-center bg-background',
         className,
       )}
     >
       {/* Technical grid background */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.03]"
+        className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
           backgroundImage: `
             linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
@@ -63,44 +32,59 @@ export function LoadingScreen({ message = 'Loading...', className, onExited }: L
         }}
       />
 
-      {/* Ambient glow orbs */}
-      <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full bg-primary/8 blur-3xl" />
-      <div className="absolute bottom-1/3 right-1/4 h-56 w-56 rounded-full bg-accent/8 blur-3xl" />
+      {/* Ambient glow orbs — purple + orange */}
+      <div className="absolute left-1/4 top-1/4 h-80 w-80 rounded-full bg-violet-500/10 blur-3xl" />
+      <div className="absolute bottom-1/3 right-1/4 h-64 w-64 rounded-full bg-orange-500/8 blur-3xl" />
+      <div className="absolute bottom-1/4 left-1/3 h-48 w-48 rounded-full bg-fuchsia-500/6 blur-3xl" />
 
       <div className="relative flex flex-col items-center gap-8">
-        {/* Car icon with rotating ring */}
+        {/* Car icon with rotating rings */}
         <div className="relative flex items-center justify-center">
-          {/* Outer scanning ring */}
+          {/* Outer scanning ring — purple */}
           <div
-            className="absolute h-28 w-28 rounded-full border-2 border-primary/20"
+            className="absolute h-28 w-28 animate-spin rounded-full border-2"
             style={{
-              animation: 'spin 3s linear infinite',
-              borderTopColor: 'hsl(var(--primary))',
+              animationDuration: '3s',
+              borderColor: 'transparent',
+              borderTopColor: '#8B5CF6',
               borderRightColor: 'transparent',
               borderBottomColor: 'transparent',
               borderLeftColor: 'transparent',
+              filter: 'drop-shadow(0 0 6px rgba(139, 92, 246, 0.4))',
             }}
           />
+          {/* Middle scanning ring — orange */}
           <div
-            className="absolute h-24 w-24 rounded-full border border-primary/10"
+            className="absolute h-24 w-24 animate-spin rounded-full border"
             style={{
-              animation: 'spin 2s linear infinite reverse',
-              borderTopColor: 'hsl(var(--accent))',
+              animationDuration: '2s',
+              animationDirection: 'reverse',
+              borderColor: 'transparent',
+              borderTopColor: '#F97316',
               borderRightColor: 'transparent',
               borderBottomColor: 'transparent',
               borderLeftColor: 'transparent',
+              filter: 'drop-shadow(0 0 6px rgba(249, 115, 22, 0.3))',
+            }}
+          />
+          {/* Inner glow ring */}
+          <div
+            className="absolute h-20 w-20 rounded-full"
+            style={{
+              background:
+                'radial-gradient(circle, rgba(139,92,246,0.15) 0%, rgba(249,115,22,0.05) 50%, transparent 70%)',
             }}
           />
 
           {/* Car icon */}
           <div className="animate-bounce-gentle">
-            <Car className="h-16 w-16 text-primary drop-shadow-[0_0_15px_hsl(var(--primary)/0.35)]" />
+            <Car className="h-16 w-16 text-violet-600 drop-shadow-[0_0_20px_rgba(139,92,246,0.35)] dark:text-violet-400" />
           </div>
         </div>
 
         {/* Brand title with tagline */}
         <div className="space-y-1 text-center">
-          <p className="gradient-text text-lg font-bold tracking-tight">
+          <p className="text-lg font-bold tracking-tight text-foreground">
             Vehicle Pricing Intelligence Platform
           </p>
           <p className="text-xs tracking-widest text-muted-foreground/60 uppercase">
@@ -108,19 +92,25 @@ export function LoadingScreen({ message = 'Loading...', className, onExited }: L
           </p>
         </div>
 
-        {/* Progress bar with percentage */}
+        {/* Glowing indeterminate progress bar — purple → orange */}
         <div className="w-72 space-y-3">
-          <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
+          <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-primary via-accent to-primary transition-all duration-75 ease-out"
-              style={{ width: `${progress}%` }}
+              className="absolute inset-0 h-full rounded-full"
+              style={{
+                background: 'linear-gradient(90deg, #8B5CF6 0%, #A855F7 30%, #F97316 70%, #F59E0B 100%)',
+                animation: 'indeterminate-bar 1.8s ease-in-out infinite',
+                width: '40%',
+                boxShadow: '0 0 12px rgba(139, 92, 246, 0.4), 0 0 24px rgba(249, 115, 22, 0.2)',
+              }}
             />
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-center gap-2">
+            <span
+              className="inline-block h-1.5 w-1.5 animate-pulse rounded-full"
+              style={{ backgroundColor: '#8B5CF6' }}
+            />
             <p className="text-sm text-muted-foreground">{message}</p>
-            <span className="text-xs font-medium text-muted-foreground tabular-nums">
-              {Math.round(progress)}%
-            </span>
           </div>
         </div>
       </div>

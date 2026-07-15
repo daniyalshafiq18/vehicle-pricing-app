@@ -7,8 +7,10 @@ import {
   Badge,
   Dialog,
   SkeletonTable,
-  Select,
-  type SelectOption,
+  Card,
+  CardContent,
+  CustomSelect,
+  type CustomSelectOption,
 } from '@components/ui';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -34,6 +36,9 @@ import {
   Minus,
   AlertCircle,
   Zap,
+  LayoutList,
+  LayoutGrid,
+  Car,
 } from 'lucide-react';
 import type { Vehicle } from '@types';
 import { formatCurrency, formatNumber, cn } from '@utils';
@@ -277,109 +282,225 @@ function FilterBar({
   const { data: hierarchy } = useVehicleHierarchy();
   const [expanded, setExpanded] = useState(false);
 
-  const yearOptions: SelectOption[] = useMemo(
-    () => (hierarchy?.years ?? []).map((y) => ({ value: String(y), label: String(y) })),
-    [hierarchy],
-  );
+  // ── Build all valid (year, make, model) tuples from hierarchy ──────
 
-  const makeOptions: SelectOption[] = useMemo(() => {
+  const allTuples: Array<{ year: number; make: string; model: string }> =
+    useMemo(() => {
+      if (!hierarchy) return [];
+      const result: Array<{ year: number; make: string; model: string }> = [];
+      for (const year of hierarchy.years) {
+        const makes = hierarchy.makes[year] ?? [];
+        for (const make of makes) {
+          const mk = `${year}-${make.toLowerCase()}`;
+          const models = hierarchy.models[mk] ?? [];
+          for (const model of models) {
+            result.push({ year, make, model });
+          }
+        }
+      }
+      return result;
+    }, [hierarchy]);
+
+  // ── Helper: filter tuples by ALL selected filters, optionally
+  //    excluding one dimension so that its dropdown shows all
+  //    compatible values (not just the already-selected one).
+  //
+  function filterTuples(
+    tuples: typeof allTuples,
+    excludeDim?: string,
+  ): typeof allTuples {
     if (!hierarchy) return [];
-    const allMakes = new Set<string>();
-    Object.values(hierarchy.makes).forEach((makes) => makes.forEach((m) => allMakes.add(m)));
-    return [...allMakes].sort().map((m) => ({ value: m, label: m }));
-  }, [hierarchy]);
 
-  const modelOptions: SelectOption[] = useMemo(() => {
-    if (!hierarchy || !filters.year) return [];
-    const year = Number(filters.year);
-    if (filters.make) {
-      const key = `${year}-${filters.make.toLowerCase()}`;
-      return (hierarchy.models[key] ?? []).map((m) => ({ value: m, label: m }));
-    }
-    const models = hierarchy.makes[year]?.flatMap((make) => {
-      const key = `${year}-${make.toLowerCase()}`;
-      return hierarchy.models[key] ?? [];
-    }) ?? [];
-    return [...new Set(models)].sort().map((m) => ({ value: m, label: m }));
-  }, [hierarchy, filters.year, filters.make]);
+    return tuples.filter((t) => {
+      const k = `${t.year}-${t.make.toLowerCase()}-${t.model.toLowerCase()}`;
 
-  // ── Constrained filter options from hierarchy ────────────────
+      // Year / Make / Model (case-insensitive match)
+      if (
+        filters.year &&
+        excludeDim !== 'year' &&
+        String(t.year) !== filters.year
+      ) return false;
+      if (
+        filters.make &&
+        excludeDim !== 'make' &&
+        t.make.toLowerCase() !== filters.make.toLowerCase()
+      ) return false;
+      if (
+        filters.model &&
+        excludeDim !== 'model' &&
+        t.model.toLowerCase() !== filters.model.toLowerCase()
+      ) return false;
 
-  const propKey = filters.year && filters.make && filters.model
-    ? `${filters.year}-${filters.make.toLowerCase()}-${filters.model.toLowerCase()}`
-    : null;
+      // Spec
+      if (filters.spec && excludeDim !== 'spec') {
+        const vals = hierarchy.specs[k] ?? [];
+        if (!vals.some((v) => v.toLowerCase() === filters.spec!.toLowerCase())) return false;
+      }
 
-  const bodyTypeOptions: SelectOption[] = useMemo(() => {
+      // Transmission
+      if (filters.transmission && excludeDim !== 'transmission') {
+        const vals = hierarchy.transmissions[k] ?? [];
+        if (!vals.some((v) => v.toLowerCase() === filters.transmission!.toLowerCase())) return false;
+      }
+
+      // Drive Type
+      if (filters.driveType && excludeDim !== 'driveType') {
+        const vals = hierarchy.driveTypes[k] ?? [];
+        if (!vals.some((v) => v.toLowerCase() === filters.driveType!.toLowerCase())) return false;
+      }
+
+      // Category
+      if (filters.category && excludeDim !== 'category') {
+        const vals = hierarchy.categories[k] ?? [];
+        if (!vals.some((v) => v.toLowerCase() === filters.category!.toLowerCase())) return false;
+      }
+
+      // Powertrain
+      if (filters.powertrain && excludeDim !== 'powertrain') {
+        const vals = hierarchy.powertrains[k] ?? [];
+        if (!vals.some((v) => v.toLowerCase() === filters.powertrain!.toLowerCase())) return false;
+      }
+
+      // Vehicle Type
+      if (filters.vehicleType && excludeDim !== 'vehicleType') {
+        const vals = hierarchy.vehicleTypes[k] ?? [];
+        if (!vals.some((v) => v.toLowerCase() === filters.vehicleType!.toLowerCase())) return false;
+      }
+
+      // Body Type — try both spec-qualified and unqualified keys
+      if (filters.bodyType && excludeDim !== 'bodyType') {
+        let body: string[] = [];
+        if (filters.spec) {
+          body = hierarchy.bodyTypes[`${k}-${filters.spec.toLowerCase()}`] ?? [];
+        }
+        if (body.length === 0) {
+          body = hierarchy.bodyTypes[k] ?? [];
+        }
+        if (!body.some((v) => v.toLowerCase() === filters.bodyType!.toLowerCase())) return false;
+      }
+
+      return true;
+    });
+  }
+
+  // ── Memoised constrained options for every dimension ─────────────
+
+  const yearOptions: CustomSelectOption[] = useMemo(() => {
     if (!hierarchy) return [];
-    if (filters.year && filters.make && filters.model && filters.spec) {
-      const key = `${filters.year}-${filters.make.toLowerCase()}-${filters.model.toLowerCase()}-${filters.spec.toLowerCase()}`;
-      return (hierarchy.bodyTypes[key] ?? []).map((b) => ({ value: b, label: b }));
-    }
-    const all = new Set<string>();
-    Object.values(hierarchy.bodyTypes).forEach((arr) => arr.forEach((b) => all.add(b)));
-    return [...all].sort().map((b) => ({ value: b, label: b }));
-  }, [hierarchy, filters.year, filters.make, filters.model, filters.spec]);
+    const matched = filterTuples(allTuples, 'year');
+    const vals = new Set(matched.map((t) => String(t.year)));
+    return [...vals].sort().map((v) => ({ value: v, label: v }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allTuples, hierarchy, JSON.stringify(filters)]);
 
-  const specOptions: SelectOption[] = useMemo(() => {
+  const makeOptions: CustomSelectOption[] = useMemo(() => {
     if (!hierarchy) return [];
-    if (filters.year && filters.make && filters.model) {
-      const key = `${filters.year}-${filters.make.toLowerCase()}-${filters.model.toLowerCase()}`;
-      return (hierarchy.specs[key] ?? []).map((s) => ({ value: s, label: s }));
-    }
-    const all = new Set<string>();
-    Object.values(hierarchy.specs).forEach((arr) => arr.forEach((s) => all.add(s)));
-    return [...all].sort().map((s) => ({ value: s, label: s }));
-  }, [hierarchy, filters.year, filters.make, filters.model]);
+    const matched = filterTuples(allTuples, 'make');
+    const vals = new Set(matched.map((t) => t.make));
+    return [...vals].sort().map((v) => ({ value: v, label: v }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allTuples, hierarchy, JSON.stringify(filters)]);
 
-  const transmissionOptions: SelectOption[] = useMemo(() => {
+  const modelOptions: CustomSelectOption[] = useMemo(() => {
     if (!hierarchy) return [];
-    if (propKey && hierarchy.transmissions[propKey]) {
-      return hierarchy.transmissions[propKey].map((t) => ({ value: t, label: t }));
-    }
-    const all = new Set<string>();
-    Object.values(hierarchy.transmissions).forEach((arr) => arr.forEach((t) => all.add(t)));
-    return [...all].sort().map((t) => ({ value: t, label: t }));
-  }, [hierarchy, propKey]);
+    const matched = filterTuples(allTuples, 'model');
+    const vals = new Set(matched.map((t) => t.model));
+    return [...vals].sort().map((v) => ({ value: v, label: v }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allTuples, hierarchy, JSON.stringify(filters)]);
 
-  const driveTypeOptions: SelectOption[] = useMemo(() => {
+  const specOptions: CustomSelectOption[] = useMemo(() => {
     if (!hierarchy) return [];
-    if (propKey && hierarchy.driveTypes[propKey]) {
-      return hierarchy.driveTypes[propKey].map((d) => ({ value: d, label: d }));
+    const matched = filterTuples(allTuples, 'spec');
+    const vals = new Set<string>();
+    for (const t of matched) {
+      const k = `${t.year}-${t.make.toLowerCase()}-${t.model.toLowerCase()}`;
+      const items = hierarchy.specs[k] ?? [];
+      items.forEach((v) => vals.add(v));
     }
-    const all = new Set<string>();
-    Object.values(hierarchy.driveTypes).forEach((arr) => arr.forEach((d) => all.add(d)));
-    return [...all].sort().map((d) => ({ value: d, label: d }));
-  }, [hierarchy, propKey]);
+    return [...vals].sort().map((v) => ({ value: v, label: v }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allTuples, hierarchy, JSON.stringify(filters)]);
 
-  const categoryOptions: SelectOption[] = useMemo(() => {
+  const transmissionOptions: CustomSelectOption[] = useMemo(() => {
     if (!hierarchy) return [];
-    if (propKey && hierarchy.categories[propKey]) {
-      return hierarchy.categories[propKey].map((c) => ({ value: c, label: c }));
+    const matched = filterTuples(allTuples, 'transmission');
+    const vals = new Set<string>();
+    for (const t of matched) {
+      const k = `${t.year}-${t.make.toLowerCase()}-${t.model.toLowerCase()}`;
+      const items = hierarchy.transmissions[k] ?? [];
+      items.forEach((v) => vals.add(v));
     }
-    const all = new Set<string>();
-    Object.values(hierarchy.categories).forEach((arr) => arr.forEach((c) => all.add(c)));
-    return [...all].sort().map((c) => ({ value: c, label: c }));
-  }, [hierarchy, propKey]);
+    return [...vals].sort().map((v) => ({ value: v, label: v }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allTuples, hierarchy, JSON.stringify(filters)]);
 
-  const powertrainOptions: SelectOption[] = useMemo(() => {
+  const driveTypeOptions: CustomSelectOption[] = useMemo(() => {
     if (!hierarchy) return [];
-    if (propKey && hierarchy.powertrains[propKey]) {
-      return hierarchy.powertrains[propKey].map((p) => ({ value: p, label: p }));
+    const matched = filterTuples(allTuples, 'driveType');
+    const vals = new Set<string>();
+    for (const t of matched) {
+      const k = `${t.year}-${t.make.toLowerCase()}-${t.model.toLowerCase()}`;
+      const items = hierarchy.driveTypes[k] ?? [];
+      items.forEach((v) => vals.add(v));
     }
-    const all = new Set<string>();
-    Object.values(hierarchy.powertrains).forEach((arr) => arr.forEach((p) => all.add(p)));
-    return [...all].sort().map((p) => ({ value: p, label: p }));
-  }, [hierarchy, propKey]);
+    return [...vals].sort().map((v) => ({ value: v, label: v }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allTuples, hierarchy, JSON.stringify(filters)]);
 
-  const vehicleTypeOptions: SelectOption[] = useMemo(() => {
+  const categoryOptions: CustomSelectOption[] = useMemo(() => {
     if (!hierarchy) return [];
-    if (propKey && hierarchy.vehicleTypes[propKey]) {
-      return hierarchy.vehicleTypes[propKey].map((v) => ({ value: v, label: v }));
+    const matched = filterTuples(allTuples, 'category');
+    const vals = new Set<string>();
+    for (const t of matched) {
+      const k = `${t.year}-${t.make.toLowerCase()}-${t.model.toLowerCase()}`;
+      const items = hierarchy.categories[k] ?? [];
+      items.forEach((v) => vals.add(v));
     }
-    const all = new Set<string>();
-    Object.values(hierarchy.vehicleTypes).forEach((arr) => arr.forEach((v) => all.add(v)));
-    return [...all].sort().map((v) => ({ value: v, label: v }));
-  }, [hierarchy, propKey]);
+    return [...vals].sort().map((v) => ({ value: v, label: v }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allTuples, hierarchy, JSON.stringify(filters)]);
+
+  const powertrainOptions: CustomSelectOption[] = useMemo(() => {
+    if (!hierarchy) return [];
+    const matched = filterTuples(allTuples, 'powertrain');
+    const vals = new Set<string>();
+    for (const t of matched) {
+      const k = `${t.year}-${t.make.toLowerCase()}-${t.model.toLowerCase()}`;
+      const items = hierarchy.powertrains[k] ?? [];
+      items.forEach((v) => vals.add(v));
+    }
+    return [...vals].sort().map((v) => ({ value: v, label: v }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allTuples, hierarchy, JSON.stringify(filters)]);
+
+  const vehicleTypeOptions: CustomSelectOption[] = useMemo(() => {
+    if (!hierarchy) return [];
+    const matched = filterTuples(allTuples, 'vehicleType');
+    const vals = new Set<string>();
+    for (const t of matched) {
+      const k = `${t.year}-${t.make.toLowerCase()}-${t.model.toLowerCase()}`;
+      const items = hierarchy.vehicleTypes[k] ?? [];
+      items.forEach((v) => vals.add(v));
+    }
+    return [...vals].sort().map((v) => ({ value: v, label: v }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allTuples, hierarchy, JSON.stringify(filters)]);
+
+  const bodyTypeOptions: CustomSelectOption[] = useMemo(() => {
+    if (!hierarchy) return [];
+    const matched = filterTuples(allTuples, 'bodyType');
+    const vals = new Set<string>();
+    for (const t of matched) {
+      const k = `${t.year}-${t.make.toLowerCase()}-${t.model.toLowerCase()}`;
+      const ymsk = filters.spec ? `${k}-${filters.spec.toLowerCase()}` : '';
+      const fromSpec = ymsk ? hierarchy.bodyTypes[ymsk] ?? [] : [];
+      const items = fromSpec.length > 0 ? fromSpec : (hierarchy.bodyTypes[k] ?? []);
+      items.forEach((v) => vals.add(v));
+    }
+    return [...vals].sort().map((v) => ({ value: v, label: v }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allTuples, hierarchy, JSON.stringify(filters)]);
 
   const hasActiveFilters = Object.values(filters).some((v) => v !== undefined);
   const activeFilterCount = Object.values(filters).filter((v) => v !== undefined).length;
@@ -399,45 +520,34 @@ function FilterBar({
 
   return (
     <div className="rounded-2xl border bg-card shadow-lg">
-      {/* Primary filters — always visible */}
+      {/* Primary filters — always visible, all independent */}
       <div className="p-4">
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-[140px]">
             <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Year</label>
-            <Select
+            <CustomSelect
               placeholder="All Years"
               options={yearOptions}
-              value={filters.year ?? ''}
-              onChange={(e) => {
-                const v = e.target.value;
-                onFilterChange('year', v || undefined);
-                onFilterChange('make', undefined);
-                onFilterChange('model', undefined);
-              }}
+              value={filters.year}
+              onChange={(v) => onFilterChange('year', v)}
             />
           </div>
           <div className="flex-1 min-w-[140px]">
             <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Make</label>
-            <Select
+            <CustomSelect
               placeholder="All Makes"
               options={makeOptions}
-              value={filters.make ?? ''}
-              onChange={(e) => {
-                const v = e.target.value;
-                onFilterChange('make', v || undefined);
-                onFilterChange('model', undefined);
-              }}
-              disabled={!filters.year}
+              value={filters.make}
+              onChange={(v) => onFilterChange('make', v)}
             />
           </div>
           <div className="flex-1 min-w-[140px]">
             <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Model</label>
-            <Select
+            <CustomSelect
               placeholder="All Models"
               options={modelOptions}
-              value={filters.model ?? ''}
-              onChange={(e) => onFilterChange('model', e.target.value || undefined)}
-              disabled={!filters.make}
+              value={filters.model}
+              onChange={(v) => onFilterChange('model', v)}
             />
           </div>
           <div className="flex items-center gap-2 pb-0.5">
@@ -484,44 +594,44 @@ function FilterBar({
               <div className="flex flex-wrap items-end gap-3">
                 <div className="flex-1 min-w-[140px]">
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Body Type</label>
-                  <Select placeholder="All Types" options={bodyTypeOptions} value={filters.bodyType ?? ''} onChange={(e) => onFilterChange('bodyType', e.target.value || undefined)} />
+                  <CustomSelect placeholder="All Types" options={bodyTypeOptions} value={filters.bodyType} onChange={(v) => onFilterChange('bodyType', v)} />
                 </div>
                 <div className="flex-1 min-w-[140px]">
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Transmission</label>
-                  <Select placeholder="All" options={transmissionOptions} value={filters.transmission ?? ''} onChange={(e) => onFilterChange('transmission', e.target.value || undefined)} />
+                  <CustomSelect placeholder="All" options={transmissionOptions} value={filters.transmission} onChange={(v) => onFilterChange('transmission', v)} />
                 </div>
                 <div className="flex-1 min-w-[140px]">
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Category</label>
-                  <Select placeholder="All" options={categoryOptions} value={filters.category ?? ''} onChange={(e) => onFilterChange('category', e.target.value || undefined)} />
+                  <CustomSelect placeholder="All" options={categoryOptions} value={filters.category} onChange={(v) => onFilterChange('category', v)} />
                 </div>
                 <div className="flex-1 min-w-[140px]">
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Drive Type</label>
-                  <Select placeholder="All" options={driveTypeOptions} value={filters.driveType ?? ''} onChange={(e) => onFilterChange('driveType', e.target.value || undefined)} />
+                  <CustomSelect placeholder="All" options={driveTypeOptions} value={filters.driveType} onChange={(v) => onFilterChange('driveType', v)} />
                 </div>
                 <div className="flex-1 min-w-[140px]">
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Spec</label>
-                  <Select placeholder="All" options={specOptions} value={filters.spec ?? ''} onChange={(e) => onFilterChange('spec', e.target.value || undefined)} />
+                  <CustomSelect placeholder="All" options={specOptions} value={filters.spec} onChange={(v) => onFilterChange('spec', v)} />
                 </div>
                 <div className="flex-1 min-w-[140px]">
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Powertrain</label>
-                  <Select placeholder="All" options={powertrainOptions} value={filters.powertrain ?? ''} onChange={(e) => onFilterChange('powertrain', e.target.value || undefined)} />
+                  <CustomSelect placeholder="All" options={powertrainOptions} value={filters.powertrain} onChange={(v) => onFilterChange('powertrain', v)} />
                 </div>
                 <div className="flex-1 min-w-[140px]">
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Vehicle Type</label>
-                  <Select placeholder="All" options={vehicleTypeOptions} value={filters.vehicleType ?? ''} onChange={(e) => onFilterChange('vehicleType', e.target.value || undefined)} />
+                  <CustomSelect placeholder="All" options={vehicleTypeOptions} value={filters.vehicleType} onChange={(v) => onFilterChange('vehicleType', v)} />
                 </div>
                 <div className="flex-1 min-w-[140px]">
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Min Price</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
-                    <input type="number" placeholder="No min" value={filters.minPrice ?? ''} onChange={(e) => onFilterChange('minPrice', e.target.value || undefined)} className="flex h-9 w-full rounded-lg border border-input bg-background pl-6 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+                    <input type="number" placeholder="No min" value={filters.minPrice ?? ''} onChange={(e) => onFilterChange('minPrice', e.target.value || undefined)} className="flex h-10 w-full rounded-xl border border-input bg-card pl-6 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                   </div>
                 </div>
                 <div className="flex-1 min-w-[140px]">
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Max Price</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
-                    <input type="number" placeholder="No max" value={filters.maxPrice ?? ''} onChange={(e) => onFilterChange('maxPrice', e.target.value || undefined)} className="flex h-9 w-full rounded-lg border border-input bg-background pl-6 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+                    <input type="number" placeholder="No max" value={filters.maxPrice ?? ''} onChange={(e) => onFilterChange('maxPrice', e.target.value || undefined)} className="flex h-10 w-full rounded-xl border border-input bg-card pl-6 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                   </div>
                 </div>
               </div>
@@ -558,9 +668,120 @@ function FilterBar({
     </div>
   );
 }
+// ─── Empty State ───────────────────────────────────────────────
+function VehiclesEmptyState({ onReset }: { onReset: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20">
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-muted">
+        <AlertCircle className="h-10 w-10 text-muted-foreground" />
+      </div>
+      <p className="text-lg font-medium text-foreground">No vehicles found</p>
+      <p className="mt-1 text-sm text-muted-foreground">Try adjusting your search or filters.</p>
+      <Button variant="outline" size="sm" onClick={onReset} className="mt-4">
+        <RotateCcw className="mr-1.5 h-3 w-3" />
+        Clear filters
+      </Button>
+    </div>
+  );
+}
+
+// ─── Vehicle Card (Grid View) ──────────────────────────────────
+function VehicleCard({ vehicle, pricing, onClick }: {
+  vehicle: Vehicle;
+  pricing?: import('@types').VehiclePricing;
+  onClick: () => void;
+}) {
+  const specBadgeColor = specColors[vehicle.spec] ?? '';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="group h-full"
+    >
+      <Card className="overflow-hidden border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 h-full">
+        {/* Gradient top bar */}
+        <div className="h-1 bg-gradient-to-r from-primary/60 via-accent/60 to-primary/30" />
+        <CardContent className="p-5 flex flex-col h-full">
+          {/* Header row: year + spec badge */}
+          <div className="flex items-center justify-between mb-4 shrink-0">
+            <span className="inline-flex items-center rounded-full border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-foreground">
+              {vehicle.year}
+            </span>
+            <Badge variant="outline" size="default" className={specBadgeColor}>
+              {vehicle.spec}
+            </Badge>
+          </div>
+
+          {/* Make & Model */}
+          <h3 className="text-lg font-bold text-foreground leading-tight">
+            {vehicle.make} {vehicle.model}
+          </h3>
+
+          {/* Details grid */}
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {[
+              { icon: Cpu, label: 'Engine', value: `${vehicle.engineSize}L` },
+              { icon: Gauge, label: 'HP', value: vehicle.horsepower },
+              { icon: Cog, label: 'Trans', value: vehicle.transmission },
+              { icon: Shield, label: 'Drive', value: vehicle.driveType },
+            ].map((spec) => (
+              <div key={spec.label} className="rounded-xl bg-muted/40 p-3 transition-colors hover:bg-muted/60">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <spec.icon className="h-3 w-3" />
+                  <span className="text-[10px]">{spec.label}</span>
+                </div>
+                <p className="mt-0.5 text-sm font-semibold text-foreground">{spec.value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Classification tags */}
+          <div className="mt-3 flex flex-wrap items-center gap-1.5 shrink-0">
+            <span className="inline-flex items-center rounded-lg border bg-card px-2 py-0.5 text-[10px] text-muted-foreground">
+              <Car className="mr-1 h-2.5 w-2.5" />
+              {vehicle.bodyType}
+            </span>
+            <span className="inline-flex items-center rounded-lg border bg-card px-2 py-0.5 text-[10px] text-muted-foreground">
+              <Layers className="mr-1 h-2.5 w-2.5" />
+              {vehicle.category}
+            </span>
+            <span className="inline-flex items-center rounded-lg border bg-card px-2 py-0.5 text-[10px] text-muted-foreground">
+              <Zap className="mr-1 h-2.5 w-2.5" />
+              {vehicle.powertrain}
+            </span>
+          </div>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Bottom: price + actions */}
+          <div className="mt-4 flex items-center justify-between border-t pt-4 shrink-0">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Market Price</p>
+              <p className="text-lg font-bold text-primary">
+                {pricing?.averagePrice ? formatCurrency(pricing.averagePrice) : '—'}
+              </p>
+              {pricing && (
+                <p className="text-[10px] text-muted-foreground">
+                  {formatCurrency(pricing.minimumPrice)} — {formatCurrency(pricing.maximumPrice)}
+                </p>
+              )}
+            </div>
+            <Button variant="ghost" size="icon-sm" title="View details" onClick={onClick}>
+              <Eye className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
 // ─── Main Page ───────────────────────────────────────────────
 export function AdminVehiclesPage() {
   const { filters, sort, page, pageSize, setSort, setPage, setPageSize, resetFilters } = useVehicleStore();
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [search, setSearch] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [localFilters, setLocalFilters] = useState<Record<string, string | undefined>>({
@@ -688,6 +909,35 @@ export function AdminVehiclesPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex items-center rounded-lg border bg-card p-0.5">
+            <button
+              onClick={() => setViewMode('table')}
+              className={cn(
+                'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
+                viewMode === 'table'
+                  ? 'bg-primary/10 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+              title="Table view"
+            >
+              <LayoutList className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Table</span>
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={cn(
+                'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
+                viewMode === 'grid'
+                  ? 'bg-primary/10 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+              title="Grid view"
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Grid</span>
+            </button>
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
             <Input
@@ -714,111 +964,138 @@ export function AdminVehiclesPage() {
         onReset={handleResetFilters}
       />
 
-      {/* Table card */}
-      <div className="rounded-2xl border bg-card">
-        {isLoading ? (
-          <div className="p-6">
-            <SkeletonTable rows={10} cols={9} />
-          </div>
-        ) : data?.vehicles && data.vehicles.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">#</th>
-                  <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('year')}>
-                      Year <SortIcon field="year" />
-                    </span>
-                  </th>
-                  <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('make')}>
-                      Make <SortIcon field="make" />
-                    </span>
-                  </th>
-                  <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('model')}>
-                      Model <SortIcon field="model" />
-                    </span>
-                  </th>
-                  <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">Spec</th>
-                  <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">Body</th>
-                  <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">Engine</th>
-                  <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">HP</th>
-                  <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('price')}>
-                      Price <SortIcon field="price" />
-                    </span>
-                  </th>
-                  <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {data.vehicles.map((vehicle, i) => (
-                  <tr
-                    key={vehicle.id}
-                    className="group/row transition-colors hover:bg-muted/50"
-                  >
-                    <td className="px-4 py-3 text-center text-xs text-muted-foreground">
-                      {(page - 1) * pageSize + i + 1}
-                    </td>
-                    <td className="px-4 py-3 text-center font-semibold text-foreground">
-                      {vehicle.year}
-                    </td>
-                    <td className="px-4 py-3 text-center font-medium text-foreground">
-                      {vehicle.make}
-                    </td>
-                    <td className="px-4 py-3 text-center text-foreground">
-                      {vehicle.model}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <Badge variant="outline" size="default" className={specColors[vehicle.spec] ?? ''}>
-                        {vehicle.spec}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 text-center text-xs text-foreground">
-                      {vehicle.bodyType}
-                    </td>
-                    <td className="px-4 py-3 text-center text-xs text-muted-foreground">
-                      {vehicle.engineSize}L
-                    </td>
-                    <td className="px-4 py-3 text-center text-xs text-muted-foreground">
-                      {vehicle.horsepower}
-                    </td>
-                    <td className="px-4 py-3 text-center font-medium text-foreground">
-                      {pricingMap?.get(vehicle.id)?.averagePrice ? formatCurrency(pricingMap.get(vehicle.id)!.averagePrice) : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon-sm" title="View details" onClick={() => setSelectedVehicle(vehicle)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-20">
-            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-muted">
-              <AlertCircle className="h-10 w-10 text-muted-foreground" />
+      {/* Table / Grid toggle */}
+      {viewMode === 'table' ? (
+        /* ── Table View ── */
+        <div className="rounded-2xl border bg-card">
+          {isLoading ? (
+            <div className="p-6">
+              <SkeletonTable rows={10} cols={9} />
             </div>
-            <p className="text-lg font-medium text-foreground">No vehicles found</p>
-            <p className="mt-1 text-sm text-muted-foreground">Try adjusting your search or filters.</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleResetFilters}
-              className="mt-4"
-            >
-              <RotateCcw className="mr-1.5 h-3 w-3" />
-              Clear filters
-            </Button>
-          </div>
-        )}
-      </div>
+          ) : data?.vehicles && data.vehicles.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">#</th>
+                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('year')}>
+                        Year <SortIcon field="year" />
+                      </span>
+                    </th>
+                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('make')}>
+                        Make <SortIcon field="make" />
+                      </span>
+                    </th>
+                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('model')}>
+                        Model <SortIcon field="model" />
+                      </span>
+                    </th>
+                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">Spec</th>
+                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">Body</th>
+                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">Engine</th>
+                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">HP</th>
+                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('price')}>
+                        Price <SortIcon field="price" />
+                      </span>
+                    </th>
+                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {data.vehicles.map((vehicle, i) => (
+                    <tr
+                      key={vehicle.id}
+                      className="group/row transition-colors hover:bg-muted/50"
+                    >
+                      <td className="px-4 py-3 text-center text-xs text-muted-foreground">
+                        {(page - 1) * pageSize + i + 1}
+                      </td>
+                      <td className="px-4 py-3 text-center font-semibold text-foreground">
+                        {vehicle.year}
+                      </td>
+                      <td className="px-4 py-3 text-center font-medium text-foreground">
+                        {vehicle.make}
+                      </td>
+                      <td className="px-4 py-3 text-center text-foreground">
+                        {vehicle.model}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <Badge variant="outline" size="default" className={specColors[vehicle.spec] ?? ''}>
+                          {vehicle.spec}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-center text-xs text-foreground">
+                        {vehicle.bodyType}
+                      </td>
+                      <td className="px-4 py-3 text-center text-xs text-muted-foreground">
+                        {vehicle.engineSize}L
+                      </td>
+                      <td className="px-4 py-3 text-center text-xs text-muted-foreground">
+                        {vehicle.horsepower}
+                      </td>
+                      <td className="px-4 py-3 text-center font-medium text-foreground">
+                        {pricingMap?.get(vehicle.id)?.averagePrice ? formatCurrency(pricingMap.get(vehicle.id)!.averagePrice) : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon-sm" title="View details" onClick={() => setSelectedVehicle(vehicle)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <VehiclesEmptyState onReset={handleResetFilters} />
+          )}
+        </div>
+      ) : (
+        /* ── Grid / Card View ── */
+        <div className="rounded-2xl">
+          {isLoading ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="h-[320px] animate-pulse rounded-2xl border bg-card p-5">
+                  <div className="mb-4 h-4 w-20 rounded bg-muted" />
+                  <div className="mb-2 h-6 w-40 rounded bg-muted" />
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    {Array.from({ length: 4 }).map((_, j) => (
+                      <div key={j} className="h-16 rounded-xl bg-muted/50" />
+                    ))}
+                  </div>
+                  <div className="mt-3 h-4 w-24 rounded bg-muted/50" />
+                  <div className="mt-4 flex items-center justify-between pt-4">
+                    <div className="h-8 w-24 rounded bg-muted" />
+                    <div className="h-8 w-8 rounded bg-muted" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : data?.vehicles && data.vehicles.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {data.vehicles.map((vehicle) => (
+                <VehicleCard
+                  key={vehicle.id}
+                  vehicle={vehicle}
+                  pricing={pricingMap?.get(vehicle.id)}
+                  onClick={() => setSelectedVehicle(vehicle)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border bg-card">
+              <VehiclesEmptyState onReset={handleResetFilters} />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Pagination */}
       <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">

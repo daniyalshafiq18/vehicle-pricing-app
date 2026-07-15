@@ -5,6 +5,7 @@ import { useValuation, useSaveInquiry, useUpsertMissingVehicleRequest, useUpsert
 import { useVehicleStore } from '@stores';
 import type { Inquiry } from '@types';
 import { Button, Card, CardContent, Badge, Skeleton, Dialog } from '@components/ui';
+import { VehicleSelect } from './components/VehicleSelect';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
@@ -356,7 +357,7 @@ export function Step3Result() {
           }}
           title=""
           description=""
-          size="md"
+          size="lg"
           hideCloseButton
         >
           {/* Step indicator */}
@@ -417,54 +418,58 @@ export function Step3Result() {
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Additional Details
                 </p>
-                <div className="grid grid-cols-4 gap-3">
-                  <select
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+                  <VehicleSelect
                     value={requestCylinders}
-                    onChange={(e) => setRequestCylinders(e.target.value)}
-                    className="h-9 rounded-lg border bg-background px-3 text-xs outline-none focus:border-primary/50"
-                  >
-                    <option value="">Cylinders</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="8">8</option>
-                    <option value="10">10</option>
-                    <option value="12">12</option>
-                    <option value="16">16</option>
-                  </select>
-                  <select
+                    onChange={setRequestCylinders}
+                    placeholder="Cylinders"
+                    searchable={false}
+                    options={[
+                      { value: '3', label: '3' },
+                      { value: '4', label: '4' },
+                      { value: '5', label: '5' },
+                      { value: '6', label: '6' },
+                      { value: '8', label: '8' },
+                      { value: '10', label: '10' },
+                      { value: '12', label: '12' },
+                      { value: '16', label: '16' },
+                    ]}
+                  />
+                  <VehicleSelect
                     value={requestFuelType}
-                    onChange={(e) => setRequestFuelType(e.target.value)}
-                    className="h-9 rounded-lg border bg-background px-3 text-xs outline-none focus:border-primary/50"
-                  >
-                    <option value="">Fuel Type</option>
-                    <option value="Electric">Electric</option>
-                    <option value="Hybrid">Hybrid</option>
-                    <option value="Petrol/Diesel">Petrol/Diesel</option>
-                  </select>
-                  <select
+                    onChange={setRequestFuelType}
+                    placeholder="Fuel Type"
+                    searchable={false}
+                    options={[
+                      { value: 'Electric', label: 'Electric' },
+                      { value: 'Hybrid', label: 'Hybrid' },
+                      { value: 'Petrol/Diesel', label: 'Petrol/Diesel' },
+                    ]}
+                  />
+                  <VehicleSelect
                     value={requestTransmissionType}
-                    onChange={(e) => setRequestTransmissionType(e.target.value)}
-                    className="h-9 rounded-lg border bg-background px-3 text-xs outline-none focus:border-primary/50"
-                  >
-                    <option value="">Transmission</option>
-                    <option value="Automatic">Automatic</option>
-                    <option value="Manual">Manual</option>
-                    <option value="CVT">CVT</option>
-                  </select>
-                  <select
+                    onChange={setRequestTransmissionType}
+                    placeholder="Transmission"
+                    searchable={false}
+                    options={[
+                      { value: 'Automatic', label: 'Automatic' },
+                      { value: 'Manual', label: 'Manual' },
+                      { value: 'CVT', label: 'CVT' },
+                    ]}
+                  />
+                  <VehicleSelect
                     value={requestDriveType}
-                    onChange={(e) => setRequestDriveType(e.target.value)}
-                    className="h-9 rounded-lg border bg-background px-3 text-xs outline-none focus:border-primary/50"
-                  >
-                    <option value="">Drive Type</option>
-                    <option value="4X4">4X4</option>
-                    <option value="AWD">AWD</option>
-                    <option value="FWD">FWD</option>
-                    <option value="RWD">RWD</option>
-                    <option value="Unknown">Unknown</option>
-                  </select>
+                    onChange={setRequestDriveType}
+                    placeholder="Drive Type"
+                    searchable={false}
+                    options={[
+                      { value: '4X4', label: '4X4' },
+                      { value: 'AWD', label: 'AWD' },
+                      { value: 'FWD', label: 'FWD' },
+                      { value: 'RWD', label: 'RWD' },
+                      { value: 'Unknown', label: 'Unknown' },
+                    ]}
+                  />
                 </div>
               </div>
 

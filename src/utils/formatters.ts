@@ -25,6 +25,15 @@ export function formatPercentage(value: number, decimals = 1): string {
 }
 
 /**
+ * Compact number formatting for chart axes (1.5M, 55k, 320).
+ */
+export function compactNumber(value: number): string {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1).replace(/\.0$/, '')}k`;
+  return value.toLocaleString();
+}
+
+/**
  * Truncate text with ellipsis.
  */
 export function truncate(text: string, maxLength: number): string {

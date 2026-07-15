@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { usePriceSuggestions, useUpdatePriceSuggestion, useUpdatePriceSuggestionStatus, usePriceSuggestionStatusOptions } from '@hooks';
-import { Button, Dialog, SkeletonTable } from '@components/ui';
+import { Button, Dialog, SkeletonTable, Card as UICard, CardContent } from '@components/ui';
 import { motion } from 'framer-motion';
 import {
   DollarSign,
@@ -17,6 +17,9 @@ import {
   XCircle,
   Edit,
   Clock,
+  LayoutList,
+  LayoutGrid,
+  User,
 } from 'lucide-react';
 import type { PriceSuggestion } from '@types';
 import type { PicklistOption } from '@lib/optionSetApi';
@@ -215,10 +218,10 @@ function PriceSuggestionDetailModal({
       onClose={onClose}
       title=""
       description=""
-      size="md"
+      size="lg"
       hideCloseButton
     >
-      <div className="flex max-h-[75vh] flex-col gap-0">
+      <div className="flex max-h-[85vh] flex-col gap-0">
         {/* Header */}
         <div className="shrink-0 -mx-6 -mt-6 rounded-t-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 pb-4 pt-5">
           <div className="flex items-start justify-between">
@@ -360,6 +363,130 @@ function PriceSuggestionDetailModal({
   );
 }
 
+// ─── Price Suggestion Card (Card View) ─────────────────────────────
+
+function PriceSuggestionCard({
+  suggestion,
+  onClick,
+}: {
+  suggestion: PriceSuggestion;
+  onClick: () => void;
+}) {
+  const statusLabel = suggestion.status || 'Pending';
+  const visual = suggestion.statusValue != null ? STATUS_VISUALS[suggestion.statusValue] : null;
+
+  const statusClassName = visual?.className ?? 'text-muted-foreground bg-muted/30 border-muted';
+  const statusDot = visual?.dot ?? 'bg-muted-foreground/40';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="group h-full"
+    >
+      <UICard className="overflow-hidden border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 h-full">
+        <div className="h-1 bg-gradient-to-r from-emerald-500/60 via-emerald-400/60 to-emerald-500/30" />
+        <CardContent className="p-5 flex flex-col h-full">
+          {/* Header: vehicle name + status */}
+          <div className="flex items-start justify-between mb-4 shrink-0 gap-3">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-lg font-bold text-foreground leading-tight truncate">
+                {suggestion.vehicleName || suggestion.vehicleId || 'Unknown Vehicle'}
+              </h3>
+              {suggestion.submittedBy && (
+                <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                  <User className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{suggestion.submittedBy}</span>
+                </p>
+              )}
+            </div>
+            <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium shrink-0', statusClassName)}>
+              <span className={cn('h-1.5 w-1.5 rounded-full', statusDot)} />
+              {statusLabel}
+            </span>
+          </div>
+
+          {/* Price details */}
+          <div className="flex items-stretch gap-3">
+            <div className="flex-1 rounded-xl border bg-gradient-to-br from-emerald-500/10 to-transparent p-3.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Min Price</p>
+              <p className="mt-1 text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                {suggestion.minPrice ? formatCurrency(suggestion.minPrice) : '—'}
+              </p>
+            </div>
+            <div className="flex-1 rounded-xl border bg-gradient-to-br from-blue-500/10 to-transparent p-3.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Max Price</p>
+              <p className="mt-1 text-lg font-bold text-blue-600 dark:text-blue-400">
+                {suggestion.maxPrice ? formatCurrency(suggestion.maxPrice) : '—'}
+              </p>
+            </div>
+          </div>
+
+          {/* Source URL */}
+          {suggestion.sourceUrl && (
+            <div className="mt-3 rounded-xl bg-muted/40 p-3 shrink-0">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Source</p>
+              <p className="mt-0.5 truncate text-xs text-primary">{suggestion.sourceUrl}</p>
+            </div>
+          )}
+
+          {/* Comment preview */}
+          {suggestion.comment && (
+            <div className="mt-2 shrink-0">
+              <p className="text-xs text-muted-foreground line-clamp-2 italic">
+                &ldquo;{suggestion.comment}&rdquo;
+              </p>
+            </div>
+          )}
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Footer: date + action */}
+          <div className="mt-3 flex items-center justify-between border-t pt-3 shrink-0">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Submitted</p>
+              <p className="text-xs text-foreground">
+                {suggestion.createdOn
+                  ? new Date(suggestion.createdOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                  : '—'}
+              </p>
+            </div>
+            <Button variant="ghost" size="icon-sm" title="View details" onClick={onClick}>
+              <Eye className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </UICard>
+    </motion.div>
+  );
+}
+
+// ─── Card View Skeleton ────────────────────────────────────────────
+
+function PriceSuggestionCardSkeleton() {
+  return (
+    <div className="h-[340px] animate-pulse rounded-2xl border bg-card p-5">
+      <div className="mb-4 flex items-start justify-between">
+        <div className="space-y-2">
+          <div className="h-6 w-40 rounded bg-muted" />
+          <div className="h-4 w-28 rounded bg-muted" />
+        </div>
+        <div className="h-6 w-20 rounded-full bg-muted" />
+      </div>
+      <div className="flex gap-3">
+        <div className="flex-1 h-[88px] rounded-xl bg-muted/50" />
+        <div className="flex-1 h-[88px] rounded-xl bg-muted/50" />
+      </div>
+      <div className="mt-3 h-[60px] rounded-xl bg-muted/50" />
+      <div className="mt-3 flex items-center justify-between border-t pt-3">
+        <div className="h-4 w-28 rounded bg-muted" />
+        <div className="h-8 w-8 rounded bg-muted" />
+      </div>
+    </div>
+  );
+}
+
 // ─── Animations ──────────────────────────────────────────────────
 
 const containerVariants = {
@@ -374,6 +501,7 @@ const itemVariants = {
 // ─── Main Page ───────────────────────────────────────────────────
 
 export function AdminPriceSuggestionsPage() {
+  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [search, setSearch] = useState('');
   const [selectedSuggestion, setSelectedSuggestion] = useState<PriceSuggestion | null>(null);
   const [page, setPage] = useState(1);
@@ -474,6 +602,35 @@ export function AdminPriceSuggestionsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex items-center rounded-lg border bg-card p-0.5">
+              <button
+                onClick={() => setViewMode('table')}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
+                  viewMode === 'table'
+                    ? 'bg-primary/10 text-primary shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+                title="Table view"
+              >
+                <LayoutList className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Table</span>
+              </button>
+              <button
+                onClick={() => setViewMode('card')}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
+                  viewMode === 'card'
+                    ? 'bg-primary/10 text-primary shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+                title="Card view"
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Card</span>
+              </button>
+            </div>
             <div className="relative">
               <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
               <input
@@ -526,147 +683,223 @@ export function AdminPriceSuggestionsPage() {
         </div>
       </motion.div>
 
-      {/* Table card */}
-      <motion.div variants={itemVariants}>
-        <div className="rounded-2xl border bg-card overflow-hidden">
-          {/* Gradient top bar */}
-          <div className="h-1 bg-gradient-to-r from-primary/60 via-accent/60 to-primary/30" />
+      {/* ── Table View ── */}
+      {viewMode === 'table' && (
+        <motion.div
+          key="table-view"
+          variants={itemVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <div className="rounded-2xl border bg-card overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-primary/60 via-accent/60 to-primary/30" />
 
-          {isLoading ? (
-            <div className="p-6">
-              <SkeletonTable rows={8} cols={5} />
-            </div>
-          ) : fetchError ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-red-500/10">
-                <XCircle className="h-10 w-10 text-red-500" />
+            {isLoading ? (
+              <div className="p-6">
+                <SkeletonTable rows={8} cols={5} />
               </div>
-              <p className="text-lg font-medium text-foreground">Failed to load suggestions</p>
-              <p className="mt-1 text-sm text-muted-foreground text-center max-w-sm">
-                {fetchError.message || 'An unexpected error occurred. Check the console for details.'}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.location.reload()}
-                className="mt-4"
-              >
-                <RotateCcw className="mr-1.5 h-3 w-3" />
-                Refresh page
-              </Button>
-            </div>
-          ) : paginated.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/20">
-                    <th className="w-10 px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Vehicle</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Submitted By</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Min Price</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Max Price</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Submitted</th>
-                    <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {paginated.map((s, i) => (
-                    <tr
-                      key={s.id}
-                      className="group/row transition-colors hover:bg-muted/30 cursor-pointer"
-                      onClick={() => setSelectedSuggestion(s)}
-                    >
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {(page - 1) * pageSize + i + 1}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap max-w-[200px]">
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
-                            <DollarSign className="h-4 w-4 text-blue-500" />
-                          </div>
-                          <span className="truncate text-sm font-medium text-foreground" title={s.vehicleName || s.vehicleId}>
-                            {s.vehicleName || s.vehicleId || '—'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-sm font-medium text-foreground">{s.submittedBy || '—'}</span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-foreground">
-                          {s.minPrice ? formatCurrency(s.minPrice) : '—'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-foreground">
-                          {s.maxPrice ? formatCurrency(s.maxPrice) : '—'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <StatusBadge suggestion={s} />
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className="text-xs text-foreground">
-                            {s.createdOn ? formatShortDate(s.createdOn) : '—'}
-                          </span>
-                          {s.createdOn && (
-                            <span className="text-[10px] text-muted-foreground">
-                              {new Date(s.createdOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            title="View details"
-                            onClick={(e) => { e.stopPropagation(); setSelectedSuggestion(s); }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-20">
-              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-muted to-muted/50">
-                <DollarSign className="h-10 w-10 text-muted-foreground/60" />
-              </div>
-              <p className="text-lg font-medium text-foreground">
-                {search || statusFilterValue !== 'all' ? 'No matching suggestions' : 'No price suggestions yet'}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground text-center max-w-sm">
-                {search
-                  ? 'Try adjusting your search.'
-                  : statusFilterValue !== 'all'
-                    ? `No suggestions with "${
-                        statusOptions.find((o) => o.value === statusFilterValue)?.label ?? statusFilterValue
-                      }" status.`
-                    : 'When users suggest pricing corrections, they will appear here.'}
-              </p>
-              {(search || statusFilterValue !== 'all') && (
+            ) : fetchError ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-red-500/10">
+                  <XCircle className="h-10 w-10 text-red-500" />
+                </div>
+                <p className="text-lg font-medium text-foreground">Failed to load suggestions</p>
+                <p className="mt-1 text-sm text-muted-foreground text-center max-w-sm">
+                  {fetchError.message || 'An unexpected error occurred. Check the console for details.'}
+                </p>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => { setSearch(''); setStatusFilterValue('all'); }}
+                  onClick={() => window.location.reload()}
                   className="mt-4"
                 >
                   <RotateCcw className="mr-1.5 h-3 w-3" />
-                  Clear filters
+                  Refresh page
                 </Button>
-              )}
+              </div>
+            ) : paginated.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/20">
+                      <th className="w-10 px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</th>
+                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Vehicle</th>
+                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Submitted By</th>
+                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Min Price</th>
+                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Max Price</th>
+                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Submitted</th>
+                      <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {paginated.map((s, i) => (
+                      <tr
+                        key={s.id}
+                        className="group/row transition-colors hover:bg-muted/30 cursor-pointer"
+                        onClick={() => setSelectedSuggestion(s)}
+                      >
+                        <td className="px-4 py-3 text-xs text-muted-foreground">
+                          {(page - 1) * pageSize + i + 1}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap max-w-[200px]">
+                          <div className="flex items-center gap-2.5">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
+                              <DollarSign className="h-4 w-4 text-blue-500" />
+                            </div>
+                            <span className="truncate text-sm font-medium text-foreground" title={s.vehicleName || s.vehicleId}>
+                              {s.vehicleName || s.vehicleId || '—'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-sm font-medium text-foreground">{s.submittedBy || '—'}</span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-sm font-semibold text-foreground">
+                            {s.minPrice ? formatCurrency(s.minPrice) : '—'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-sm font-semibold text-foreground">
+                            {s.maxPrice ? formatCurrency(s.maxPrice) : '—'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <StatusBadge suggestion={s} />
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="text-xs text-foreground">
+                              {s.createdOn ? formatShortDate(s.createdOn) : '—'}
+                            </span>
+                            {s.createdOn && (
+                              <span className="text-[10px] text-muted-foreground">
+                                {new Date(s.createdOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              title="View details"
+                              onClick={(e) => { e.stopPropagation(); setSelectedSuggestion(s); }}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-muted to-muted/50">
+                  <DollarSign className="h-10 w-10 text-muted-foreground/60" />
+                </div>
+                <p className="text-lg font-medium text-foreground">
+                  {search || statusFilterValue !== 'all' ? 'No matching suggestions' : 'No price suggestions yet'}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground text-center max-w-sm">
+                  {search
+                    ? 'Try adjusting your search.'
+                    : statusFilterValue !== 'all'
+                      ? `No suggestions with "${
+                          statusOptions.find((o) => o.value === statusFilterValue)?.label ?? statusFilterValue
+                        }" status.`
+                      : 'When users suggest pricing corrections, they will appear here.'}
+                </p>
+                {(search || statusFilterValue !== 'all') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setSearch(''); setStatusFilterValue('all'); }}
+                    className="mt-4"
+                  >
+                    <RotateCcw className="mr-1.5 h-3 w-3" />
+                    Clear filters
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── Card View ── */}
+      {viewMode === 'card' && (
+        <motion.div
+          key="card-view"
+          variants={itemVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          {isLoading ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <PriceSuggestionCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : fetchError ? (
+            <div className="rounded-2xl border bg-card">
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-red-500/10">
+                  <XCircle className="h-10 w-10 text-red-500" />
+                </div>
+                <p className="text-lg font-medium text-foreground">Failed to load suggestions</p>
+                <p className="mt-1 text-sm text-muted-foreground text-center max-w-sm">
+                  {fetchError.message || 'An unexpected error occurred. Check the console for details.'}
+                </p>
+                <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="mt-4">
+                  <RotateCcw className="mr-1.5 h-3 w-3" />
+                  Refresh page
+                </Button>
+              </div>
+            </div>
+          ) : paginated.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {paginated.map((s) => (
+                <PriceSuggestionCard
+                  key={s.id}
+                  suggestion={s}
+                  onClick={() => setSelectedSuggestion(s)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border bg-card">
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-muted to-muted/50">
+                  <DollarSign className="h-10 w-10 text-muted-foreground/60" />
+                </div>
+                <p className="text-lg font-medium text-foreground">
+                  {search || statusFilterValue !== 'all' ? 'No matching suggestions' : 'No price suggestions yet'}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground text-center max-w-sm">
+                  {search
+                    ? 'Try adjusting your search.'
+                    : statusFilterValue !== 'all'
+                      ? `No suggestions with "${
+                          statusOptions.find((o) => o.value === statusFilterValue)?.label ?? statusFilterValue
+                        }" status.`
+                      : 'When users suggest pricing corrections, they will appear here.'}
+                </p>
+                {(search || statusFilterValue !== 'all') && (
+                  <Button variant="outline" size="sm" onClick={() => { setSearch(''); setStatusFilterValue('all'); }} className="mt-4">
+                    <RotateCcw className="mr-1.5 h-3 w-3" />
+                    Clear filters
+                  </Button>
+                )}
+              </div>
             </div>
           )}
-        </div>
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* Pagination */}
       {sorted.length > pageSize && (

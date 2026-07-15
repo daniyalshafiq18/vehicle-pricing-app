@@ -13,7 +13,7 @@ export function useDashboardAnalytics() {
     queryFn: () => analyticsRepository.getDashboardAnalytics(
       Object.values(filters).some((v) => v !== undefined) ? filters : undefined,
     ),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30_000,
     placeholderData: (prev) => prev,
   });
 

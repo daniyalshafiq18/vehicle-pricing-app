@@ -29,9 +29,9 @@ export function LazyChart({
   const [visible, setVisible] = useState(immediate);
 
   useEffect(() => {
-    if (immediate) return;
+    if (immediate) {return;}
     const el = ref.current;
-    if (!el) return;
+    if (!el) {return;}
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -48,7 +48,7 @@ export function LazyChart({
   }, [immediate, rootMargin]);
 
   return (
-    <div ref={ref} style={{ minHeight: height }} className="relative">
+    <div ref={ref} style={{ minHeight: height }} className="relative w-full">
       {visible ? (
         children
       ) : (

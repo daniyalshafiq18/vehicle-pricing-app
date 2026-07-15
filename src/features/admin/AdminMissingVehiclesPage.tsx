@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useMissingVehicleRequests, useUpdateMissingVehicleRequestStatus, useApproveMissingVehicleRequest } from '@hooks';
-import { Button, Dialog, SkeletonTable } from '@components/ui';
+import { Button, Dialog, SkeletonTable, Card as UICard, CardContent } from '@components/ui';
 import { motion } from 'framer-motion';
 import {
   Car,
@@ -17,6 +17,9 @@ import {
   CheckCircle2,
   AlertCircle,
   XCircle,
+  LayoutList,
+  LayoutGrid,
+  User,
 } from 'lucide-react';
 import type { MissingVehicleRequest } from '@types';
 import { cn, formatCurrency } from '@utils';
@@ -187,10 +190,10 @@ function MissingVehicleDetailModal({
       onClose={onClose}
       title=""
       description=""
-      size="md"
+      size="lg"
       hideCloseButton
     >
-      <div className="flex max-h-[75vh] flex-col gap-0">
+      <div className="flex max-h-[85vh] flex-col gap-0">
         {/* Header */}
         <div className="shrink-0 -mx-6 -mt-6 rounded-t-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 pb-4 pt-5">
           <div className="flex items-start justify-between">
@@ -256,6 +259,134 @@ function MissingVehicleDetailModal({
   );
 }
 
+// ─── Missing Vehicle Card (Card View) ──────────────────────────────
+
+function MissingVehicleCard({
+  request,
+  onClick,
+}: {
+  request: MissingVehicleRequest;
+  onClick: () => void;
+}) {
+  const cfg = STATUS_CONFIG[request.status ?? ''] ?? STATUS_CONFIG['Pending']!;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="group h-full"
+    >
+      <UICard className="overflow-hidden border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 h-full">
+        <div className="h-1 bg-gradient-to-r from-amber-500/60 via-amber-400/60 to-amber-500/30" />
+        <CardContent className="p-5 flex flex-col h-full">
+          {/* Header: make model year + status */}
+          <div className="flex items-start justify-between mb-4 shrink-0 gap-3">
+            <div className="min-w-0">
+              <h3 className="text-lg font-bold text-foreground leading-tight truncate">
+                {request.make} {request.model}
+              </h3>
+              {request.modelYear && (
+                <span className="inline-flex items-center rounded-full border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-foreground mt-1">
+                  {request.modelYear}
+                </span>
+              )}
+            </div>
+            <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium shrink-0', cfg.className)}>
+              <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
+              {cfg.label}
+            </span>
+          </div>
+
+          {/* Details grid */}
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: 'Trim', value: request.trim },
+              { label: 'Body Type', value: request.bodyType },
+              { label: 'Cylinders', value: request.cylinders ? String(request.cylinders) : null },
+              { label: 'Fuel Type', value: request.fuelType },
+              { label: 'Transmission', value: request.transmissionType },
+              { label: 'Drive Type', value: request.driveType },
+            ].map((spec) => (
+              <div key={spec.label} className="rounded-xl bg-muted/40 p-3 transition-colors hover:bg-muted/60">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{spec.label}</p>
+                <p className="mt-0.5 text-sm font-semibold text-foreground truncate">
+                  {spec.value || '—'}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Price info */}
+          {(request.minPrice != null || request.maxPrice != null) && (
+            <div className="mt-3 flex items-center gap-3 rounded-xl border bg-card p-3 shrink-0">
+              <div className="flex-1">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Min Price</p>
+                <p className="text-sm font-bold text-foreground">
+                  {request.minPrice != null ? formatCurrency(request.minPrice) : '—'}
+                </p>
+              </div>
+              <div className="h-8 w-px bg-border" />
+              <div className="flex-1">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Max Price</p>
+                <p className="text-sm font-bold text-foreground">
+                  {request.maxPrice != null ? formatCurrency(request.maxPrice) : '—'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Footer: requested by + action */}
+          <div className="mt-3 flex items-center justify-between border-t pt-3 shrink-0">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Requested by</p>
+              <p className="text-xs font-medium text-foreground truncate" title={request.contactName || request.contactEmail || ''}>
+                <User className="mr-1 inline h-3 w-3 text-muted-foreground/60" />
+                {request.contactName || request.contactEmail || '—'}
+              </p>
+              {request.createdOn && (
+                <p className="text-[10px] text-muted-foreground/60">
+                  {new Date(request.createdOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </p>
+              )}
+            </div>
+            <Button variant="ghost" size="icon-sm" title="View details" onClick={onClick}>
+              <Eye className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </UICard>
+    </motion.div>
+  );
+}
+
+// ─── Card View Skeleton ────────────────────────────────────────────
+
+function MissingVehicleCardSkeleton() {
+  return (
+    <div className="h-[380px] animate-pulse rounded-2xl border bg-card p-5">
+      <div className="mb-4 flex items-start justify-between">
+        <div className="space-y-2">
+          <div className="h-6 w-36 rounded bg-muted" />
+          <div className="h-5 w-16 rounded bg-muted" />
+        </div>
+        <div className="h-6 w-20 rounded-full bg-muted" />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        {Array.from({ length: 6 }).map((_, j) => (
+          <div key={j} className="h-[60px] rounded-xl bg-muted/50" />
+        ))}
+      </div>
+      <div className="mt-3 h-[68px] rounded-xl bg-muted/50" />
+      <div className="mt-3 flex items-center justify-between border-t pt-3">
+        <div className="h-4 w-32 rounded bg-muted" />
+        <div className="h-8 w-8 rounded bg-muted" />
+      </div>
+    </div>
+  );
+}
+
 // ─── Animations ──────────────────────────────────────────────────
 
 const containerVariants = {
@@ -270,6 +401,7 @@ const itemVariants = {
 // ─── Main Page ───────────────────────────────────────────────────
 
 export function AdminMissingVehiclesPage() {
+  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [search, setSearch] = useState('');
   const [selectedRequest, setSelectedRequest] = useState<MissingVehicleRequest | null>(null);
   const [page, setPage] = useState(1);
@@ -278,7 +410,7 @@ export function AdminMissingVehiclesPage() {
 
   const { data: requests, isLoading } = useMissingVehicleRequests();
 
-  // Status counts for the summary bar
+  // Status counts for the summary bar + filter tabs
   const statusCounts = {
     all: requests?.length ?? 0,
     pending: requests?.filter((r) => r.status === 'Pending' || !r.status).length ?? 0,
@@ -355,6 +487,35 @@ export function AdminMissingVehiclesPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex items-center rounded-lg border bg-card p-0.5">
+              <button
+                onClick={() => setViewMode('table')}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
+                  viewMode === 'table'
+                    ? 'bg-primary/10 text-primary shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+                title="Table view"
+              >
+                <LayoutList className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Table</span>
+              </button>
+              <button
+                onClick={() => setViewMode('card')}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
+                  viewMode === 'card'
+                    ? 'bg-primary/10 text-primary shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+                title="Card view"
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Card</span>
+              </button>
+            </div>
             <div className="relative">
               <SearchX className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
               <input
@@ -413,149 +574,212 @@ export function AdminMissingVehiclesPage() {
         </div>
       </motion.div>
 
-      {/* Table card */}
-      <motion.div variants={itemVariants}>
-        <div className="rounded-2xl border bg-card overflow-hidden">
-          {/* Gradient top bar */}
-          <div className="h-1 bg-gradient-to-r from-primary/60 via-accent/60 to-primary/30" />
+      {/* ── Table View ── */}
+      {viewMode === 'table' && (
+        <motion.div
+          key="table-view"
+          variants={itemVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <div className="rounded-2xl border bg-card overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-primary/60 via-accent/60 to-primary/30" />
 
+            {isLoading ? (
+              <div className="p-6">
+                <SkeletonTable rows={8} cols={7} />
+              </div>
+            ) : paginated.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/20">
+                      <th className="w-10 px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</th>
+                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Make</th>
+                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Model</th>
+                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Year</th>
+                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Spec / Trim</th>
+                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Body Type</th>
+                      <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Min Price</th>
+                      <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Max Price</th>
+                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Requested By</th>
+                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Requested</th>
+                      <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {paginated.map((req, i) => (
+                      <tr
+                        key={req.id}
+                        className="group/row transition-colors hover:bg-muted/30 cursor-pointer"
+                        onClick={() => setSelectedRequest(req)}
+                      >
+                        <td className="px-4 py-3 text-xs text-muted-foreground">
+                          {(page - 1) * pageSize + i + 1}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                              <Car className="h-4 w-4 text-primary" />
+                            </div>
+                            <span className="font-medium text-foreground">{req.make}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-foreground">{req.model}</span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="inline-flex items-center rounded-full border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-foreground">
+                            {req.modelYear}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 max-w-[160px]">
+                          <p className="text-sm text-foreground truncate" title={req.trim}>
+                            {req.trim || '—'}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-xs text-foreground/80">{req.bodyType || '—'}</span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-right">
+                          <span className="text-xs font-medium text-foreground">
+                            {req.minPrice != null ? formatCurrency(req.minPrice) : '—'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-right">
+                          <span className="text-xs font-medium text-foreground">
+                            {req.maxPrice != null ? formatCurrency(req.maxPrice) : '—'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <StatusBadge status={req.status} />
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <p className="text-xs text-foreground truncate max-w-[140px]" title={req.contactName || req.contactEmail || ''}>
+                            {req.contactName || req.contactEmail || '—'}
+                          </p>
+                          {req.contactName && req.contactEmail && req.contactEmail !== req.contactName && (
+                            <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">{req.contactEmail}</p>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="text-xs text-foreground">
+                              {req.createdOn ? formatShortDate(req.createdOn) : '—'}
+                            </span>
+                            {req.createdOn && (
+                              <span className="text-[10px] text-muted-foreground">
+                                {new Date(req.createdOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              title="View details"
+                              onClick={(e) => { e.stopPropagation(); setSelectedRequest(req); }}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-muted to-muted/50">
+                  <SearchX className="h-10 w-10 text-muted-foreground/60" />
+                </div>
+                <p className="text-lg font-medium text-foreground">
+                  {search || statusFilter !== 'all' ? 'No matching requests' : 'No missing vehicle requests yet'}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground text-center max-w-sm">
+                  {search
+                    ? 'Try adjusting your search.'
+                    : statusFilter !== 'all'
+                      ? `No requests with "${statusFilter}" status.`
+                      : 'When users search for vehicles not in the database, they will appear here.'}
+                </p>
+                {(search || statusFilter !== 'all') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setSearch(''); setStatusFilter('all'); }}
+                    className="mt-4"
+                  >
+                    <RotateCcw className="mr-1.5 h-3 w-3" />
+                    Clear filters
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* ── Card View ── */}
+      {viewMode === 'card' && (
+        <motion.div
+          key="card-view"
+          variants={itemVariants}
+          initial="hidden"
+          animate="visible"
+        >
           {isLoading ? (
-            <div className="p-6">
-              <SkeletonTable rows={8} cols={7} />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <MissingVehicleCardSkeleton key={i} />
+              ))}
             </div>
           ) : paginated.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/20">
-                    <th className="w-10 px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Make</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Model</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Year</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Spec / Trim</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Body Type</th>
-                    <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Min Price</th>
-                    <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Max Price</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Requested By</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Requested</th>
-                    <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {paginated.map((req, i) => (
-                    <tr
-                      key={req.id}
-                      className="group/row transition-colors hover:bg-muted/30 cursor-pointer"
-                      onClick={() => setSelectedRequest(req)}
-                    >
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {(page - 1) * pageSize + i + 1}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                            <Car className="h-4 w-4 text-primary" />
-                          </div>
-                          <span className="font-medium text-foreground">{req.make}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-foreground">{req.model}</span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="inline-flex items-center rounded-full border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-foreground">
-                          {req.modelYear}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 max-w-[160px]">
-                        <p className="text-sm text-foreground truncate" title={req.trim}>
-                          {req.trim || '—'}
-                        </p>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-xs text-foreground/80">{req.bodyType || '—'}</span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-right">
-                        <span className="text-xs font-medium text-foreground">
-                          {req.minPrice != null ? formatCurrency(req.minPrice) : '—'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-right">
-                        <span className="text-xs font-medium text-foreground">
-                          {req.maxPrice != null ? formatCurrency(req.maxPrice) : '—'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <StatusBadge status={req.status} />
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <p className="text-xs text-foreground truncate max-w-[140px]" title={req.contactName || req.contactEmail || ''}>
-                          {req.contactName || req.contactEmail || '—'}
-                        </p>
-                        {req.contactName && req.contactEmail && req.contactEmail !== req.contactName && (
-                          <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">{req.contactEmail}</p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className="text-xs text-foreground">
-                            {req.createdOn ? formatShortDate(req.createdOn) : '—'}
-                          </span>
-                          {req.createdOn && (
-                            <span className="text-[10px] text-muted-foreground">
-                              {new Date(req.createdOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            title="View details"
-                            onClick={(e) => { e.stopPropagation(); setSelectedRequest(req); }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {paginated.map((req) => (
+                <MissingVehicleCard
+                  key={req.id}
+                  request={req}
+                  onClick={() => setSelectedRequest(req)}
+                />
+              ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-20">
-              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-muted to-muted/50">
-                <SearchX className="h-10 w-10 text-muted-foreground/60" />
+            <div className="rounded-2xl border bg-card">
+              <div className="flex flex-col items-center justify-center py-20">
+                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-muted to-muted/50">
+                  <SearchX className="h-10 w-10 text-muted-foreground/60" />
+                </div>
+                <p className="text-lg font-medium text-foreground">
+                  {search || statusFilter !== 'all' ? 'No matching requests' : 'No missing vehicle requests yet'}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground text-center max-w-sm">
+                  {search
+                    ? 'Try adjusting your search.'
+                    : statusFilter !== 'all'
+                      ? `No requests with "${statusFilter}" status.`
+                      : 'When users search for vehicles not in the database, they will appear here.'}
+                </p>
+                {(search || statusFilter !== 'all') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => { setSearch(''); setStatusFilter('all'); }}
+                    className="mt-4"
+                  >
+                    <RotateCcw className="mr-1.5 h-3 w-3" />
+                    Clear filters
+                  </Button>
+                )}
               </div>
-              <p className="text-lg font-medium text-foreground">
-                {search || statusFilter !== 'all' ? 'No matching requests' : 'No missing vehicle requests yet'}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground text-center max-w-sm">
-                {search
-                  ? 'Try adjusting your search.'
-                  : statusFilter !== 'all'
-                    ? `No requests with "${statusFilter}" status.`
-                    : 'When users search for vehicles not in the database, they will appear here.'}
-              </p>
-              {(search || statusFilter !== 'all') && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => { setSearch(''); setStatusFilter('all'); }}
-                  className="mt-4"
-                >
-                  <RotateCcw className="mr-1.5 h-3 w-3" />
-                  Clear filters
-                </Button>
-              )}
             </div>
           )}
-        </div>
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* Pagination */}
       {sorted.length > pageSize && (

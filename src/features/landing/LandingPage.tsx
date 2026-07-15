@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Badge, LoadingScreen } from '@components/ui';
+import { useDataSource } from '@data';
 import {
   ArrowRight,
   Car,
@@ -34,23 +35,40 @@ const stagger = {
 
 export function LandingPage() {
   const { data: analytics, isLoading } = useAnalytics();
+  const { isInitializing } = useDataSource();
   const [showSplash, setShowSplash] = useState(true);
 
-  if (showSplash) {
-    return (
-      <LoadingScreen
-        message="Loading vehicle data..."
-        onExited={() => setShowSplash(false)}
-      />
-    );
-  }
+  // Keep splash visible until BOTH:
+  //   1. Data source is fully initialized (all vehicle pages fetched via keyset pagination)
+  //   2. Analytics query has resolved
+  useEffect(() => {
+    if (!isInitializing && !isLoading) {
+      const timeout = setTimeout(() => setShowSplash(false), 200);
+      return () => clearTimeout(timeout);
+    }
+  }, [isInitializing, isLoading]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
+    <>
+      <AnimatePresence>
+        {showSplash && (
+          <motion.div
+            key="splash"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.3 } }}
+            className="fixed inset-0 z-50"
+          >
+            <LoadingScreen message="Loading vehicle data..." />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isLoading ? 0 : 1 }}
+        transition={{ duration: 0.5 }}
+      >
       {/* ─── Hero Section ─────────────────────────── */}
       <section className="relative bg-grid-glow">
         {/* Background gradient */}
@@ -248,5 +266,6 @@ export function LandingPage() {
         </div>
       </section>
     </motion.div>
+    </>
   );
 }
