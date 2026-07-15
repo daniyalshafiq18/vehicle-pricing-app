@@ -10,8 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export function ValuationPage() {
   const { currentStep } = useInquiryStore();
-  const { isInitialized, isInitializing, error } = useDataSource();
-  const { isInitialized, isInitializing, triggerInit } = useDataSource();
+  const { isInitialized, isInitializing, error, triggerInit } = useDataSource();
 
   // Trigger deferred DataSource init when the valuation page is first visited.
   useEffect(() => {

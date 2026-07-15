@@ -1,8 +1,7 @@
 import { useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminStore } from '@stores';
-import { ThemeSwitcher, NotificationDropdown } from '@components/ui';
-import { LoadingScreen, ThemeSwitcher } from '@components/ui';
+import { LoadingScreen, ThemeSwitcher, NotificationDropdown } from '@components/ui';
 import { cn } from '@utils';
 import { useDataSource } from '@data';
 import { useInquiries, useMissingVehicleRequests, usePriceSuggestions } from '@hooks';
