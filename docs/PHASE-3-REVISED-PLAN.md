@@ -1,11 +1,13 @@
 # Phase 3 Revised Plan — Vehicle Pricing Intelligence Platform
 
 > **Date:** 2026-07-09 (Updated 2026-07-15)
-> **Status:** Path B (Puppeteer) ❌ Abandoned → Path C (Power Automate Cloud-only) ✅ Working
+> **Status:** Path B (Puppeteer) ❌ Abandoned → Path C (Power Automate Cloud-only) ✅ Working (⚠️ YallaMotor backend outage on 2026-07-15 — NOT a Cloudflare issue)
 > **Previous Plan:** `docs/PHASE-3-PLAN.md` (original, superseded by this revision)
 > **Key Change:** Simplified flow, real-time scraping replaces mock, user price suggestions merged into missing vehicle flow
 >
-> **⚠️ Update 2026-07-15:** After initial pivot to Power Automate Desktop (RPA), we discovered that **Power Automate Cloud flows** (HTTP premium connector) work directly. Microsoft cloud IPs are **not blocked** by YallaMotor's Cloudflare (unlike Railway/Render datacenters). Flow 1 successfully extracts full listing records (price, specs, dealer). Flow 2 heading-based design is complete but not yet built. See `docs/power-automate-cloud-only-design.md` for the current design.
+> **⚠️ Update 2026-07-15 (v2):** Flow 2 was built and tested. Both Flow 1 and 2 initially failed with Cloudflare challenge pages, but further investigation revealed YallaMotor's own Next.js backend was down (`backend_error`, `Backend fetch failed`). The Power Automate Cloud-only approach remains viable — YallaMotor's server outage was the cause of test failures, not Cloudflare blocking.
+>
+> **⚠️ Update 2026-07-15 (v1):** After initial pivot to Power Automate Desktop (RPA), we discovered that **Power Automate Cloud flows** (HTTP premium connector) work directly. Microsoft cloud IPs are **not blocked** by YallaMotor's Cloudflare (unlike Railway/Render datacenters). Flow 1 successfully extracts full listing records (price, specs, dealer). Flow 2 heading-based design is complete but not yet built. See `docs/power-automate-cloud-only-design.md` for the current design.
 >
 > **⚠️ Archived Update 2026-07-13:** The Puppeteer microservice (Path B) has been **abandoned** due to YallaMotor Cloudflare protection. Postmortem at `docs/path-b-scraper-microservice-postmortem.md`. The initial pivot to Power Automate Desktop (RPA) was overtaken on 2026-07-15 by the Cloud-only approach.
 

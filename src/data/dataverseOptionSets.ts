@@ -413,6 +413,21 @@ export const missingVehicleDriveTypeValue = (label: string): number | null =>
 export const missingVehicleDriveTypeLabel = (v: unknown, fallback = 'Unknown'): string =>
   toLabel(MISSING_VEHICLE_DRIVE_TYPE_VALUES, v, fallback);
 
+// ─── Missing Vehicle Scrape Status (vpi_scrapestatus) ──────
+
+export const MISSING_VEHICLE_SCRAPE_STATUS: Record<string, number> = {
+  Pending: 1,
+  Testing: 2,
+  'In Progress': 3,
+  Scraped: 4,
+  Failed: 5,
+  Unreachable: 6,
+};
+export const missingVehicleScrapeStatusLabel = (v: unknown, fallback = 'Pending'): string =>
+  toLabel(MISSING_VEHICLE_SCRAPE_STATUS, v, fallback);
+export const missingVehicleScrapeStatusValue = (label: string): number | null =>
+  toValue(MISSING_VEHICLE_SCRAPE_STATUS, label);
+
 // ─── Missing Vehicle Status (vpi_status) ───────────────────
 
 export const MISSING_VEHICLE_STATUS: Record<string, number> = {

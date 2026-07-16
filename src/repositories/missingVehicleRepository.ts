@@ -18,6 +18,11 @@ export class MissingVehicleRepository {
     maxPrice?: number;
     minMileage?: number;
     maxMileage?: number;
+    scrapedMinPrice?: number;
+    scrapedMaxPrice?: number;
+    scrapedListings?: string;
+    scrapedSources?: string;
+    scrapeStatusValue?: number;
   }): Promise<string> {
     const ds = getDataSource();
     return ds.upsertMissingVehicleRequest(payload);
@@ -26,6 +31,11 @@ export class MissingVehicleRepository {
   async getAll(): Promise<MissingVehicleRequest[]> {
     const ds = getDataSource();
     return ds.getMissingVehicleRequests();
+  }
+
+  async getById(id: string): Promise<MissingVehicleRequest | null> {
+    const ds = getDataSource();
+    return ds.getMissingVehicleRequestById(id);
   }
 
   async updateStatus(id: string, status: string): Promise<void> {

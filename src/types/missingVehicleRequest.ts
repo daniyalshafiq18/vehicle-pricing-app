@@ -10,6 +10,7 @@ export interface MissingVehicleRequest {
   transmissionType?: string;
   driveType?: string;
   status?: string;
+  statusValue?: number;
   minPrice?: number;
   maxPrice?: number;
   minMileage?: number;
@@ -17,4 +18,11 @@ export interface MissingVehicleRequest {
   createdOn?: Date;
   contactName?: string;
   contactEmail?: string;
+  // Scrape result fields (populated by Power Automate Flow 2)
+  scrapeStatus?: string;
+  scrapeStatusValue?: number;
+  scrapedListings?: string;
+  scrapedMinPrice?: number;
+  scrapedMaxPrice?: number;
+  scrapedSources?: string;
 }

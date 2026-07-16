@@ -72,8 +72,15 @@ export interface IDataSource {
     maxPrice?: number;
     minMileage?: number;
     maxMileage?: number;
+    // Scrape result fields (from Flow 3)
+    scrapedMinPrice?: number;
+    scrapedMaxPrice?: number;
+    scrapedListings?: string;
+    scrapedSources?: string;
+    scrapeStatusValue?: number;
   }): Promise<string>;
   getMissingVehicleRequests(): Promise<MissingVehicleRequest[]>;
+  getMissingVehicleRequestById(id: string): Promise<MissingVehicleRequest | null>;
   updateMissingVehicleRequestStatus(id: string, status: string): Promise<void>;
   updateMissingVehicleRequest(id: string, fields: { minPrice?: number; maxPrice?: number }): Promise<void>;
   approveAndCreateVehicle(mvr: MissingVehicleRequest): Promise<void>;

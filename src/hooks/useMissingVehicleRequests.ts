@@ -33,6 +33,11 @@ export function useUpsertMissingVehicleRequest() {
       maxPrice?: number;
       minMileage?: number;
       maxMileage?: number;
+      scrapedMinPrice?: number;
+      scrapedMaxPrice?: number;
+      scrapedListings?: string;
+      scrapedSources?: string;
+      scrapeStatusValue?: number;
     }) => missingVehicleRepository.upsert(payload),
     onSuccess: () => {
       toast.success('Vehicle request submitted!');

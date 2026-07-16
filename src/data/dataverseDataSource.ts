@@ -14,7 +14,7 @@ import { fetchAllVehicles } from '@lib/vehicleApi';
 import { createContact } from '@lib/contactApi';
 import { createInquiry } from '@lib/inquiryApi';
 import type { CreateInquiryPayload } from '@lib/inquiryApi';
-import { upsertMissingVehicleRequest, fetchMissingVehicleRequests, updateMissingVehicleRequest, updateMissingVehicleRequestStatus, approveAndCreateVehicle } from '@lib/missingVehicleApi';
+import { upsertMissingVehicleRequest, fetchMissingVehicleRequests, fetchMissingVehicleRequestById, updateMissingVehicleRequest, updateMissingVehicleRequestStatus, approveAndCreateVehicle } from '@lib/missingVehicleApi';
 import { upsertPriceSuggestion, fetchPriceSuggestions, updatePriceSuggestion, updatePriceSuggestionStatus } from '@lib/priceSuggestionApi';
 import { memoize } from '@utils';
 import type {
@@ -822,12 +822,21 @@ export class DataverseDataSource implements IDataSource {
     maxPrice?: number;
     minMileage?: number;
     maxMileage?: number;
+    scrapedMinPrice?: number;
+    scrapedMaxPrice?: number;
+    scrapedListings?: string;
+    scrapedSources?: string;
+    scrapeStatusValue?: number;
   }): Promise<string> {
     return upsertMissingVehicleRequest(payload);
   }
 
   async getMissingVehicleRequests(): Promise<MissingVehicleRequest[]> {
     return fetchMissingVehicleRequests();
+  }
+
+  async getMissingVehicleRequestById(id: string): Promise<MissingVehicleRequest | null> {
+    return fetchMissingVehicleRequestById(id);
   }
 
   async updateMissingVehicleRequestStatus(id: string, status: string): Promise<void> {

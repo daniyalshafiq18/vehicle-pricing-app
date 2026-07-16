@@ -1,7 +1,7 @@
 # Power Automate Cloud Flow — Step-by-Step Build Guide
 
-> **Date:** 2026-07-15 (Updated with modified Flow 1 test results)
-> **Status:** Flow 1 ✅ Built, Modified & Re-Tested | Flow 2 ⏳ Not yet built
+> **Date:** 2026-07-15 (Updated — YallaMotor backend outage diagnosed)
+> **Status:** Flow 1 ✅ Built, Modified & Re-Tested | Flow 2 ✅ Built & Tested (YallaMotor had backend outage)
 > **Platform:** https://make.powerautomate.com
 > **Connectors needed:** HTTP (premium), Microsoft Dataverse, Office 365 Outlook (optional)
 
@@ -12,14 +12,14 @@
 | Flow | Status | Notes |
 |---|---|---|
 | **Flow 1: YallaMotor Accessibility Test** | ✅ **Built, Modified & Re-Tested** | Confirmed full listing record extraction (price, specs, dealer). Heading extraction confirmed for aggregate pricing. |
-| **Flow 2: MVR Automated Scraper** | ⏳ Design ready, not built | Parses JSON-LD structured data from YallaMotor HTML. See full design below. |
+| **Flow 2: MVR Automated Scraper** | ✅ **Built & Tested** | See full design below. YallaMotor backend was down during tests — not a Cloudflare issue. |
 
 ### Key Findings from Flow 1 Test (Original + Modified)
 
 | Finding | Detail |
 |---|---|
-| **YallaMotor accessible?** | ✅ Yes — HTTP 200, real page content returned |
-| **Cloudflare blocking?** | ❌ No — Cloudflare did NOT block the Power Automate HTTP request |
+| **YallaMotor accessible?** | ⚠️ **Yes when healthy — but backend outage on 2026-07-15** | 
+| **Cloudflare blocking?** | ❌ No — Cloudflare did NOT block the Power Automate HTTP request. The 2026-07-15 test failures were caused by YallaMotor's own Next.js backend being down (`Backend fetch failed`), not Cloudflare |
 | **Cloudflare false positives?** | ✅ Fixed — removed 3 body-content checks that incorrectly flagged normal content |
 | **InvalidTemplate error?** | ✅ Fixed — removed non-existent text_2/text_3 trigger inputs |
 | **Page title** | `Used Toyota Camry for Sale in UAE — From AED 120` |
@@ -29,6 +29,7 @@
 | **JSON-LD available?** | ✅ Yes — `<script type="application/ld+json">` blocks present in HTML |
 | **YallaMotor architecture** | Next.js (server-side rendered) — HTML contains full listing data |
 | **Why it works (vs Puppeteer failure)** | Power Automate HTTP requests come from Microsoft datacenter IPs which are not blocked. Previous Puppeteer scraper on Railway/Render used datacenter IPs that YallaMotor's Cloudflare flagged. |
+| **⚠️ 2026-07-15 finding** | During retesting, YallaMotor returned `Backend fetch failed` (Next.js outage). Both Flow 1 and 2 failed because YallaMotor's own servers were down. Once YallaMotor recovers, both flows should work. |
 
 ### ⚠️ Practical Learnings
 
@@ -369,23 +370,33 @@ Used Toyota Camry 2.5 S 2019
     - Table name: search → **Missing Vehicle Requests**
     - Scope: **Organization**
 
-### Step 2: Initialize Variable — ResponseBody
+### Step 2: 🔍 Debug — Inspect Trigger Output (First Run Only)
 
-7. Click **+ New step** → **Initialize variable**
-8. Configure:
+> ⚠️ **Important:** On the first run, the `triggerOutputs()?['body/xxx']` field names need to match Dataverse. Add this debug step, run the flow, then **remove it**.
+
+7. Click **+ New step** → **Compose**
+8. Name: `Debug — Trigger Outputs`
+9. Input: click → **Expression**: `triggerOutputs()`
+
+**After first run:** Open the run history → expand this step → copy the JSON. Find the record ID field (e.g., `vpi_missingvehiclerequestsid`). Update all `triggerOutputs()?['body/xxx']` expressions to match the **exact casing**. Delete this debug step before production.
+
+### Step 3: Initialize Variable — ResponseBody
+
+10. Click **+ New step** → **Initialize variable**
+11. Configure:
     - Name: `ResponseBody`
     - Type: **String**
     - Value: (leave empty)
 
-### Step 3: Initialize Variable — IsAccessible
+### Step 4: Initialize Variable — IsAccessible
 
-9. Click **+ New step** → **Initialize variable**
-10. Configure:
+12. Click **+ New step** → **Initialize variable**
+13. Configure:
     - Name: `IsAccessible`
     - Type: **Boolean**
     - Value: `false`
 
-### Step 4: Initialize Variable — ErrorMessage
+### Step 5: Initialize Variable — ErrorMessage
 
 11. Click **+ New step** → **Initialize variable**
 12. Configure:
@@ -393,7 +404,7 @@ Used Toyota Camry 2.5 S 2019
     - Type: **String**
     - Value: (leave empty)
 
-### Step 5: Initialize Variable — HeadingText
+### Step 6: Initialize Variable — HeadingText
 
 13. Click **+ New step** → **Initialize variable**
 14. Configure:
@@ -401,30 +412,36 @@ Used Toyota Camry 2.5 S 2019
     - Type: **String**
     - Value: (leave empty)
 
-### Step 6: Build Search URL (with Year Filter)
+### Step 7: Build Search URL (with Year Filter + Trim/Version + Hyphen Fix)
 
 15. Click **+ New step** → **Compose**
 16. Name: `Build Search URL`
 17. Input: click **Expression** → paste:
     ```
-    concat('https://uae.yallamotor.com/used-cars/', toLower(triggerOutputs()?['body/vpi_make']), '/', toLower(triggerOutputs()?['body/vpi_model']), '/yr_', triggerOutputs()?['body/vpi_modelyear'], '_', triggerOutputs()?['body/vpi_modelyear'])
+    concat('https://uae.yallamotor.com/used-cars/', replace(toLower(triggerOutputs()?['body/vpi_make']), ' ', '-'), '/', replace(toLower(triggerOutputs()?['body/vpi_model']), ' ', '-'), '/vr_', replace(toLower(coalesce(triggerOutputs()?['body/vpi_trim'], triggerOutputs()?['body/vpi_version'], '')), ' ', '-'), '/yr_', triggerOutputs()?['body/vpi_modelyear'], '_', triggerOutputs()?['body/vpi_modelyear'])
     ```
 
-    **Example output:**
+    **Example outputs:**
     ```
-    https://uae.yallamotor.com/used-cars/toyota/camry/yr_2022_2022
+    # Simple (no trim):
+    https://uae.yallamotor.com/used-cars/toyota/camry/vr_/yr_2022_2022
+    
+    # Multi-word make + trim:
+    https://uae.yallamotor.com/used-cars/mercedes-benz/c-class/vr_c-200/yr_2021_2021
     ```
 
-### Step 7: Update MVR → In Progress
+    **⚠️ Hyphen rule:** Database stores "Mercedes Benz" (space), but YallaMotor URLs use "mercedes-benz" (hyphen). The `replace(' ', '-')` handles this. Make names like "Alfa Romeo" also get `alfa-romeo`. **Do NOT** blindly replace all spaces in the raw value — only in the URL slug.
+
+### Step 8: Update MVR → In Progress
 
 18. Click **+ New step** → **Update a row** (Dataverse)
 19. Configure:
     - Table name: **Missing Vehicle Requests**
-    - Row ID: click → **Expression**: `triggerOutputs()?['body/vpi_missingvehiclerequestid']`
+    - Row ID: click → **Expression**: `triggerOutputs()?['body/vpi_missingvehiclerequestsid']`
     - Click **Add all columns** → set:
       - `vpi_scrapestatus`: enter `3` (In Progress)
 
-### Step 8: HTTP Request to YallaMotor
+### Step 9: HTTP Request to YallaMotor
 
 20. Click **+ New step** → search **HTTP**
 21. Configure:
@@ -442,14 +459,14 @@ Used Toyota Camry 2.5 S 2019
       }
       ```
 
-### Step 9: Store Response Body
+### Step 10: Store Response Body
 
 22. Click **+ New step** → **Set variable**
 23. Configure:
     - Name: `ResponseBody`
     - Value: click → **Expression**: `body('HTTP')`
 
-### Step 10: Extract Page Title
+### Step 11: Extract Page Title
 
 24. Click **+ New step** → **Compose**
 25. Name: `Extract Page Title`
@@ -458,13 +475,13 @@ Used Toyota Camry 2.5 S 2019
     if(contains(body('HTTP'), '<title>'), first(split(first(skip(split(body('HTTP'), '<title>'), 1)), '</title>')), 'No title found')
     ```
 
-### Step 11: Check HTTP Status Code
+### Step 12: Check HTTP Status Code
 
 27. Click **+ New step** → **Compose**
 28. Name: `HTTP Status Code`
 29. Input: click → **Expression**: `outputs('HTTP')['statusCode']`
 
-### Step 12: Simplified Cloudflare Check
+### Step 13: Simplified Cloudflare Check
 
 30. Click **+ New step** → **Condition**
 31. Name: `Cloudflare Check`
@@ -476,7 +493,7 @@ Used Toyota Camry 2.5 S 2019
 | `outputs('Extract_Page_Title')` | contains | `Attention Required` |
 | `outputs('HTTP_Status_Code')` | not equals | `200` |
 
-### Step 13: If Blocked — Mark Unreachable and Stop
+### Step 14: If Blocked — Mark Unreachable and Stop
 
 **In If yes (blocked):**
 
@@ -493,7 +510,7 @@ Used Toyota Camry 2.5 S 2019
 
 35. Click **Add an action** → **Update a row** (Dataverse)
     - Table: **Missing Vehicle Requests**
-    - Row ID: `triggerOutputs()?['body/vpi_missingvehiclerequestid']`
+    - Row ID: `triggerOutputs()?['body/vpi_missingvehiclerequestsid']`
     - Columns:
       - `vpi_scrapestatus`: `6` (Unreachable)
       - `vpi_scraped_listings`: `variables('ErrorMessage')`
@@ -502,7 +519,7 @@ Used Toyota Camry 2.5 S 2019
     - Status: **Failed**
     - Reason: `YallaMotor not accessible`
 
-### Step 14: If Accessible — Set Variable
+### Step 15: If Accessible — Set Variable
 
 **In If no (accessible):**
 
@@ -510,7 +527,7 @@ Used Toyota Camry 2.5 S 2019
     - Name: `IsAccessible`
     - Value: `true`
 
-### Step 15: Extract Heading — Aggregate Data (PRIMARY approach)
+### Step 16: Extract Heading — Aggregate Data (PRIMARY approach)
 
 Place this **after** the Cloudflare condition ends. This is the primary extraction method. Only runs if accessible.
 
@@ -530,7 +547,7 @@ Place this **after** the Cloudflare condition ends. This is the primary extracti
     - Name: `HeadingText`
     - Value: click → **Expression**: `outputs('Extract_Heading')`
 
-### Step 16: Condition — Heading Found?
+### Step 17: Condition — Heading Found?
 
 42. Click **+ New step** → **Condition**
 43. Name: `Is Heading Available`
@@ -539,7 +556,7 @@ Place this **after** the Cloudflare condition ends. This is the primary extracti
     - Operator: `is not equal to`
     - Right: `No heading found`
 
-### Step 17: Parse Heading — Extract Prices (If yes — primary path)
+### Step 18: Parse Heading — Extract Prices (If yes — primary path)
 
 **In If yes (heading found):**
 
@@ -583,7 +600,7 @@ Place this **after** the Cloudflare condition ends. This is the primary extracti
     ```
     → Produces: `{"count": 15, "minPrice": 30000, "maxPrice": 110000, "source": "YallaMotor", ...}`
 
-### Step 18: Fallback — JSON-LD Parsing (If heading not found)
+### Step 19: Fallback — JSON-LD Parsing (If heading not found)
 
 **In If no (no heading):**
 
@@ -633,14 +650,14 @@ Place this **after** the Cloudflare condition ends. This is the primary extracti
     if(contains(variables('ResponseBody'), '<bdi class="tabular-nums" dir="ltr">'), trim(first(split(first(skip(split(variables('ResponseBody'), '<bdi class="tabular-nums" dir="ltr">'), 1)), '</bdi>'))), '0')
     ```
 
-### Step 19: Update MVR with Results
+### Step 20: Update MVR with Results
 
 After both branches of the "Heading Available?" condition merge back:
 
 78. Click **+ New step** → **Update a row** (Dataverse)
 79. Configure:
     - Table: **Missing Vehicle Requests**
-    - Row ID: `triggerOutputs()?['body/vpi_missingvehiclerequestid']`
+    - Row ID: `triggerOutputs()?['body/vpi_missingvehiclerequestsid']`
     - Columns:
 
 | Field | Value (Expression) |
@@ -683,6 +700,77 @@ After both branches of the "Heading Available?" condition merge back:
     - Model Year: `2022`
 82. The flow triggers automatically within a few minutes
 83. Check the MVR record → `vpi_scrapestatus` should show **Scraped** (4)
+
+### ✅ Flow 2 Actual Test Result (2026-07-16)
+
+**Test Input (via Missing Vehicle Request):**
+| Field | Value |
+|---|---|
+| Make | Mercedes Benz |
+| Model | C-Class |
+| Trim | C 200 |
+| Model Year | 2021 |
+| Body Type | Regular Cab Chassis (Maybe) |
+| Cylinders | 4 |
+| Fuel Type | Hybrid (Maybe) |
+| Transmission | Automatic |
+| Drive Type | RWD |
+
+**Scraped Results (saved to Dataverse MVR record) — with flawed URL:**
+
+The first test used the **old URL builder** (no hyphen fix, no trim/version segment):
+
+| Field | Value |
+|---|---|
+| **Scrape Status** | ✅ Scraped (4) |
+| **Scraped Listings** | `{"count": ">294", "minPrice": "5,000", "maxPrice": "385,000", "source": "YallaMotor", "url": "https://uae.yallamotor.com/used-cars/mercedes benz/c-class/yr_2021_2021", "heading": ">294 listings · AED 5,000 – 385,000 · 2000–2027 · updated 15 July 2026"}` |
+| **Scraped Min Price** | 5,000.00 |
+| **Scraped Max Price** | 385,000.00 |
+| **Scraped Sources** | `https://uae.yallamotor.com/used-cars/mercedes benz/c-class/yr_2021_2021` |
+
+**Issues Found (1st test):**
+
+| # | Issue | Detail | Fix |
+|---|---|---|---|
+| 1 | **Space in URL** | `mercedes benz` should be `mercedes-benz` → caused 404 when clicking Scraped Sources link | Add `replace(' ', '-')` to URL builder |
+| 2 | **`>` prefix in count** | Heading `>294 listings` → count parsed as `>294` | Strip non-numeric prefix |
+| 3 | **Year filter not narrowing** | Heading showed `2000–2027` — because the URL was **missing the trim/version segment** | Add `/vr_{trim-slug}` to URL |
+| 4 | **Commas in prices** | `5,000` and `385,000` break numeric conversion | Add `replace(',', '')` |
+
+### 🔑 Key Discovery — Version/Trim URL Segment
+
+The user manually tested the **correct URL** on YallaMotor:
+
+```
+https://uae.yallamotor.com/used-cars/mercedes-benz/c-class/vr_c-200/yr_2021_2021
+```
+
+**Result with correct URL:**
+
+| Field | Value |
+|---|---|
+| **Heading** | `7 listings · AED 95,000 – 145,000 · 2021–2021 · updated 16 July 2026` |
+| **Page Title** | `Used Mercedes-Benz C-Class From Year 2021 - 2021 for Sale in UAE` |
+| **Listings** | 7 |
+| **Min Price** | 95,000 AED |
+| **Max Price** | 145,000 AED |
+| **Year Range** | ✅ Correct — 2021–2021 |
+
+🎯 **The version/trim segment (`vr_c-200`) is essential** — without it, YallaMotor shows the aggregate for the entire model across all years. With it, the heading narrows precisely to the user's vehicle configuration.
+
+### Corrected URL Pattern
+
+```
+https://uae.yallamotor.com/used-cars/{make-slug}/{model-slug}/vr_{version-slug}/yr_{year}_{year}
+```
+
+Where slugs are:
+- **make-slug**: `replace(toLower(vpi_make), ' ', '-')` — "mercedes benz" → `mercedes-benz`
+- **model-slug**: `replace(toLower(vpi_model), ' ', '-')` — "c class" → `c-class`
+- **version-slug**: `replace(toLower(vpi_trim), ' ', '-')` — "c 200" → `c-200`
+- **year-slug**: `yr_{year}_{year}` — "2021" → `yr_2021_2021`
+
+**⚠️ Hyphen rule:** Database stores "Mercedes Benz" (space), but YallaMotor URLs use "mercedes-benz" (hyphen). The `replace(' ', '-')` handles this. Make names like "Alfa Romeo" also get `alfa-romeo`. **Do NOT** blindly replace all spaces in the raw value — only in the URL slug.
 
 ### Visual Flow Summary
 
@@ -735,6 +823,256 @@ After both branches of the "Heading Available?" condition merge back:
 | Add fuel type + transmission to URL | After verifying choice field label extraction in Dataverse triggers |
 | Email notification to user | After admin approval flow is built |
 | Dubizzle support | After YallaMotor flow is stable |
+
+---
+
+## FLOW 3: Real-Time Scrape from Frontend (HTTP Trigger)
+
+**Purpose:** When a user submits a missing vehicle request from the app, scrape YallaMotor **synchronously** and return results immediately so the user can see them and optionally suggest a price before the MVR record is created.
+
+**Why this approach:**
+- 🚀 **Instant** — no Dataverse polling delay (seconds vs minutes)
+- 👤 **User sees results** — scraped prices shown before MVR is saved
+- 💾 **Both prices stored** — `vpi_scraped_minprice/maxprice` = scraped, `vpi_minprice/maxprice` = user-suggested
+
+### Data Flow
+
+```
+Step3Result.tsx                    Power Automate (FLOW 3)              Dataverse
+┌──────────────────┐               ┌──────────────────────────┐         
+│ User clicks      │               │                          │         
+│ "Search & Submit"│ ── POST ────→ │ HTTP Trigger receives     │         
+│                  │   {make,      │ make, model, trim, year   │         
+│                  │    model,     │                          │         
+│                  │    trim,      │ HTTP GET → YallaMotor     │         
+│                  │    year}      │                          │         
+│ Show spinner     │               │ Parse heading             │         
+│ "Searching..."   │               │ Strip > from count        │         
+│                  │               │ Strip , from prices       │         
+│                  │ ←─── JSON ─── │ Respond with results      │         
+│                  │               │                          │         
+│ Show scraped     │               └──────────────────────────┘         
+│ results +        │                                                   
+│ price input      │                                                   
+│                  │                                                   
+│ User suggests    │                                                   
+│ price (optional) │ ───→ Create MVR in Dataverse                      
+│ User confirms    │       - vpi_minprice = user suggested              
+│                  │       - vpi_maxprice = user suggested              
+│                  │       - vpi_scraped_minprice = scraped             
+│                  │       - vpi_scraped_maxprice = scraped             
+│                  │       - vpi_scraped_listings = {...}               
+│                  │       - vpi_scraped_sources = URL                  
+│                  │       - vpi_scrapestatus = 4 (Scraped)             
+└──────────────────┘                                                   
+```
+
+### Create the Flow
+
+1. Go to https://make.powerautomate.com
+2. Click **Create** → **Instant cloud flow**
+3. Flow name: `MVR - Scrape YallaMotor (HTTP)`
+4. Trigger: **When an HTTP request is received**
+5. Click **Create**
+
+### Step 1: Configure HTTP Trigger Schema
+
+6. Click **When an HTTP request is received** → **Use sample payload to generate schema**
+7. Paste this sample JSON:
+
+```json
+{
+  "make": "Mercedes Benz",
+  "model": "C-Class",
+  "trim": "C 200",
+  "year": 2021
+}
+```
+
+This auto-generates the JSON schema. Note the **HTTP POST URL** shown at the top — you'll need this in the frontend code.
+
+### Step 2: Initialize Variable — ResponseBody
+
+8. Click **+ New step** → **Initialize variable**
+   - Name: `ResponseBody`
+   - Type: **String**
+   - Value: (leave empty)
+
+### Step 3: Build Search URL (with Hyphens + Trim + Year)
+
+9. Click **+ New step** → **Compose**
+10. Name: `Build Search URL`
+11. Input: click **Expression** → paste:
+    ```
+    concat('https://uae.yallamotor.com/used-cars/', replace(toLower(triggerBody()?['make']), ' ', '-'), '/', replace(toLower(triggerBody()?['model']), ' ', '-'), '/vr_', replace(toLower(coalesce(triggerBody()?['trim'], '')), ' ', '-'), '/yr_', triggerBody()?['year'], '_', triggerBody()?['year'])
+    ```
+
+### Step 4: HTTP Request to YallaMotor
+
+12. Click **+ New step** → search **HTTP**
+13. Configure:
+    - Method: **GET**
+    - URI: click → **Expression**: `outputs('Build_Search_URL')`
+    - Headers:
+      ```json
+      {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,...",
+        "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Cache-Control": "no-cache",
+        "Referer": "https://www.google.com/"
+      }
+      ```
+
+### Step 5: Store Response Body
+
+14. Click **+ New step** → **Set variable**
+    - Name: `ResponseBody`
+    - Value: click → **Expression**: `body('HTTP')`
+
+### Step 6: Extract Page Title
+
+15. Click **+ New step** → **Compose**
+16. Name: `Extract Page Title`
+17. Input: click → **Expression**:
+    ```
+    if(contains(body('HTTP'), '<title>'), first(split(first(skip(split(body('HTTP'), '<title>'), 1)), '</title>')), 'No title found')
+    ```
+
+### Step 7: Check HTTP Status Code
+
+18. Click **+ New step** → **Compose**
+19. Name: `HTTP Status Code`
+20. Input: click → **Expression**: `outputs('HTTP')['statusCode']`
+
+### Step 8: Simplified Cloudflare Check
+
+21. Click **+ New step** → **Condition**
+22. Name: `Cloudflare Check`
+23. **OR** conditions:
+    - `outputs('Extract_Page_Title')` contains `Just a moment`
+    - `outputs('Extract_Page_Title')` contains `Attention Required`
+    - `outputs('HTTP_Status_Code')` not equals `200`
+
+### Step 9: If Blocked — Return Error
+
+**In If yes (blocked):**
+
+24. Click **Add an action** → **Respond to a PowerApp or flow**
+25. Configure:
+    - Status Code: `200` (to avoid CORS/fetch errors — indicate success with error flag)
+    - Headers: `{ "Content-Type": "application/json" }`
+    - Body:
+    ```json
+    {
+      "success": false,
+      "error": "YallaMotor not accessible",
+      "url": "@{outputs('Build_Search_URL')}",
+      "statusCode": "@{outputs('HTTP_Status_Code')}"
+    }
+    ```
+
+26. Click **Add an action** → **Terminate**
+    - Status: **Succeeded** (response already sent)
+
+### Step 10: If Accessible — Extract Heading
+
+**In If no (accessible):**
+
+27. Click **Add an action** → **Compose**
+28. Name: `Extract Heading`
+29. Input: click **Expression**:
+    ```
+    if(contains(variables('ResponseBody'), 'heading-h2-content'), trim(first(split(first(skip(split(variables('ResponseBody'), 'heading-h2-content'), 1)), '</div>'))), 'No heading found')
+    ```
+
+### Step 11: Condition — Heading Found?
+
+30. Click **+ New step** → **Condition**
+31. Name: `Is Heading Available`
+32. Row:
+    - Left: `outputs('Extract_Heading')`
+    - Operator: `is not equal to`
+    - Right: `No heading found`
+
+### Step 12: Parse Heading — Extract Prices
+
+**In If yes (heading found):**
+
+33. Click **Add an action** → **Compose**
+34. Name: `Extract After AED`
+35. Input: `trim(first(skip(split(outputs('Extract_Heading'), 'AED '), 1)))`
+
+36. Click **Add an action** → **Compose**
+37. Name: `Extract Min Price`
+38. Input: **`replace(trim(first(split(outputs('Extract_After_AED'), ' –'))), ',', '')`**
+    > Strips commas: `95,000` → `95000` ✅
+
+39. Click **Add an action** → **Compose**
+40. Name: `Extract Max Price`
+41. Input: **`replace(trim(first(split(first(skip(split(outputs('Extract_After_AED'), '– '), 1)), ' ·'))), ',', '')`**
+    > Strips commas: `145,000` → `145000` ✅
+
+42. Click **Add an action** → **Compose**
+43. Name: `Extract Listing Count`
+44. Input: **`replace(trim(first(split(outputs('Extract_Heading'), ' listings'))), '>', '')`**
+    > Strips `>` prefix: `>294` → `294` ✅
+
+### Step 13: Build Response JSON
+
+45. Click **+ New step** → **Compose**
+46. Name: `Build Response JSON`
+47. Input: click **Expression**:
+    ```
+    concat('{"success": true, "make": "', triggerBody()?['make'], '", "model": "', triggerBody()?['model'], '", "trim": "', triggerBody()?['trim'], '", "year": ', triggerBody()?['year'], ', "count": ', outputs('Extract_Listing_Count'), ', "minPrice": ', outputs('Extract_Min_Price'), ', "maxPrice": ', outputs('Extract_Max_Price'), ', "heading": "', outputs('Extract_Heading'), '", "sourceUrl": "', outputs('Build_Search_URL'), '"}')
+    ```
+
+### Step 14: Respond to Caller
+
+48. Click **+ New step** → **Respond to a PowerApp or flow**
+49. Configure:
+    - Status Code: `200`
+    - Headers: `{ "Content-Type": "application/json" }`
+    - Body: click **Expression**: `outputs('Build_Response_JSON')` 
+
+### Step 15: Fallback — JSON-LD (If heading not found)
+
+If heading is empty, add the same JSON-LD and BDI fallback steps from Flow 2 (Steps 60-77), then build the response JSON with fallback values.
+
+### Test the Flow
+
+50. Click **Save** (top-left)
+51. Copy the **HTTP POST URL** from the trigger step
+52. Test with any HTTP client:
+    ```
+    POST [your-flow-url]
+    Content-Type: application/json
+    
+    {
+      "make": "Mercedes Benz",
+      "model": "C-Class",
+      "trim": "C 200",
+      "year": 2021
+    }
+    ```
+
+### Expected Response
+
+```json
+{
+  "success": true,
+  "make": "Mercedes Benz",
+  "model": "C-Class",
+  "trim": "C 200",
+  "year": 2021,
+  "count": 7,
+  "minPrice": 95000,
+  "maxPrice": 145000,
+  "heading": "7 listings · AED 95,000 – 145,000 · 2021–2021 · updated 16 July 2026",
+  "sourceUrl": "https://uae.yallamotor.com/used-cars/mercedes-benz/c-class/vr_c-200/yr_2021_2021"
+}
+```
 
 ---
 

@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useInquiryStore } from '@stores';
 import { useDataSource } from '@data';
 import { LoadingScreen } from '@components/ui';
@@ -10,20 +9,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export function ValuationPage() {
   const { currentStep } = useInquiryStore();
-  const { isInitialized, isInitializing, error, triggerInit } = useDataSource();
-
-  // Trigger deferred DataSource init when the valuation page is first visited.
-  useEffect(() => {
-    if (!isInitialized && !isInitializing) {
-      triggerInit();
-    }
-  }, [isInitialized, isInitializing, triggerInit]);
+  const { isInitializing, error } = useDataSource();
 
   if (isInitializing) {
     return <LoadingScreen message="Loading vehicle data..." />;
   }
 
-  if (!isInitialized) {
+  if (error) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center">
         <p className="text-destructive">Failed to load data source. Please try again.</p>
@@ -39,63 +31,42 @@ export function ValuationPage() {
 
   return (
     <AnimatePresence mode="wait">
-      {isInitializing ? (
-        <motion.div
-          key="loading"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0, transition: { duration: 0.3 } }}
-          className="fixed inset-0 z-50"
-        >
-          <LoadingScreen message="Loading vehicle data..." />
-        </motion.div>
-      ) : !isInitialized ? (
-        <motion.div
-          key="error"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex min-h-[60vh] flex-col items-center justify-center"
-        >
-          <p className="text-destructive">{error ?? 'Failed to load data source. Please try again.'}</p>
-        </motion.div>
-      ) : (
-        <motion.div
-          key="content"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="container mx-auto px-4 py-8 md:py-12"
-        >
-          <div className="mx-auto max-w-4xl">
-            {/* Header */}
-            <div className="mb-8 text-center">
-              <h1 className="mb-2 text-3xl font-bold md:text-4xl">Vehicle Valuation</h1>
-              <p className="text-muted-foreground">
-                Get an accurate market valuation for any vehicle in the UAE
-              </p>
-            </div>
-
-            {/* Step indicator */}
-            <WizardStepIndicator steps={steps} currentStep={currentStep} />
-
-            {/* Step content */}
-            <div className="mt-8">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentStep}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {currentStep === 1 && <Step1PersonalInfo />}
-                  {currentStep === 2 && <Step2VehicleSelection />}
-                  {currentStep === 3 && <Step3Result />}
-                </motion.div>
-              </AnimatePresence>
-            </div>
+      <motion.div
+        key="content"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="container mx-auto px-4 py-8 md:py-12"
+      >
+        <div className="mx-auto max-w-4xl">
+          {/* Header */}
+          <div className="mb-8 text-center">
+            <h1 className="mb-2 text-3xl font-bold md:text-4xl">Vehicle Valuation</h1>
+            <p className="text-muted-foreground">
+              Get an accurate market valuation for any vehicle in the UAE
+            </p>
           </div>
-        </motion.div>
-      )}
+
+          {/* Step indicator */}
+          <WizardStepIndicator steps={steps} currentStep={currentStep} />
+
+          {/* Step content */}
+          <div className="mt-8">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentStep}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                {currentStep === 1 && <Step1PersonalInfo />}
+                {currentStep === 2 && <Step2VehicleSelection />}
+                {currentStep === 3 && <Step3Result />}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+      </motion.div>
     </AnimatePresence>
   );
 }

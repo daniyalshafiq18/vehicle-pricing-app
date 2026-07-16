@@ -1,9 +1,7 @@
-import { useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAdminStore } from '@stores';
-import { LoadingScreen, ThemeSwitcher, NotificationDropdown } from '@components/ui';
+import { ThemeSwitcher, NotificationDropdown } from '@components/ui';
 import { cn } from '@utils';
-import { useDataSource } from '@data';
 import { useInquiries, useMissingVehicleRequests, usePriceSuggestions } from '@hooks';
 import {
   LayoutDashboard,
@@ -218,46 +216,6 @@ function AdminLayoutContent() {
   );
 }
 
-/**
- * Admin layout with DataSource init guard.
- * Shows a loading screen until the Dataverse data source is ready,
- * preventing a crash when admin hooks call getDataSource() too early.
- */
 export function AdminLayout() {
-  const { isInitialized, isInitializing, error, triggerInit } = useDataSource();
-
-  // Trigger deferred DataSource init when the admin panel is first visited.
-  // This is a no-op if init has already started or completed.
-  useEffect(() => {
-    if (!isInitialized && !isInitializing) {
-      triggerInit();
-    }
-  }, [isInitialized, isInitializing, triggerInit]);
-
-  if (isInitializing) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-muted/30">
-        <LoadingScreen message="Loading admin panel..." />
-      </div>
-    );
-  }
-
-  if (!isInitialized) {
-    return (
-      <div className="flex h-screen flex-col items-center justify-center gap-4 bg-muted/30">
-        <p className="text-lg font-medium text-destructive">Failed to load data source</p>
-        <p className="max-w-md text-center text-sm text-muted-foreground">
-          {error || 'The admin panel could not connect to the database. Please try refreshing the page.'}
-        </p>
-        <button
-          onClick={() => window.location.reload()}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          Refresh Page
-        </button>
-      </div>
-    );
-  }
-
   return <AdminLayoutContent />;
 }

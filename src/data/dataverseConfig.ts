@@ -111,6 +111,12 @@ export const MISSING_VEHICLE_REQUEST_FIELDS = {
   MIN_MILEAGE: 'vpi_minmilage',
   MAX_MILEAGE: 'vpi_maxmilage',
   CREATED_ON: 'createdon',
+  // Scrape result fields
+  SCRAPE_STATUS: 'vpi_scrapestatus',
+  SCRAPED_LISTINGS: 'vpi_scraped_listings',
+  SCRAPED_MIN_PRICE: 'vpi_scraped_minprice',
+  SCRAPED_MAX_PRICE: 'vpi_scraped_maxprice',
+  SCRAPED_SOURCES: 'vpi_scraped_sources',
 } as const;
 
 export const MISSING_VEHICLE_REQUEST_SELECT_FIELDS = Object.values(MISSING_VEHICLE_REQUEST_FIELDS).join(',');

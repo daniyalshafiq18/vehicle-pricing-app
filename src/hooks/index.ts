@@ -6,3 +6,4 @@ export * from './useDashboardAnalytics';
 export * from './useMissingVehicleRequests';
 export * from './usePriceSuggestions';
 export * from './usePriceSuggestionStatuses';
+export * from './useMissingVehicleRequest';

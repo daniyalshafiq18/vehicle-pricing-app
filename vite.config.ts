@@ -40,9 +40,8 @@ export default defineConfig({
         assetFileNames: 'assets/[name]-[hash][extname]',
         manualChunks(id) {
           // Separate vendor code into cacheable chunks
-          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
-            return 'vendor-react';
-          }
+          // Note: React is intentionally kept in the main vendor chunk to avoid
+          // circular dependency issues (vendor -> react -> vendor)
           if (id.includes('node_modules/recharts')) {
             return 'vendor-charts';
           }

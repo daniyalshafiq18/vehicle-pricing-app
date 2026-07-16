@@ -34,8 +34,7 @@ import {
   Globe,
 } from 'lucide-react';
 import { cn, formatCurrency } from '@utils';
-import { scrapeYallaMotor, type ScrapeResult } from '@lib/yallaMotorScraper';
-import { updateMissingVehicleRequest } from '@lib/missingVehicleApi';
+import { scrapeViaFlow3, type Flow3ScrapeResult } from '@lib/yallaMotorHttpScraper';
 
 export function Step3Result() {
   const [searchParams] = useSearchParams();
@@ -53,15 +52,14 @@ export function Step3Result() {
 
   /** Dialog phase: 'form' → 'scraping' → 'results' */
   const [dialogPhase, setDialogPhase] = useState<'form' | 'scraping' | 'results'>('form');
-  const [scrapeResult, setScrapeResult] = useState<ScrapeResult | null>(null);
+  const [flow3Result, setFlow3Result] = useState<Flow3ScrapeResult | null>(null);
   const [scrapeError, setScrapeError] = useState<string | null>(null);
-  /** ID of the MVR created during step 1, used to patch correction prices. */
-  const [mvrCreatedId, setMvrCreatedId] = useState<string | null>(null);
+  /** ID of the final MVR created after user confirms. */
+  const [, setMvrCreatedId] = useState<string | null>(null);
 
-  /** Price correction (step 2 inside dialog) */
-  const [correctionMinPrice, setCorrectionMinPrice] = useState('');
-  const [correctionMaxPrice, setCorrectionMaxPrice] = useState('');
-  const [correctionSourceUrl, setCorrectionSourceUrl] = useState('');
+  /** User's price suggestion (optional — shown after scraped results). */
+  const [suggestedMinPrice, setSuggestedMinPrice] = useState('');
+  const [suggestedMaxPrice, setSuggestedMaxPrice] = useState('');
 
   const [showSuggestDialog, setShowSuggestDialog] = useState(false);
   const [suggestMinPrice, setSuggestMinPrice] = useState('');
@@ -125,21 +123,32 @@ export function Step3Result() {
     setScrapeError(null);
 
     try {
-      // 1. Scrape YallaMotor first to get the estimated prices
-      const result = await scrapeYallaMotor({
+      // Call Flow 3 to scrape YallaMotor in real-time
+      const result = await scrapeViaFlow3({
         make: vehicleSelection.make,
         model: vehicleSelection.model,
-        spec: vehicleSelection.spec,
+        trim: vehicleSelection.spec,
         year: vehicleSelection.year ?? new Date().getFullYear(),
-        bodyType: vehicleSelection.bodyType || undefined,
-        cylinders: requestCylinders || undefined,
-        fuelType: requestFuelType || undefined,
-        transmissionType: requestTransmissionType || undefined,
-        driveType: requestDriveType || undefined,
       });
-      setScrapeResult(result);
 
-      // 2. Create the MVR with scraped prices included
+      if (!result.success) {
+        throw new Error(result.error || 'Scrape failed');
+      }
+
+      setFlow3Result(result);
+      setDialogPhase('results');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to scrape YallaMotor';
+      setScrapeError(message);
+      setDialogPhase('results');
+    }
+  }, [vehicleSelection]);
+
+  /** User confirmed — create the MVR with scraped + suggested prices. */
+  const handleConfirmAndCreate = useCallback(async () => {
+    if (!flow3Result) return;
+
+    try {
       const mvrId = await upsertRequest.mutateAsync({
         make: vehicleSelection.make,
         model: vehicleSelection.model,
@@ -154,45 +163,34 @@ export function Step3Result() {
         contactName: personalInfo.firstName && personalInfo.lastName
           ? `${personalInfo.firstName} ${personalInfo.lastName}`
           : personalInfo.firstName || undefined,
-        minPrice: result.estimatedMinPrice,
-        maxPrice: result.estimatedMaxPrice,
+        minPrice: suggestedMinPrice ? Number(suggestedMinPrice) : undefined,
+        maxPrice: suggestedMaxPrice ? Number(suggestedMaxPrice) : undefined,
         minMileage: requestMinMileage ? Number(requestMinMileage) : undefined,
         maxMileage: requestMaxMileage ? Number(requestMaxMileage) : undefined,
+        // Scrape results from Flow 3
+        scrapedMinPrice: flow3Result.minPrice,
+        scrapedMaxPrice: flow3Result.maxPrice,
+        scrapedListings: JSON.stringify({
+          count: flow3Result.count,
+          minPrice: flow3Result.minPrice,
+          maxPrice: flow3Result.maxPrice,
+          source: 'YallaMotor',
+          url: flow3Result.sourceUrl,
+          heading: flow3Result.heading,
+        }),
+        scrapedSources: flow3Result.sourceUrl,
+        scrapeStatusValue: 4, // Scraped
       });
       setMvrCreatedId(mvrId);
-
-      setDialogPhase('results');
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to process request';
-      setScrapeError(message);
-      setDialogPhase('results');
-    }
-  }, [
-    vehicleSelection, requestCylinders, requestFuelType,
-    requestTransmissionType, requestDriveType, requestMinMileage,
-    requestMaxMileage, personalInfo, upsertRequest,
-  ]);
-
-  /** Submit the user's price correction from the scraped-results step. */
-  const handleSubmitCorrection = useCallback(async () => {
-    const hasPrices = correctionMinPrice || correctionMaxPrice;
-
-    // If there's a valid MVR ID and prices to correct, PATCH them to Dataverse
-    if (mvrCreatedId && hasPrices) {
-      try {
-        await updateMissingVehicleRequest(mvrCreatedId, {
-          minPrice: correctionMinPrice ? Number(correctionMinPrice) : undefined,
-          maxPrice: correctionMaxPrice ? Number(correctionMaxPrice) : undefined,
-        });
-      } catch {
-        // Correction PATCH failed — still show success to the user.
-        // The admin can correct prices manually.
-      }
+    } catch {
+      // MVR creation failed — toast will show from the hook
     }
 
     setShowRequestDialog(false);
     setRequestSubmitted(true);
-  }, [correctionMinPrice, correctionMaxPrice, correctionSourceUrl, mvrCreatedId]);
+  }, [flow3Result, vehicleSelection, personalInfo, upsertRequest,
+    requestCylinders, requestFuelType, requestTransmissionType, requestDriveType,
+    requestMinMileage, requestMaxMileage, suggestedMinPrice, suggestedMaxPrice]);
 
   const handleSubmitSuggestion = () => {
     const vehicleId = valuationResult?.vehicle.id;
@@ -259,17 +257,20 @@ export function Step3Result() {
                 </span>{' '}
                 once this vehicle is available.
               </p>
-              {/* Show scraped result summary if available */}
-              {scrapeResult && (
+              {/* Show scraped data from Flow 3 if available */}
+              {flow3Result && (
                 <div className="mx-auto mt-4 mb-6 max-w-xs rounded-xl border bg-card p-4">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    Scraped Market Price
-                  </p>
-                  <p className="mt-1 text-lg font-bold text-primary">
-                    {formatCurrency(scrapeResult.estimatedMinPrice)} — {formatCurrency(scrapeResult.estimatedMaxPrice)}
+                  <div className="mb-1 flex items-center justify-center gap-1.5">
+                    <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-500">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      Live Market Data
+                    </span>
+                  </div>
+                  <p className="text-lg font-bold text-primary">
+                    {formatCurrency(flow3Result.minPrice)} — {formatCurrency(flow3Result.maxPrice)}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    Based on {scrapeResult.listingsCount} listings
+                    {flow3Result.count} listings · YallaMotor
                   </p>
                 </div>
               )}
@@ -364,7 +365,7 @@ export function Step3Result() {
           <div className="flex items-center gap-2 px-6 pt-5 pb-3">
             {[
               { phase: 'form', label: 'Details', icon: Car },
-              { phase: 'scraping', label: 'Scrape', icon: Globe },
+              { phase: 'scraping', label: 'Estimate', icon: Globe },
               { phase: 'results', label: 'Results', icon: Sparkles },
             ].map((step, i) => {
               const Icon = step.icon;
@@ -518,8 +519,8 @@ export function Step3Result() {
                     </>
                   ) : (
                     <>
-                      <Send className="mr-2 h-4 w-4" />
-                      Submit Request &amp; Scrape
+                      <Globe className="mr-2 h-4 w-4" />
+                      Search YallaMotor &amp; Submit
                     </>
                   )}
                 </Button>
@@ -533,9 +534,9 @@ export function Step3Result() {
               <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-              <p className="text-lg font-semibold text-foreground">Scraping Listings</p>
+              <p className="text-lg font-semibold text-foreground">Searching YallaMotor</p>
               <p className="mt-1.5 text-center text-sm text-muted-foreground max-w-xs">
-                Searching YallaMotor, Dubizzle, and other UAE marketplaces for{' '}
+                Looking up live listings for{' '}
                 {vehicleSelection.year} {vehicleSelection.make} {vehicleSelection.model}...
               </p>
             </div>
@@ -544,7 +545,7 @@ export function Step3Result() {
           {/* ── Phase 3: Results ── */}
           {dialogPhase === 'results' && (
             <div className="space-y-5 px-6 pb-6">
-              {scrapeError && !scrapeResult ? (
+              {scrapeError && !flow3Result ? (
                 /* Error state */
                 <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5 text-center">
                   <p className="text-sm font-medium text-red-600 dark:text-red-400">
@@ -562,73 +563,65 @@ export function Step3Result() {
                     Try Again
                   </Button>
                 </div>
-              ) : scrapeResult ? (
+              ) : flow3Result ? (
                 <>
-                  {/* Scraped Price Estimate */}
-                  <div className="rounded-xl border bg-gradient-to-br from-primary/5 to-transparent p-5 text-center">
+                  {/* Price Estimate — Real YallaMotor Data */}
+                  <div className="rounded-xl border bg-gradient-to-br from-emerald-500/5 to-transparent p-5 text-center">
                     <div className="mb-2 flex items-center justify-center gap-2">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                        Scraped Market Price
+                      <Globe className="h-4 w-4 text-emerald-500" />
+                      <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                        Live Market Data — YallaMotor
                       </p>
                     </div>
                     <p className="text-2xl font-bold text-foreground">
-                      {formatCurrency(scrapeResult.estimatedMinPrice)} — {formatCurrency(scrapeResult.estimatedMaxPrice)}
+                      {formatCurrency(flow3Result.minPrice)} — {formatCurrency(flow3Result.maxPrice)}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {scrapeResult.currency} · Based on {scrapeResult.listingsCount} listings
+                      {flow3Result.count} listings found · {flow3Result.year} {flow3Result.make} {flow3Result.model}
                     </p>
-                    {/* Mini listings list */}
-                    <div className="mt-4 max-h-24 space-y-1.5 overflow-y-auto">
-                      {scrapeResult.listings.slice(0, 5).map((listing, i) => (
-                        <div key={i} className="flex items-center justify-between rounded-lg bg-background/50 px-3 py-1.5 text-xs">
-                          <span className="text-muted-foreground truncate">
-                            {listing.source} · {listing.mileage.toLocaleString()} km
-                          </span>
-                          <span className="ml-2 font-semibold text-foreground">
-                            {formatCurrency(listing.price)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                    {flow3Result.heading && (
+                      <p className="mt-2 text-[11px] text-muted-foreground/70 italic">
+                        {flow3Result.heading}
+                      </p>
+                    )}
+                    {/* Source link */}
+                    <a
+                      href={flow3Result.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      View on YallaMotor
+                    </a>
                   </div>
 
-                  {/* Price Correction */}
+                  {/* Price Suggestion */}
                   <div className="rounded-xl border bg-muted/20 p-4">
                     <div className="mb-3 flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4 text-amber-500" />
+                      <DollarSign className="h-4 w-4 text-amber-500" />
                       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Not satisfied with the estimate?
+                        Suggest Your Own Price (Optional)
                       </p>
                     </div>
                     <p className="mb-3 text-xs text-muted-foreground">
-                      Enter your own suggested price range for this vehicle.
+                      Know the market better? Enter your own price range for this vehicle.
                     </p>
                     <div className="flex items-center gap-3 mb-3">
                       <input
                         type="number"
                         placeholder="Min Price"
-                        value={correctionMinPrice}
-                        onChange={(e) => setCorrectionMinPrice(e.target.value)}
+                        value={suggestedMinPrice}
+                        onChange={(e) => setSuggestedMinPrice(e.target.value)}
                         className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
                       />
                       <span className="text-muted-foreground/40">—</span>
                       <input
                         type="number"
                         placeholder="Max Price"
-                        value={correctionMaxPrice}
-                        onChange={(e) => setCorrectionMaxPrice(e.target.value)}
+                        value={suggestedMaxPrice}
+                        onChange={(e) => setSuggestedMaxPrice(e.target.value)}
                         className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
-                      />
-                    </div>
-                    <div className="relative">
-                      <ExternalLink className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
-                      <input
-                        type="url"
-                        placeholder="Source URL (optional)"
-                        value={correctionSourceUrl}
-                        onChange={(e) => setCorrectionSourceUrl(e.target.value)}
-                        className="h-9 w-full rounded-lg border bg-background pl-9 pr-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
                       />
                     </div>
                   </div>
@@ -638,28 +631,29 @@ export function Step3Result() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        setShowRequestDialog(false);
-                        setRequestSubmitted(true);
+                        // Skip: Create MVR with scraped prices only (no user suggestion)
+                        handleConfirmAndCreate();
                       }}
                       className="flex-1"
+                      disabled={upsertRequest.isPending}
                     >
                       Skip
                     </Button>
                     <Button
                       variant="gradient"
-                      onClick={handleSubmitCorrection}
-                      disabled={upsertSuggestion.isPending || (!correctionMinPrice && !correctionMaxPrice)}
+                      onClick={handleConfirmAndCreate}
+                      disabled={upsertRequest.isPending}
                       className="flex-1"
                     >
-                      {upsertSuggestion.isPending ? (
+                      {upsertRequest.isPending ? (
                         <>
                           <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                          Saving...
+                          Submitting...
                         </>
                       ) : (
                         <>
-                          <DollarSign className="mr-2 h-4 w-4" />
-                          Submit Price
+                          <Send className="mr-2 h-4 w-4" />
+                          Confirm &amp; Submit
                         </>
                       )}
                     </Button>

@@ -20,6 +20,9 @@ import {
   LayoutList,
   LayoutGrid,
   User,
+  Globe,
+  ExternalLink,
+  Loader,
 } from 'lucide-react';
 import type { MissingVehicleRequest } from '@types';
 import { cn, formatCurrency } from '@utils';
@@ -54,6 +57,70 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; clas
     dot: 'bg-red-500',
   },
 };
+
+// ─── Scrape Status helpers ──────────────────────────────────────────
+
+const SCRAPE_STATUS_CONFIG: Record<string, { label: string; className: string; dot: string }> = {
+  Pending: {
+    label: 'Pending',
+    className: 'text-slate-600 dark:text-slate-400 bg-slate-500/10 border-slate-500/20',
+    dot: 'bg-slate-500',
+  },
+  Testing: {
+    label: 'Testing',
+    className: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20',
+    dot: 'bg-blue-500',
+  },
+  'In Progress': {
+    label: 'In Progress',
+    className: 'text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/20',
+    dot: 'bg-purple-500',
+  },
+  Scraped: {
+    label: 'Scraped',
+    className: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    dot: 'bg-emerald-500',
+  },
+  Failed: {
+    label: 'Failed',
+    className: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/20',
+    dot: 'bg-red-500',
+  },
+  Unreachable: {
+    label: 'Unreachable',
+    className: 'text-orange-600 dark:text-orange-400 bg-orange-500/10 border-orange-500/20',
+    dot: 'bg-orange-500',
+  },
+};
+
+function ScrapeStatusBadge({ status }: { status: string | undefined }) {
+  const cfg = SCRAPE_STATUS_CONFIG[status ?? ''];
+  if (!cfg) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium text-muted-foreground bg-muted/30 border-muted">
+        <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+        {status || '—'}
+      </span>
+    );
+  }
+  return (
+    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium', cfg.className)}>
+      <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
+      {cfg.label}
+    </span>
+  );
+}
+
+/** Safely parse the scrapedListings JSON field into an object. */
+function parseScrapedListings(raw: string | undefined): Record<string, unknown> | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
 
 function StatusBadge({ status }: { status: string | undefined }) {
   const cfg = STATUS_CONFIG[status ?? ''];
@@ -253,9 +320,112 @@ function MissingVehicleDetailModal({
               </div>
             ))}
           </div>
+
+          {/* ── Scrape Results Section ── */}
+          <div className="mt-5">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-500/10">
+                <Loader className="h-3.5 w-3.5 text-purple-500" />
+              </div>
+              <h3 className="text-sm font-semibold text-foreground">Scrape Results</h3>
+              <ScrapeStatusBadge status={request.scrapeStatus} />
+            </div>
+
+            {request.scrapeStatus === 'Scraped' || request.scrapedListings ? (
+              <div className="grid grid-cols-2 gap-3">
+                {(() => {
+                  const parsed = parseScrapedListings(request.scrapedListings);
+                  if (parsed) {
+                    return (
+                      <>
+                        <div className="rounded-xl border bg-card p-3.5">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Listings Found</p>
+                          <p className="mt-1 text-sm font-bold text-foreground">{String(parsed.count ?? '—')}</p>
+                        </div>
+                        <div className="rounded-xl border bg-card p-3.5">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Source</p>
+                          <p className="mt-1 text-sm font-medium text-foreground">{String(parsed.source ?? '—')}</p>
+                        </div>
+                      </>
+                    );
+                  }
+                  return null;
+                })()}
+                {request.scrapedMinPrice != null && (
+                  <div className="rounded-xl border bg-card p-3.5">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Scraped Min Price</p>
+                    <p className="mt-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                      {formatCurrency(request.scrapedMinPrice)}
+                    </p>
+                  </div>
+                )}
+                {request.scrapedMaxPrice != null && (
+                  <div className="rounded-xl border bg-card p-3.5">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Scraped Max Price</p>
+                    <p className="mt-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                      {formatCurrency(request.scrapedMaxPrice)}
+                    </p>
+                  </div>
+                )}
+                {request.scrapedSources && (
+                  <div className="col-span-2 rounded-xl border bg-card p-3.5">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Source URL</p>
+                    <a
+                      href={request.scrapedSources}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline break-all"
+                    >
+                      <Globe className="h-3.5 w-3.5 shrink-0" />
+                      {request.scrapedSources}
+                      <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
+                    </a>
+                  </div>
+                )}
+                {request.scrapedListings && !parseScrapedListings(request.scrapedListings) && (
+                  <div className="col-span-2 rounded-xl border bg-card p-3.5">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Raw Scraped Data</p>
+                    <pre className="mt-1 max-h-32 overflow-auto rounded-lg bg-muted/50 p-2 text-[11px] text-foreground break-all whitespace-pre-wrap">
+                      {request.scrapedListings}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            ) : request.scrapeStatus && request.scrapeStatus !== 'Pending' ? (
+              <div className="rounded-xl border bg-muted/30 p-4 text-center">
+                <p className="text-xs text-muted-foreground">
+                  {request.scrapeStatus === 'In Progress'
+                    ? 'Scraping is currently in progress...'
+                    : request.scrapeStatus === 'Failed'
+                      ? 'Scraping failed. Check the flow run history for details.'
+                      : request.scrapeStatus === 'Unreachable'
+                        ? 'The source website was unreachable during scraping.'
+                        : `Scrape status: ${request.scrapeStatus}`}
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-xl border bg-muted/30 p-4 text-center">
+                <p className="text-xs text-muted-foreground">
+                  No scrape results available yet. Scraping is triggered automatically when the request is created.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </Dialog>
+  );
+}
+
+/** A small helper to format a listings count from scrapedListings JSON. */
+function ScrapedListingCount({ listings }: { listings: string | undefined }) {
+  const parsed = parseScrapedListings(listings);
+  if (!parsed || parsed.count == null) return null;
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md bg-purple-500/10 px-2 py-0.5 text-[10px] font-medium text-purple-600 dark:text-purple-400">
+      <SearchX className="h-3 w-3" />
+      {String(parsed.count)} listings
+    </span>
   );
 }
 
@@ -331,6 +501,39 @@ function MissingVehicleCard({
                   {request.maxPrice != null ? formatCurrency(request.maxPrice) : '—'}
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* Scrape info */}
+          {request.scrapeStatus && request.scrapeStatus !== 'Pending' && (
+            <div className="mt-3 space-y-2 shrink-0">
+              <div className="flex items-center gap-2">
+                <ScrapeStatusBadge status={request.scrapeStatus} />
+                <ScrapedListingCount listings={request.scrapedListings} />
+              </div>
+              {(request.scrapedMinPrice != null || request.scrapedMaxPrice != null) && (
+                <div className="flex items-center gap-3 rounded-xl border bg-card p-3">
+                  {request.scrapedMinPrice != null && (
+                    <div className="flex-1">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Scraped Min</p>
+                      <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                        {formatCurrency(request.scrapedMinPrice)}
+                      </p>
+                    </div>
+                  )}
+                  {request.scrapedMinPrice != null && request.scrapedMaxPrice != null && (
+                    <div className="h-8 w-px bg-border" />
+                  )}
+                  {request.scrapedMaxPrice != null && (
+                    <div className="flex-1">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Scraped Max</p>
+                      <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                        {formatCurrency(request.scrapedMaxPrice)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -587,7 +790,7 @@ export function AdminMissingVehiclesPage() {
 
             {isLoading ? (
               <div className="p-6">
-                <SkeletonTable rows={8} cols={7} />
+                <SkeletonTable rows={8} cols={13} />
               </div>
             ) : paginated.length > 0 ? (
               <div className="overflow-x-auto">
@@ -603,6 +806,7 @@ export function AdminMissingVehiclesPage() {
                       <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Min Price</th>
                       <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Max Price</th>
                       <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Scrape</th>
                       <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Requested By</th>
                       <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Requested</th>
                       <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
@@ -654,6 +858,12 @@ export function AdminMissingVehiclesPage() {
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <StatusBadge status={req.status} />
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <ScrapeStatusBadge status={req.scrapeStatus} />
+                            <ScrapedListingCount listings={req.scrapedListings} />
+                          </div>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <p className="text-xs text-foreground truncate max-w-[140px]" title={req.contactName || req.contactEmail || ''}>

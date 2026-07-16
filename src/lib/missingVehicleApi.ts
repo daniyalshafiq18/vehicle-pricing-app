@@ -21,6 +21,7 @@ import {
   missingVehicleTransmissionTypeLabel,
   missingVehicleDriveTypeLabel,
   missingVehicleStatusLabel,
+  missingVehicleScrapeStatusLabel,
   bodyTypeValue,
   powertrainValue,
   transmissionValue,
@@ -74,6 +75,13 @@ function parseRawRecord(raw: Record<string, unknown>): MissingVehicleRequest {
       ? `${(contactRaw.firstname as string) ?? ''} ${(contactRaw.lastname as string) ?? ''}`.trim()
       : undefined,
     contactEmail: (contactRaw?.emailaddress1 as string) ?? undefined,
+    // Scrape result fields
+    scrapeStatus: missingVehicleScrapeStatusLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPE_STATUS]),
+    scrapeStatusValue: raw[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPE_STATUS] as number | undefined,
+    scrapedListings: raw[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_LISTINGS] as string | undefined,
+    scrapedMinPrice: raw[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MIN_PRICE] as number | undefined,
+    scrapedMaxPrice: raw[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MAX_PRICE] as number | undefined,
+    scrapedSources: raw[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_SOURCES] as string | undefined,
   };
 }
 
@@ -96,6 +104,12 @@ export async function upsertMissingVehicleRequest(payload: {
   maxPrice?: number;
   minMileage?: number;
   maxMileage?: number;
+  // Scrape result fields (from Flow 3)
+  scrapedMinPrice?: number;
+  scrapedMaxPrice?: number;
+  scrapedListings?: string;
+  scrapedSources?: string;
+  scrapeStatusValue?: number;
 }): Promise<string> {
   const baseUrl = `${API_BASE}/${ENTITIES.MISSING_VEHICLE_REQUEST}`;
 
@@ -112,6 +126,23 @@ export async function upsertMissingVehicleRequest(payload: {
   }
   if (payload.maxPrice !== undefined) {
     record[MISSING_VEHICLE_REQUEST_FIELDS.MAX_PRICE] = payload.maxPrice;
+  }
+
+  // Scrape result fields (from Flow 3)
+  if (payload.scrapedMinPrice !== undefined) {
+    record[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MIN_PRICE] = payload.scrapedMinPrice;
+  }
+  if (payload.scrapedMaxPrice !== undefined) {
+    record[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MAX_PRICE] = payload.scrapedMaxPrice;
+  }
+  if (payload.scrapedListings !== undefined) {
+    record[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_LISTINGS] = payload.scrapedListings;
+  }
+  if (payload.scrapedSources !== undefined) {
+    record[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_SOURCES] = payload.scrapedSources;
+  }
+  if (payload.scrapeStatusValue !== undefined) {
+    record[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPE_STATUS] = payload.scrapeStatusValue;
   }
 
   // Optional choice fields — only send if provided
@@ -218,6 +249,11 @@ export async function fetchMissingVehicleRequests(): Promise<MissingVehicleReque
     MISSING_VEHICLE_REQUEST_FIELDS.MIN_MILEAGE,
     MISSING_VEHICLE_REQUEST_FIELDS.MAX_MILEAGE,
     MISSING_VEHICLE_REQUEST_FIELDS.CREATED_ON,
+    MISSING_VEHICLE_REQUEST_FIELDS.SCRAPE_STATUS,
+    MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_LISTINGS,
+    MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MIN_PRICE,
+    MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MAX_PRICE,
+    MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_SOURCES,
   ].join(',');
 
   const resp: ODataResponse = await safeFetchWithMeta<ODataResponse>({
@@ -226,6 +262,50 @@ export async function fetchMissingVehicleRequests(): Promise<MissingVehicleReque
   }).then((r) => r.data);
 
   return (resp.value ?? []).map(parseRawRecord);
+}
+
+/**
+ * Fetch a single missing vehicle request by ID.
+ * Returns null if not found or on error (caller should handle gracefully).
+ */
+export async function fetchMissingVehicleRequestById(id: string): Promise<MissingVehicleRequest | null> {
+  const baseUrl = `${API_BASE}/${ENTITIES.MISSING_VEHICLE_REQUEST}`;
+
+  const select = [
+    MISSING_VEHICLE_REQUEST_FIELDS.ID,
+    MISSING_VEHICLE_REQUEST_FIELDS.MAKE,
+    MISSING_VEHICLE_REQUEST_FIELDS.MODEL,
+    MISSING_VEHICLE_REQUEST_FIELDS.TRIM,
+    MISSING_VEHICLE_REQUEST_FIELDS.MODEL_YEAR,
+    MISSING_VEHICLE_REQUEST_FIELDS.BODY_TYPE,
+    MISSING_VEHICLE_REQUEST_FIELDS.CYLINDERS,
+    MISSING_VEHICLE_REQUEST_FIELDS.FUEL_TYPE,
+    MISSING_VEHICLE_REQUEST_FIELDS.TRANSMISSION_TYPE,
+    MISSING_VEHICLE_REQUEST_FIELDS.DRIVE_TYPE,
+    MISSING_VEHICLE_REQUEST_FIELDS.STATUS,
+    MISSING_VEHICLE_REQUEST_FIELDS.MIN_PRICE,
+    MISSING_VEHICLE_REQUEST_FIELDS.MAX_PRICE,
+    MISSING_VEHICLE_REQUEST_FIELDS.MIN_MILEAGE,
+    MISSING_VEHICLE_REQUEST_FIELDS.MAX_MILEAGE,
+    MISSING_VEHICLE_REQUEST_FIELDS.CREATED_ON,
+    MISSING_VEHICLE_REQUEST_FIELDS.SCRAPE_STATUS,
+    MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_LISTINGS,
+    MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MIN_PRICE,
+    MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MAX_PRICE,
+    MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_SOURCES,
+  ].join(',');
+
+  try {
+    const raw = await safeFetchWithMeta<Record<string, unknown>>({
+      url: `${baseUrl}(${id})?$select=${select}&$expand=vpi_Contact($select=firstname,lastname,emailaddress1)`,
+      headers: { Prefer: 'odata.include-annotations=*' },
+    }).then((r) => r.data);
+
+    if (!raw || !raw[MISSING_VEHICLE_REQUEST_FIELDS.ID]) return null;
+    return parseRawRecord(raw);
+  } catch {
+    return null;
+  }
 }
 
 /**

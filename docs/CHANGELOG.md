@@ -1,5 +1,53 @@
 # Changelog
 
+## 2026-07-16
+
+### Flow 3 — New HTTP-Triggered Flow Design for Real-Time Scraping
+- **New approach**: Instead of Dataverse-triggered scraping (slow, user never sees results), created **FLOW 3** with "When an HTTP request is received" trigger
+- Frontend calls Flow 3 → scrapes YallaMotor → returns JSON immediately → user sees results → suggests price (optional) → MVR created with both scraped + suggested prices
+- `vpi_scraped_minprice/maxprice` = scraped from YallaMotor, `vpi_minprice/maxprice` = user-suggested (both preserved)
+- Full design documented in `docs/power-automate-cloud-only-design.md` (FLOW 3 section)
+
+### Flow 2 — Full Test Results with Mercedes-Benz C-Class C 200
+- **First test** — used old URL builder (no hyphen fix, no version/trim segment):
+  - Results: `>294` listings, AED 5,000–385,000, years 2000–2027
+  - Scraped Sources link returned 404 (space in URL: `mercedes benz`)
+- **🔑 Key discovery** — YallaMotor's URL needs the **version/trim segment** (`vr_c-200`) for year-specific results. Without it, the heading shows the entire model range across all years
+- **Manual test with correct URL** (`/mercedes-benz/c-class/vr_c-200/yr_2021_2021`):
+  - ✅ **7 listings · AED 95,000 – 145,000 · 2021–2021** — accurate, year-specific data!
+- Updated URL builder: added `replace(' ', '-')` for multi-word makes/models and `/vr_{trim-slug}` segment
+- Documented hyphen rule: database stores "Mercedes Benz" (space), YallaMotor URL needs "mercedes-benz" (hyphen)
+- Updated `docs/power-automate-cloud-only-design.md` with corrected test results and URL pattern
+
+## 2026-07-15
+
+### Flow 2 — Field Name Fix & Debug Step
+- Fixed all `Update a row` Row ID expressions in Flow 2 design doc: `vpi_missingvehiclerequestid` → `vpi_missingvehiclerequestsid` (Dataverse uses lowercase `sid` suffix, not uppercase `ID`)
+- Added debug Compose step (Step 2) after trigger to inspect exact trigger output field names before building expressions
+- Documented step numbering shift caused by debug step insertion
+
+### Fixed — YallaMotor Backend Outage Diagnosed
+- Discovered YallaMotor was returning `backend_error` (`backend=nextjs`, `Backend fetch failed`) — their Next.js servers were down, NOT Cloudflare blocking the HTTP connector
+- Both Flow 1 (Toyota Camry) and Flow 2 (Mercedes-Benz) failed for the same reason: YallaMotor server outage
+- The Power Automate Cloud-only approach remains viable. Cloudflare was not the cause of recent failures
+- Updated `docs/power-automate-cloud-only-design.md` status header to reflect accurate diagnosis
+- Updated `docs/PHASE-3-REVISED-PLAN.md` status with YallaMotor backend outage finding
+
+### Fixed — URL Format for Multi-Word Makes/Models
+- Identified that multi-word makes ("Mercedes Benz") and models ("C-Class") need hyphenated URL slugs (`mercedes-benz`) not space-encoded (`mercedes%20benz`) for YallaMotor URLs
+- Documented in design doc URL builder expression
+
+### Added — Scrape Result Fields Wired into UI
+- Added `scrapeStatus`, `scrapeStatusValue`, `scrapedListings`, `scrapedMinPrice`, `scrapedMaxPrice`, `scrapedSources` to `MissingVehicleRequest` type
+- Added scrape field names to `MISSING_VEHICLE_REQUEST_FIELDS` in `dataverseConfig.ts`
+- Added `MISSING_VEHICLE_SCRAPE_STATUS` optionset mapping (Pending=1, Testing=2, In Progress=3, Scraped=4, Failed=5, Unreachable=6) in `dataverseOptionSets.ts`
+- Added scrape field parsing in `missingVehicleApi.ts` (`parseRawRecord` and `$select`)
+- **AdminMissingVehiclesPage** now displays scrape results:
+  - **Table view**: New "Scrape" column with status badge + listing count
+  - **Card view**: Scrape status badge + scraped min/max prices
+  - **Detail modal**: Full "Scrape Results" section with parsed JSON display, source URL link, and descriptive messages for In Progress/Failed/Unreachable states
+- All builds clean — TypeScript strict, no errors
+
 ## 2026-07-15
 
 ### Changed — Layout reorder: Top Makes + Top Models side by side
