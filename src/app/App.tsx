@@ -10,7 +10,7 @@ import { AppRouter } from './router';
  * Once data is ready, the app renders.
  */
 function SplashGate({ children }: { children: ReactNode }) {
-  const { isInitialized, isInitializing, error, triggerInit } = useDataSource();
+  const { isInitialized, isInitializing, error, triggerInit, progress } = useDataSource();
 
   // Start DataSource init on app mount
   useEffect(() => {
@@ -19,9 +19,9 @@ function SplashGate({ children }: { children: ReactNode }) {
     }
   }, [isInitialized, isInitializing, triggerInit]);
 
-  // Loading state — show branded splash
+  // Loading state — show branded splash with live progress
   if (isInitializing) {
-    return <LoadingScreen message="Loading vehicle data..." />;
+    return <LoadingScreen message="Loading vehicle data..." progress={progress} />;
   }
 
   // Error state

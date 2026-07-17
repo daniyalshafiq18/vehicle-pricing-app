@@ -33,7 +33,7 @@ import {
   Loader2,
   Globe,
 } from 'lucide-react';
-import { cn, formatCurrency } from '@utils';
+import { cn, formatCurrency, downloadValuationPdf } from '@utils';
 import { scrapeViaFlow3, type Flow3ScrapeResult } from '@lib/yallaMotorHttpScraper';
 
 export function Step3Result() {
@@ -821,7 +821,7 @@ export function Step3Result() {
           <Button
             variant="outline"
             onClick={() => {
-              window.print();
+              downloadValuationPdf({ vehicle, pricing });
             }}
           >
             <Download className="mr-2 h-4 w-4" />

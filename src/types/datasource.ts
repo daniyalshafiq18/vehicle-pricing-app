@@ -21,7 +21,7 @@ import type { MissingVehicleRequest } from './missingVehicleRequest';
  */
 export interface IDataSource {
   // ─── Lifecycle ────────────────────────────────────────
-  initialize(): Promise<void>;
+  initialize(onProgress?: (progress: number) => void): Promise<void>;
   isInitialized(): boolean;
 
   // ─── Vehicles ─────────────────────────────────────────

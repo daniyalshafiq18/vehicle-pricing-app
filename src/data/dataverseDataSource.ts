@@ -134,8 +134,21 @@ export class DataverseDataSource implements IDataSource {
 
   // ─── Lifecycle ────────────────────────────────────────
 
-  async initialize(): Promise<void> {
-    const records = await fetchAllVehicles();
+  async initialize(onProgress?: (progress: number) => void): Promise<void> {
+    onProgress?.(3);
+
+    const records = await fetchAllVehicles((fetched, total) => {
+      // Map fetch progress from 3% → 78% of the overall bar
+      const phaseStart = 3;
+      const phaseEnd = 78;
+      const pct =
+        total > 0
+          ? Math.round(phaseStart + ((fetched / total) * (phaseEnd - phaseStart)))
+          : Math.min(phaseStart + Math.round(fetched / 200), phaseEnd);
+      onProgress?.(pct);
+    });
+
+    onProgress?.(80);
 
     // Extract pricing data from raw API records before parsing
     this.rawPrices.clear();
@@ -153,13 +166,22 @@ export class DataverseDataSource implements IDataSource {
       }
     }
 
+    onProgress?.(85);
+
     this.vehicles = records
       .map((r, i) => this.parseVehicle(r, i))
       .filter((v): v is Vehicle => v !== null);
 
+    onProgress?.(90);
+
     this.pricing = this.buildPricingIndex();
+
+    onProgress?.(95);
+
     this.hierarchy = this.buildHierarchy();
     this.initialized = true;
+
+    onProgress?.(100);
   }
 
   isInitialized(): boolean {

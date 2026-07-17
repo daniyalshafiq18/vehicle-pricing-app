@@ -1,5 +1,56 @@
 # Changelog
 
+## 2026-07-17
+
+### UI — Live Loading Percentage on Splash Screen
+- Added `progress` prop (0–100) to `LoadingScreen` component showing a determinate progress bar and live percentage text (e.g. "Loading vehicle data... 45%")
+- `fetchAllVehicles()` now includes `$count=true` on the first page to get the total record count, and fires an `onProgress` callback after each page with `(fetched, total)`
+- `DataverseDataSource.initialize()` accepts an `onProgress` callback and reports progress across 4 phases: fetching (3–78%), pricing extraction (80–85%), vehicle parsing (85–90%), pricing index (90–95%), hierarchy (95–100%)
+- `DataSourceContext` tracks `progress` as React state and wires it through the context value
+- `SplashGate` passes `progress` to `LoadingScreen` during init
+- Graceful fallback: when no progress prop is provided, the component retains its original indeterminate animation
+
+### UI — Landing Page Polish
+- **Hero badge**: Replaced `Badge variant="secondary"` (muddy gray) with a custom premium pill — semi-transparent violet background, subtle border, glowing text (`bg-violet-50/80 dark:bg-violet-950/30 border-violet-200/50 dark:border-violet-800/50`)
+- **Cards (Stats, How It Works, Features)**: Added `bg-white/90 dark:bg-slate-900/90`, explicit `border-slate-100 dark:border-slate-800` so cards lift off the background grid
+- **Card hover state**: Added violet border transition on hover via `.interactive-card:hover` in `globals.css` (`border-color: hsl(252 87% 70% / 0.5)` light, `hsl(252 87% 50% / 0.4)` dark)
+- **Header**: Changed from `bg-background/80 backdrop-blur-xl` to `bg-white/70 dark:bg-slate-950/70 backdrop-blur-md border-slate-100 dark:border-slate-900` for cohesive background flow
+- **Footer**: Changed from `bg-card/50` to `bg-white/70 dark:bg-slate-950/70 border-slate-100 dark:border-slate-900` — matches header exactly
+- Removed unused `Badge` import from `LandingPage.tsx`
+
+### Feature — Real PDF Export (jsPDF)
+- Added `jspdf` + `jspdf-autotable` dependencies
+- Created `src/utils/pdfExport.ts` with a `downloadValuationPdf()` function that generates a clean A4 PDF containing:
+  - Brand header bar (violet)
+  - Vehicle identity (year / make / model / spec)
+  - Price summary card (min / average / max in AED)
+  - Technical specifications table (11 specs) with alternating row shading
+  - Date-generated footer with disclaimer
+- Replaced `window.print()` in both `Step3Result.tsx` and `ValuationResultPage.tsx` with the proper PDF download
+- File naming: `{year}-{make}-{model}-valuation.pdf`
+
+### UI — VehicleSelect Clearable Dropdown
+- **Clear X button in trigger**: When a value is selected, a small `X` icon appears between the value text and chevron. Clicking it calls `onChange('')` with `e.stopPropagation()` so the dropdown does not open
+- **Toggle-off on re-click**: Clicking an already-selected item in the dropdown list now calls `onChange('')` (deselects) instead of being a no-op
+- **"Clear Selection" row**: When a value is selected and no search query is active, a "Clear Selection" option appears at the top of the dropdown list for an explicit reset path
+- All three pathways cleanly reset the field to empty, cascading downstream fields (Model, Spec, Year, Body Type) as per the existing `setVehicleSelection` reset logic
+
+### UI — Valuation Wizard Card Container & Premium Wizard Indicator
+- **Page background offset**: Added `bg-slate-50/50 dark:bg-slate-950` to the valuation page section so the form card visually lifts off the background
+- **Form card container**: Wrapped the step indicator + form content in a `bg-white border-slate-100 shadow-xl shadow-slate-100/50 rounded-2xl p-8 md:p-10 dark:bg-slate-900 dark:border-slate-800 dark:shadow-none` card — makes the form distinct from the page body
+- **WizardStepIndicator upgrade**: Active step now uses `bg-violet-600 text-white shadow-lg shadow-violet-500/30` with bold text; completed steps show a `Check` icon in `bg-violet-100 dark:bg-violet-900/40`; upcoming steps use muted border circles; connector lines use `bg-gradient-to-r from-violet-500 to-violet-400` when completed
+
+### UI — Header & Footer Polish
+- **Header nav links**: Replaced background-tint active state with a clean underline indicator that animates from center (`after:absolute after:-bottom-[9px] after:left-1/2 after:h-[2px] after:w-0 after:-translate-x-1/2 after:rounded-full after:bg-primary after:transition-all after:duration-300 hover:after:w-4/5`)
+- **Footer background**: Changed to `bg-slate-50 dark:bg-slate-900/50` for a slightly darker offset from the page body; added 3-column grid layout (Brand, Quick Links with `hover:text-violet-600` transitions, Legal) with balanced padding
+
+### UI — Fix Filter Dropdown Overflow Clipping in Admin Vehicles
+- **Portal-based dropdown panel in CustomSelect** (`custom-select.tsx`): The dropdown panel now renders via `createPortal` at `document.body` with `position: fixed` positioning computed from the trigger button's bounding rect. This completely sidesteps any ancestor `overflow` / `z-index` stacking context, preventing dropdowns from being clipped by parent containers.
+- **Scroll/resize-aware repostioning**: The portal position updates on scroll and resize events so the dropdown always tracks the trigger button.
+- **Removed `overflow-hidden`** from the advanced filters animated `motion.div` in `AdminVehiclesPage.tsx` — no longer needed since the dropdown escapes via the portal.
+- **Dynamic z-index on filter wrappers**: Added `relative` positioning to all filter wrapper divs with conditional `z-50`/`z-0` so the active dropdown's stacking context stays above siblings (defensive measure alongside the portal).
+- **Applied consistently** to all 10 CustomSelect filters (Year, Make, Model, Body Type, Transmission, Category, Drive Type, Spec, Powertrain, Vehicle Type).
+
 ## 2026-07-16
 
 ### Flow 3 — New HTTP-Triggered Flow Design for Real-Time Scraping

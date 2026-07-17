@@ -66,7 +66,7 @@ export function Step1PersonalInfo() {
         {/* Personal Details */}
         <section>
           <div className="mb-5 flex items-center gap-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground/70">Personal Details</h2>
+            <h2 className="text-sm font-semibold tracking-wider text-slate-800 dark:text-slate-200">Personal Details</h2>
             <div className="h-px flex-1 bg-border/50" />
           </div>
           <div className="grid gap-6 sm:grid-cols-2">
@@ -90,7 +90,7 @@ export function Step1PersonalInfo() {
         {/* Contact Details */}
         <section>
           <div className="mb-5 flex items-center gap-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground/70">Contact Details</h2>
+            <h2 className="text-sm font-semibold tracking-wider text-slate-800 dark:text-slate-200">Contact Details</h2>
             <div className="h-px flex-1 bg-border/50" />
           </div>
           <div className="grid gap-6 sm:grid-cols-2">
@@ -130,7 +130,7 @@ export function Step1PersonalInfo() {
         {/* Location */}
         <section>
           <div className="mb-5 flex items-center gap-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground/70">Location</h2>
+            <h2 className="text-sm font-semibold tracking-wider text-slate-800 dark:text-slate-200">Location</h2>
             <div className="h-px flex-1 bg-border/50" />
           </div>
           <div className="grid gap-6 sm:grid-cols-2">
@@ -209,7 +209,7 @@ export function Step1PersonalInfo() {
         {/* Consent */}
         <section>
           <div className="mb-5 flex items-center gap-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground/70">Agreement</h2>
+            <h2 className="text-sm font-semibold tracking-wider text-slate-800 dark:text-slate-200">Agreement</h2>
             <div className="h-px flex-1 bg-border/50" />
           </div>
           <label className="flex cursor-pointer items-start gap-4 rounded-xl border border-border/40 bg-muted/10 p-5 transition-colors hover:bg-muted/20 has-[:checked]:border-primary/30 has-[:checked]:bg-primary/5">

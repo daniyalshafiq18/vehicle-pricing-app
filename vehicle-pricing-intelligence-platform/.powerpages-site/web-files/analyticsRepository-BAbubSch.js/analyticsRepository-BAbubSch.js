@@ -1,0 +1,1 @@
+import{v as t}from"./index-CNKCDlyb.js";import"./vendor-2NP6WqdN.js";class c{async getAnalytics(){return t().getAnalytics()}async getAllVehiclesWithPricing(s){return t().getAllVehiclesWithPricing(s)}async getDashboardAnalytics(s){return t().getDashboardAnalytics(s)}}const r=new c;export{r as a};

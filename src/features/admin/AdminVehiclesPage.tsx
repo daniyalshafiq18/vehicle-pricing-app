@@ -282,6 +282,7 @@ function FilterBar({
 }) {
   const { data: hierarchy } = useVehicleHierarchy();
   const [expanded, setExpanded] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   // ── Build all valid (year, make, model) tuples from hierarchy ──────
 
@@ -524,31 +525,34 @@ function FilterBar({
       {/* Primary filters — always visible, all independent */}
       <div className="p-4">
         <div className="flex flex-wrap items-end gap-3">
-          <div className="flex-1 min-w-[140px]">
+          <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'year' ? 'z-50' : 'z-0')}>
             <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Year</label>
             <CustomSelect
               placeholder="All Years"
               options={yearOptions}
               value={filters.year}
               onChange={(v) => onFilterChange('year', v)}
+              onOpenChange={(o) => setOpenDropdown(o ? 'year' : null)}
             />
           </div>
-          <div className="flex-1 min-w-[140px]">
+          <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'make' ? 'z-50' : 'z-0')}>
             <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Make</label>
             <CustomSelect
               placeholder="All Makes"
               options={makeOptions}
               value={filters.make}
               onChange={(v) => onFilterChange('make', v)}
+              onOpenChange={(o) => setOpenDropdown(o ? 'make' : null)}
             />
           </div>
-          <div className="flex-1 min-w-[140px]">
+          <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'model' ? 'z-50' : 'z-0')}>
             <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Model</label>
             <CustomSelect
               placeholder="All Models"
               options={modelOptions}
               value={filters.model}
               onChange={(v) => onFilterChange('model', v)}
+              onOpenChange={(o) => setOpenDropdown(o ? 'model' : null)}
             />
           </div>
           <div className="flex items-center gap-2 pb-0.5">
@@ -587,39 +591,38 @@ function FilterBar({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="overflow-hidden"
           >
             <div className="border-t border-border" />
             <div className="p-4">
               <span className="mb-3 block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">Advanced Filters</span>
               <div className="flex flex-wrap items-end gap-3">
-                <div className="flex-1 min-w-[140px]">
+                <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'bodyType' ? 'z-50' : 'z-0')}>
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Body Type</label>
-                  <CustomSelect placeholder="All Types" options={bodyTypeOptions} value={filters.bodyType} onChange={(v) => onFilterChange('bodyType', v)} />
+                  <CustomSelect placeholder="All Types" options={bodyTypeOptions} value={filters.bodyType} onChange={(v) => onFilterChange('bodyType', v)} onOpenChange={(o) => setOpenDropdown(o ? 'bodyType' : null)} />
                 </div>
-                <div className="flex-1 min-w-[140px]">
+                <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'transmission' ? 'z-50' : 'z-0')}>
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Transmission</label>
-                  <CustomSelect placeholder="All" options={transmissionOptions} value={filters.transmission} onChange={(v) => onFilterChange('transmission', v)} />
+                  <CustomSelect placeholder="All" options={transmissionOptions} value={filters.transmission} onChange={(v) => onFilterChange('transmission', v)} onOpenChange={(o) => setOpenDropdown(o ? 'transmission' : null)} />
                 </div>
-                <div className="flex-1 min-w-[140px]">
+                <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'category' ? 'z-50' : 'z-0')}>
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Category</label>
-                  <CustomSelect placeholder="All" options={categoryOptions} value={filters.category} onChange={(v) => onFilterChange('category', v)} />
+                  <CustomSelect placeholder="All" options={categoryOptions} value={filters.category} onChange={(v) => onFilterChange('category', v)} onOpenChange={(o) => setOpenDropdown(o ? 'category' : null)} />
                 </div>
-                <div className="flex-1 min-w-[140px]">
+                <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'driveType' ? 'z-50' : 'z-0')}>
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Drive Type</label>
-                  <CustomSelect placeholder="All" options={driveTypeOptions} value={filters.driveType} onChange={(v) => onFilterChange('driveType', v)} />
+                  <CustomSelect placeholder="All" options={driveTypeOptions} value={filters.driveType} onChange={(v) => onFilterChange('driveType', v)} onOpenChange={(o) => setOpenDropdown(o ? 'driveType' : null)} />
                 </div>
-                <div className="flex-1 min-w-[140px]">
+                <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'spec' ? 'z-50' : 'z-0')}>
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Spec</label>
-                  <CustomSelect placeholder="All" options={specOptions} value={filters.spec} onChange={(v) => onFilterChange('spec', v)} />
+                  <CustomSelect placeholder="All" options={specOptions} value={filters.spec} onChange={(v) => onFilterChange('spec', v)} onOpenChange={(o) => setOpenDropdown(o ? 'spec' : null)} />
                 </div>
-                <div className="flex-1 min-w-[140px]">
+                <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'powertrain' ? 'z-50' : 'z-0')}>
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Powertrain</label>
-                  <CustomSelect placeholder="All" options={powertrainOptions} value={filters.powertrain} onChange={(v) => onFilterChange('powertrain', v)} />
+                  <CustomSelect placeholder="All" options={powertrainOptions} value={filters.powertrain} onChange={(v) => onFilterChange('powertrain', v)} onOpenChange={(o) => setOpenDropdown(o ? 'powertrain' : null)} />
                 </div>
-                <div className="flex-1 min-w-[140px]">
+                <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'vehicleType' ? 'z-50' : 'z-0')}>
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Vehicle Type</label>
-                  <CustomSelect placeholder="All" options={vehicleTypeOptions} value={filters.vehicleType} onChange={(v) => onFilterChange('vehicleType', v)} />
+                  <CustomSelect placeholder="All" options={vehicleTypeOptions} value={filters.vehicleType} onChange={(v) => onFilterChange('vehicleType', v)} onOpenChange={(o) => setOpenDropdown(o ? 'vehicleType' : null)} />
                 </div>
                 <div className="flex-1 min-w-[140px]">
                   <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Min Price</label>

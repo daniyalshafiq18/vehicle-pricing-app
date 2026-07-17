@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button, Badge, LoadingScreen } from '@components/ui';
+import { Button, LoadingScreen } from '@components/ui';
 import { useDataSource } from '@data';
 import {
   ArrowRight,
@@ -82,10 +82,10 @@ export function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <Badge variant="secondary" className="mb-6 animate-bounce-gentle px-4 py-1.5 text-sm">
-              <Zap className="mr-1 h-3.5 w-3.5 text-accent" />
+            <span className="mb-6 inline-flex animate-bounce-gentle items-center gap-2 rounded-full border border-violet-200/50 bg-violet-50/80 px-4 py-1.5 text-sm font-medium tracking-wide text-violet-700 shadow-sm backdrop-blur-sm dark:border-violet-800/50 dark:bg-violet-950/30 dark:text-violet-300">
+              <Zap className="h-3.5 w-3.5 text-violet-500 dark:text-violet-400" />
               UAE Vehicle Pricing Intelligence
-            </Badge>
+            </span>
 
             <h1 className="mb-6 text-4xl font-extrabold leading-tight tracking-tight md:text-6xl lg:text-7xl">
               Know the{' '}
@@ -131,7 +131,7 @@ export function LandingPage() {
               <motion.div
                 key={stat.label}
                 variants={fadeUp}
-                className="interactive-card group bg-card/50 p-6 backdrop-blur-sm"
+                className="interactive-card group border-slate-100 bg-white/90 p-6 dark:border-slate-800 dark:bg-slate-900/90"
               >
                 <stat.icon className="mb-3 h-8 w-8 text-primary transition-all duration-300 group-hover:scale-110 group-hover:text-accent" />
                 <p className="text-3xl font-bold transition-colors duration-300 group-hover:text-primary">
@@ -183,7 +183,7 @@ export function LandingPage() {
                 initial="initial"
                 whileInView="whileInView"
                 viewport={{ once: true }}
-                className="interactive-card group p-8"
+                className="interactive-card group border-slate-100 bg-white/90 p-8 dark:border-slate-800 dark:bg-slate-900/90"
               >
                 <div className="mb-4 flex items-center gap-3">
                   <span className="text-4xl font-bold text-primary/20 transition-all duration-300 group-hover:text-accent/40 group-hover:scale-110">
@@ -228,7 +228,7 @@ export function LandingPage() {
                 initial="initial"
                 whileInView="whileInView"
                 viewport={{ once: true }}
-                className="interactive-card group p-6"
+                className="interactive-card group border-slate-100 bg-white/90 p-6 dark:border-slate-800 dark:bg-slate-900/90"
               >
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary transition-all duration-300 group-hover:bg-accent/20 group-hover:text-accent group-hover:scale-110 group-hover:rotate-3">
                   <feature.icon className="h-6 w-6 transition-transform duration-300 group-hover:scale-110" />
