@@ -1,13 +1,13 @@
 /**
- * Format a number as currency (AED by default).
+ * Format a number as currency using its ISO code (AED by default).
  */
 export function formatCurrency(amount: number, currency = 'AED'): string {
-  return new Intl.NumberFormat('en-AE', {
-    style: 'currency',
-    currency,
+  const formattedAmount = new Intl.NumberFormat('en-AE', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
+
+  return `${currency} ${formattedAmount}`;
 }
 
 /**

@@ -67,10 +67,10 @@ export function downloadValuationPdf(data: PdfExportData): void {
     doc.setTextColor(100, 116, 139);
     doc.text(col.label, col.x + 4, y + 8);
 
-    doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(30, 41, 59);
-    const formatted = col.value.toLocaleString('en-US', { style: 'currency', currency: 'AED', maximumFractionDigits: 0 });
+    doc.setFont('helvetica', 'bold');
+    const formatted = `AED ${col.value.toLocaleString('en-AE', { maximumFractionDigits: 0 })}`;
     doc.text(formatted, col.x + 4, y + 21);
   }
 

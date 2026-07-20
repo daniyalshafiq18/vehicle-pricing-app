@@ -92,7 +92,7 @@ src/
 │   ├── valuation/  # 3-step wizard (Personal Info → Vehicle → Result)
 │   └── admin/      # Dashboard, Vehicles, Queries, Settings
 ├── layouts/        # MainLayout (public), AdminLayout (sidebar)
-├── hooks/          # React Query hooks
+├── hooks/          # React Query hooks + startup API prefetch orchestration
 ├── repositories/   # Data access wrappers
 ├── providers/      # Context providers
 ├── stores/         # Zustand stores

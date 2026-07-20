@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useInquiryStore } from '@stores';
 import { Button, Input } from '@components/ui';
-import { inquiryFormSchema } from '@utils';
+import { inquiryFormSchema, cn } from '@utils';
 import { ArrowRight, ChevronDown, MapPin, ShieldCheck } from 'lucide-react';
 
 const cities = [
@@ -22,6 +22,8 @@ export function Step1PersonalInfo() {
 
   const [cityOpen, setCityOpen] = useState(false);
   const cityRef = useRef<HTMLDivElement>(null);
+  const [cityTouched, setCityTouched] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
 
   const {
     register,
@@ -31,6 +33,7 @@ export function Step1PersonalInfo() {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(inquiryFormSchema),
+    mode: 'onTouched',
     defaultValues: { ...personalInfo, country: 'United Arab Emirates' },
   });
 
@@ -51,6 +54,12 @@ export function Step1PersonalInfo() {
   const onSubmit = (data: typeof personalInfo) => {
     setPersonalInfo({ ...data, country: 'United Arab Emirates' });
     nextStep();
+  };
+
+  // Mark all custom fields as touched before submit to surface inline errors
+  const handleSubmitClick = () => {
+    setCityTouched(true);
+    setPhoneTouched(true);
   };
 
   return (
@@ -74,6 +83,7 @@ export function Step1PersonalInfo() {
               label="First Name"
               placeholder="John"
               className="h-12"
+              required
               error={errors.firstName?.message}
               {...register('firstName')}
             />
@@ -81,6 +91,7 @@ export function Step1PersonalInfo() {
               label="Last Name"
               placeholder="Doe"
               className="h-12"
+              required
               error={errors.lastName?.message}
               {...register('lastName')}
             />
@@ -99,29 +110,47 @@ export function Step1PersonalInfo() {
               type="email"
               placeholder="john@example.com"
               className="h-12"
+              required
               error={errors.email?.message}
               {...register('email')}
             />
             <div className="space-y-2">
-              <label className="text-sm font-medium">Phone</label>
-              <div className="flex h-12 overflow-hidden rounded-xl border border-input shadow-sm transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-ring has-[:invalid]:ring-destructive">
+              <label className="text-sm font-medium">
+                Phone
+                <span className="ml-0.5 text-red-500">*</span>
+              </label>
+              <div className={cn(
+                'flex h-12 overflow-hidden rounded-xl border shadow-sm transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-ring',
+                errors.phone
+                  ? 'border-destructive focus-within:ring-destructive'
+                  : phoneTouched && !phoneValue
+                    ? 'border-red-300 focus-within:ring-red-500'
+                    : 'border-input',
+              )}>
                 <div className="flex shrink-0 items-center bg-muted/30 px-4 text-sm font-semibold text-foreground">
                   +971
                 </div>
                 <input
                   type="tel"
                   placeholder="50 123 4567"
+                  required
                   className="h-full w-full bg-transparent px-4 text-sm outline-none"
                   value={phoneSuffix}
                   onChange={(e) => {
                     const digits = e.target.value.replace(/\D/g, '');
                     setValue('phone', digits ? `+971${digits}` : '', { shouldValidate: true });
                   }}
-                  onBlur={() => setValue('phone', watch('phone'), { shouldValidate: true })}
+                  onBlur={() => {
+                    setPhoneTouched(true);
+                    setValue('phone', watch('phone'), { shouldValidate: true });
+                  }}
                 />
               </div>
               {errors.phone && (
                 <p className="text-xs text-destructive">{errors.phone.message}</p>
+              )}
+              {!errors.phone && phoneTouched && !phoneValue && (
+                <p className="text-xs text-destructive">Phone is required</p>
               )}
             </div>
           </div>
@@ -135,7 +164,10 @@ export function Step1PersonalInfo() {
           </div>
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Country</label>
+              <label className="text-sm font-medium">
+                Country
+                <span className="ml-0.5 text-red-500">*</span>
+              </label>
               <input type="hidden" value="United Arab Emirates" {...register('country')} />
               <div className="flex h-12 items-center gap-2.5 rounded-xl border border-input bg-muted/30 px-4 text-sm text-muted-foreground">
                 <span className="flex items-center text-lg leading-none">
@@ -150,12 +182,23 @@ export function Step1PersonalInfo() {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">City</label>
+              <label className="text-sm font-medium">
+                City
+                <span className="ml-0.5 text-red-500">*</span>
+              </label>
               <div className="relative" ref={cityRef}>
                 <button
                   type="button"
-                  onClick={() => setCityOpen(!cityOpen)}
-                  className="flex h-12 w-full items-center rounded-xl border border-input bg-background px-4 text-sm shadow-sm transition-all duration-200 hover:border-muted-foreground/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+                  onClick={() => { setCityOpen(!cityOpen); setCityTouched(true); }}
+                  onBlur={() => setCityTouched(true)}
+                  className={cn(
+                    'flex h-12 w-full items-center rounded-xl border bg-background px-4 text-sm shadow-sm transition-all duration-200 hover:border-muted-foreground/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer',
+                    errors.city
+                      ? 'border-destructive focus-visible:ring-destructive'
+                      : cityTouched && !selectedCity
+                        ? 'border-red-300 focus-visible:ring-red-500'
+                        : 'border-input',
+                  )}
                 >
                   {selectedCity ? (
                     <span className="flex items-center gap-2.5">
@@ -181,6 +224,7 @@ export function Step1PersonalInfo() {
                           onClick={() => {
                             setValue('city', c, { shouldValidate: true });
                             setCityOpen(false);
+                            setCityTouched(true);
                           }}
                           className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
                             isSelected
@@ -201,6 +245,9 @@ export function Step1PersonalInfo() {
               </div>
               {errors.city && (
                 <p className="text-xs text-destructive">{errors.city.message}</p>
+              )}
+              {!errors.city && cityTouched && !selectedCity && (
+                <p className="text-xs text-destructive">City is required</p>
               )}
             </div>
           </div>
@@ -229,7 +276,7 @@ export function Step1PersonalInfo() {
         </section>
 
         <div className="flex justify-center pt-2">
-          <Button type="submit" variant="gradient" size="xl" loading={isSubmitting}>
+          <Button type="submit" variant="gradient" size="xl" loading={isSubmitting} onClick={handleSubmitClick}>
             Continue
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>

@@ -82,19 +82,19 @@ export function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <span className="mb-6 inline-flex animate-bounce-gentle items-center gap-2 rounded-full border border-violet-200/50 bg-violet-50/80 px-4 py-1.5 text-sm font-medium tracking-wide text-violet-700 shadow-sm backdrop-blur-sm dark:border-violet-800/50 dark:bg-violet-950/30 dark:text-violet-300">
-              <Zap className="h-3.5 w-3.5 text-violet-500 dark:text-violet-400" />
+            <span className="mb-6 inline-flex animate-bounce-gentle items-center gap-2 rounded-full border border-violet-800 bg-violet-700 px-4 py-1.5 text-sm font-semibold tracking-wide text-white shadow-md shadow-violet-500/20 dark:border-violet-500 dark:bg-violet-600 dark:text-white">
+              <Zap className="h-3.5 w-3.5 text-violet-100" />
               UAE Vehicle Pricing Intelligence
             </span>
 
-            <h1 className="mb-6 text-4xl font-extrabold leading-tight tracking-tight md:text-6xl lg:text-7xl">
+            <h1 className="mb-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 dark:text-white md:text-6xl lg:text-7xl">
               Know the{' '}
               <span className="shimmer-text">True Value</span>
               <br />
               of Any Vehicle
             </h1>
 
-            <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground md:text-xl">
+            <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground dark:text-slate-300 md:text-xl">
               Data-driven vehicle valuations powered by comprehensive UAE market analysis.
               Get accurate pricing, market insights, and confidence-backed recommendations.
             </p>
@@ -134,10 +134,10 @@ export function LandingPage() {
                 className="interactive-card group border-slate-100 bg-white/90 p-6 dark:border-slate-800 dark:bg-slate-900/90"
               >
                 <stat.icon className="mb-3 h-8 w-8 text-primary transition-all duration-300 group-hover:scale-110 group-hover:text-accent" />
-                <p className="text-3xl font-bold transition-colors duration-300 group-hover:text-primary">
+                <p className="text-3xl font-bold text-slate-800 dark:text-white transition-colors duration-300 group-hover:text-primary">
                   {stat.value}
                 </p>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
+                <p className="text-sm text-muted-foreground dark:text-slate-400">{stat.label}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -145,13 +145,13 @@ export function LandingPage() {
       </section>
 
       {/* ─── How It Works ────────────────────────── */}
-      <section className="border-t bg-card/30">
+      <section className="border-t bg-[#FCF8F7] dark:bg-slate-950">
         <div className="mx-auto w-full max-w-[1536px] min-[2560px]:max-w-[90%] px-4 py-20">
           <motion.div className="text-center" {...fadeUp}>
-            <h2 className="mb-2 text-3xl font-bold md:text-4xl">
+            <h2 className="mb-2 text-3xl font-bold text-slate-900 dark:text-white md:text-4xl">
               How It Works
             </h2>
-            <p className="mx-auto mb-12 max-w-xl text-muted-foreground">
+            <p className="mx-auto mb-12 max-w-xl text-muted-foreground dark:text-slate-300">
               Get a comprehensive vehicle valuation in three simple steps.
             </p>
           </motion.div>
@@ -191,10 +191,10 @@ export function LandingPage() {
                   </span>
                   <item.icon className="h-6 w-6 text-primary transition-all duration-300 group-hover:text-accent group-hover:rotate-[-8deg]" />
                 </div>
-                <h3 className="mb-2 text-xl font-semibold group-hover:text-primary transition-colors duration-300">
+                <h3 className="mb-2 text-xl font-semibold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors duration-300">
                   {item.title}
                 </h3>
-                <p className="text-sm text-muted-foreground">{item.desc}</p>
+                <p className="text-sm text-muted-foreground dark:text-slate-400">{item.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -205,10 +205,10 @@ export function LandingPage() {
       <section className="w-full">
         <div className="mx-auto w-full max-w-[1536px] min-[2560px]:max-w-[90%] px-4 py-20">
           <motion.div className="text-center" {...fadeUp}>
-            <h2 className="mb-2 text-3xl font-bold md:text-4xl">
+            <h2 className="mb-2 text-3xl font-bold text-slate-900 dark:text-white md:text-4xl">
               Premium Features
             </h2>
-            <p className="mx-auto mb-12 max-w-xl text-muted-foreground">
+            <p className="mx-auto mb-12 max-w-xl text-muted-foreground dark:text-slate-300">
               Everything you need for intelligent vehicle pricing decisions.
             </p>
           </motion.div>
@@ -233,8 +233,8 @@ export function LandingPage() {
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary transition-all duration-300 group-hover:bg-accent/20 group-hover:text-accent group-hover:scale-110 group-hover:rotate-3">
                   <feature.icon className="h-6 w-6 transition-transform duration-300 group-hover:scale-110" />
                 </div>
-                <h3 className="mb-2 text-lg font-semibold transition-colors duration-300 group-hover:text-primary">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground">{feature.desc}</p>
+                <h3 className="mb-2 text-lg font-semibold text-slate-800 dark:text-slate-100 transition-colors duration-300 group-hover:text-primary">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground dark:text-slate-400">{feature.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -242,18 +242,18 @@ export function LandingPage() {
       </section>
 
       {/* ─── CTA ─────────────────────────────────── */}
-      <section className="relative border-t bg-card/30 overflow-hidden">
+      <section className="relative border-t bg-[#FCF8F7] dark:bg-slate-950 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 animate-gradient-shift bg-[length:200%_100%]" />
         <div className="relative mx-auto w-full max-w-[1536px] min-[2560px]:max-w-[90%] px-4 py-20">
           <motion.div
             className="mx-auto max-w-3xl text-center"
             {...fadeUp}
           >
-            <h2 className="mb-4 text-3xl font-bold md:text-4xl">
+            <h2 className="mb-4 text-3xl font-bold text-slate-900 dark:text-white md:text-4xl">
               Ready to Discover Your Vehicle's{' '}
               <span className="shimmer-text">True Value</span>?
             </h2>
-            <p className="mb-8 text-lg text-muted-foreground">
+            <p className="mb-8 text-lg text-muted-foreground dark:text-slate-300">
               Join thousands of users who trust us for accurate vehicle valuations.
             </p>
             <Button asChild variant="gradient" size="xl" className="group shadow-xl shadow-primary/20">

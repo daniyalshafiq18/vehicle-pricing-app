@@ -20,6 +20,16 @@ Component → React Query Hook → Repository → IDataSource → DataverseDataS
 - Feature components in `src/features/` implement specific business logic
 - Pages compose features with layouts
 
+### Startup Loading
+- `DataverseDataSource.initialize()` loads paginated vehicle records and builds in-memory indexes; this phase occupies 0–85% of the splash progress
+- `useStartupData()` then prefetches inquiries, missing vehicle requests, and price suggestions into React Query; each settled request advances the final 15%
+- The router mounts only after startup prefetching reaches 100%, preventing immediate duplicate admin API requests after the splash
+
+### Currency Formatting
+- Use `formatCurrency()` from `@utils` for every displayed vehicle price so values consistently use the `AED` ISO currency code
+- Price inputs and filter chips use `AED` as their visible prefix
+- PDF currency output also uses `AED` in `src/utils/pdfExport.ts`
+
 ## Adding a Feature
 
 1. Create types in `src/types/`
