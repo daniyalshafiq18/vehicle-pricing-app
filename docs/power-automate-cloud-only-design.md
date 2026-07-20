@@ -1,7 +1,7 @@
 # Power Automate Cloud Flow — Step-by-Step Build Guide
 
-> **Date:** 2026-07-15 (Updated — YallaMotor backend outage diagnosed)
-> **Status:** Flow 1 ✅ Built, Modified & Re-Tested | Flow 2 ✅ Built & Tested (YallaMotor had backend outage)
+> **Date:** 2026-07-20 (Updated — Flow 3 count fix: double `replace()` + `@{...}` template syntax, documented actual flow structure with Cloudflare Check, nested Is Heading Available condition, Try-scope Response, and hardcoded Catch Response)
+> **Status:** Flow 1 ✅ Built, Modified & Re-Tested | Flow 2 ✅ Built & Tested | Flow 3 ✅ Built & Tested (SAS token, Try/Catch Scope)
 > **Platform:** https://make.powerautomate.com
 > **Connectors needed:** HTTP (premium), Microsoft Dataverse, Office 365 Outlook (optional)
 
@@ -12,7 +12,8 @@
 | Flow | Status | Notes |
 |---|---|---|
 | **Flow 1: YallaMotor Accessibility Test** | ✅ **Built, Modified & Re-Tested** | Confirmed full listing record extraction (price, specs, dealer). Heading extraction confirmed for aggregate pricing. |
-| **Flow 2: MVR Automated Scraper** | ✅ **Built & Tested** | See full design below. YallaMotor backend was down during tests — not a Cloudflare issue. |
+| **Flow 2: MVR Automated Scraper** | ✅ **Built & Tested** | See full design below. YallaMotor backend was down during initial tests — not a Cloudflare issue. |
+| **Flow 3: Real-Time HTTP Scraper** | ✅ **Built & Fully Working** | SAS token auth, Try/Catch Scope, double `replace()` for clean count, `@{...}` template syntax in Response, nested "Is Heading Available" condition, 3-value response, `_unavailable` graceful degradation. **Tested: 6 listings · AED 127,000 – 275,000 · 2024 Mercedes-Benz C-Class** |
 
 ### Key Findings from Flow 1 Test (Original + Modified)
 
@@ -826,45 +827,91 @@ Where slugs are:
 
 ---
 
-## FLOW 3: Real-Time Scrape from Frontend (HTTP Trigger)
+## FLOW 3: Real-Time Scrape from Frontend (HTTP Trigger + SAS Token)
 
 **Purpose:** When a user submits a missing vehicle request from the app, scrape YallaMotor **synchronously** and return results immediately so the user can see them and optionally suggest a price before the MVR record is created.
+
+> ⚠️ **BUILD STATUS:** Flow 3 is fully built and tested. See "✅ Actual Test Results" below.
 
 **Why this approach:**
 - 🚀 **Instant** — no Dataverse polling delay (seconds vs minutes)
 - 👤 **User sees results** — scraped prices shown before MVR is saved
 - 💾 **Both prices stored** — `vpi_scraped_minprice/maxprice` = scraped, `vpi_minprice/maxprice` = user-suggested
 
+### Key Design Decisions
+
+| Decision | Why |
+|---|---|
+| **"Anyone can trigger" (SAS token)** | Avoids Azure AD OAuth — browser can't provide it. Setting generates a `sig=` token in the URL |
+| **Try/Catch Scope pattern** | When YallaMotor is down or Cloudflare blocks, the Catch scope fires and returns Count: -1 instead of crashing |
+| **Response in Catch Scope has hardcoded 0/0/-1** | Can't reference Try's action outputs when Catch fires — those actions failed/skipped. Hardcoded -1 is the sentinel for frontend |
+| **Response at end of Try scope (not inside Catch)** | The main Response is inside Try scope, configured to run on success only. Catch has its own Response with hardcoded -1 |
+| **Nested "Is Heading Available" condition** | Guards against missing heading-h2-content div. Extraction steps only run when heading is found |
+| **Terminate (Succeeded) + Response in Cloudflare block branch** | When Cloudflare blocks, Terminate stops the flow engine but a subsequent Response action still sends the -1 payload |
+| **Only 3 values in response** | `Min Price`, `Max Price`, `Count` — heading and URL are constructed client-side to keep response lightweight |
+| **Count = -1 means unreachable** | Frontend checks `count < 0` → shows amber "Live Data Unavailable" message instead of error |
+| **Frontend strips non-numeric chars from Count** | Power Automate Scope wrapping causes extra quotes (`"\"7"`) — frontend handles this robustly with regex |
+
 ### Data Flow
 
 ```
-Step3Result.tsx                    Power Automate (FLOW 3)              Dataverse
-┌──────────────────┐               ┌──────────────────────────┐         
-│ User clicks      │               │                          │         
-│ "Search & Submit"│ ── POST ────→ │ HTTP Trigger receives     │         
-│                  │   {make,      │ make, model, trim, year   │         
-│                  │    model,     │                          │         
-│                  │    trim,      │ HTTP GET → YallaMotor     │         
-│                  │    year}      │                          │         
-│ Show spinner     │               │ Parse heading             │         
-│ "Searching..."   │               │ Strip > from count        │         
-│                  │               │ Strip , from prices       │         
-│                  │ ←─── JSON ─── │ Respond with results      │         
-│                  │               │                          │         
-│ Show scraped     │               └──────────────────────────┘         
-│ results +        │                                                   
-│ price input      │                                                   
-│                  │                                                   
-│ User suggests    │                                                   
-│ price (optional) │ ───→ Create MVR in Dataverse                      
-│ User confirms    │       - vpi_minprice = user suggested              
-│                  │       - vpi_maxprice = user suggested              
-│                  │       - vpi_scraped_minprice = scraped             
-│                  │       - vpi_scraped_maxprice = scraped             
-│                  │       - vpi_scraped_listings = {...}               
-│                  │       - vpi_scraped_sources = URL                  
-│                  │       - vpi_scrapestatus = 4 (Scraped)             
-└──────────────────┘                                                   
+┌──────────────────┐     POST (fetch)       ┌──────────────────────────────────────────────┐
+│  Step3Result.tsx │  ──────────────────→   │  Power Automate FLOW 3                       │
+│                  │  {make, model,         │                                              │
+│                  │   trim, year}          │  [Initialize Variable]                       │
+│                  │                        │         │                                    │
+│                  │                        │  ┌─── Try Scope ──────────────────────────┐  │
+│                  │                        │  │  Build Search URL                      │  │
+│                  │                        │  │  HTTP GET → YallaMotor                 │  │
+│  [Show spinner]  │                        │  │  Extract Page Title                    │  │
+│                  │                        │  │  HTTP Status Code                      │  │
+│                  │                        │  │                                         │  │
+│                  │                        │  │  ┌─ Cloudflare Check (OR) ──────────┐  │  │
+│                  │                        │  │  │  Title="Just a moment"?          │  │  │
+│                  │                        │  │  │  Title="Attention Required"?     │  │  │
+│                  │                        │  │  │  outputs('HTTP')['statusCode']   │  │  │
+│                  │                        │  │  │           = 403?                   │  │  │
+│                  │                        │  │  └──────────────┬───────────────────┘  │  │
+│                  │                        │  │          Yes   │   No                  │  │
+│                  │                        │  │     ┌──────────▼──────────┐            │  │
+│                  │                        │  │     │ Terminate (Succ.)  │            │  │
+│                  │                        │  │     │ Response: -1       │            │  │
+│                  │                        │  │     └───────────────────┘            │  │
+│                  │                        │  │                          │            │  │
+│                  │                        │  │                 Extract Heading      │  │
+│                  │                        │  │                          │            │  │
+│                  │                        │  │           ┌─ Is Heading Avail? ─┐    │  │
+│                  │                        │  │           │ heading ≠ "No found"│    │  │
+│                  │                        │  │           └──────────┬──────────┘    │  │
+│                  │                        │  │                Yes   │   No            │  │
+│                  │                        │  │           ┌──────────▼──────┐         │  │
+│                  │                        │  │           │ Extract After  │         │  │
+│                  │                        │  │           │ AED / Min/Max  │         │  │
+│                  │                        │  │           │ Extract Count  │         │  │
+│                  │                        │  │           │ Build JSON     │         │  │
+│                  │                        │  │           └───────────────┘         │  │
+│                  │                        │  │                                    │  │
+│                  │                        │  │  Response (@{...} interpolation)   │  │
+│                  │                        │  └────────────────────────────────────┘  │
+│                  │                        │                                           │
+│                  │                        │  ┌── Catch Scope ─────────────────────┐  │
+│                  │                        │  │  Run after: failure/skip/timeout   │  │
+│                  │                        │  │  Response: Min:0, Max:0, Count:-1  │  │
+│                  │                        │  └────────────────────────────────────┘  │
+│                  │  ←──── JSON ──────────  └──────────────────────────────────────────┘
+│                  │
+│  [Show results]  │
+│  + price input   │
+│                  │
+│  User confirms   │ ───→ Create MVR in Dataverse
+│                  │       - vpi_minprice = user suggested
+│                  │       - vpi_maxprice = user suggested
+│                  │       - vpi_scraped_minprice = scraped
+│                  │       - vpi_scraped_maxprice = scraped
+│                  │       - vpi_scraped_listings = {...}
+│                  │       - vpi_scraped_sources = URL
+│                  │       - vpi_scrapestatus = 4 (Scraped)
+└──────────────────┘
 ```
 
 ### Create the Flow
@@ -875,7 +922,7 @@ Step3Result.tsx                    Power Automate (FLOW 3)              Datavers
 4. Trigger: **When an HTTP request is received**
 5. Click **Create**
 
-### Step 1: Configure HTTP Trigger Schema
+### Step 1: Configure HTTP Trigger — "Anyone can trigger"
 
 6. Click **When an HTTP request is received** → **Use sample payload to generate schema**
 7. Paste this sample JSON:
@@ -889,28 +936,40 @@ Step3Result.tsx                    Power Automate (FLOW 3)              Datavers
 }
 ```
 
-This auto-generates the JSON schema. Note the **HTTP POST URL** shown at the top — you'll need this in the frontend code.
+8. ⚠️ **CRITICAL:** Click **"Anyone can trigger"** in the trigger settings. This generates a **SAS token** (`sig=...`) embedded in the POST URL. Without this, the browser `fetch()` call will get a **401 OAuth error** because the browser cannot provide Azure AD credentials.
+
+9. Copy the **HTTP POST URL** shown at the top — it will look like:
+   ```
+   https://[env].environment.api.powerplatform.com:443/powerautomate/...&sig=[SAS-TOKEN]
+   ```
+   This URL goes into `src/lib/yallaMotorHttpScraper.ts` as `FLOW_3_URL`.
 
 ### Step 2: Initialize Variable — ResponseBody
 
-8. Click **+ New step** → **Initialize variable**
-   - Name: `ResponseBody`
-   - Type: **String**
-   - Value: (leave empty)
+10. Click **+ New step** → **Initialize variable**
+    - Name: `ResponseBody`
+    - Type: **String**
+    - Value: (leave empty)
 
-### Step 3: Build Search URL (with Hyphens + Trim + Year)
+### ⚠️ Step 3-9: All Actions Inside Try Scope
 
-9. Click **+ New step** → **Compose**
-10. Name: `Build Search URL`
-11. Input: click **Expression** → paste:
+11. Click **+ New step** → search **Scope**
+12. Rename the Scope to **`Try`** (double-click the title bar)
+13. Drag all remaining action steps (3-9 below) **inside** this Try scope.
+
+### Step 3 (inside Try): Build Search URL
+
+14. Click **Add an action** (inside Try) → **Compose**
+15. Name: `Build Search URL`
+16. Input: click **Expression** → paste:
     ```
     concat('https://uae.yallamotor.com/used-cars/', replace(toLower(triggerBody()?['make']), ' ', '-'), '/', replace(toLower(triggerBody()?['model']), ' ', '-'), '/vr_', replace(toLower(coalesce(triggerBody()?['trim'], '')), ' ', '-'), '/yr_', triggerBody()?['year'], '_', triggerBody()?['year'])
     ```
 
-### Step 4: HTTP Request to YallaMotor
+### Step 4 (inside Try): HTTP Request to YallaMotor
 
-12. Click **+ New step** → search **HTTP**
-13. Configure:
+17. Click **Add an action** (inside Try) → search **HTTP**
+18. Configure:
     - Method: **GET**
     - URI: click → **Expression**: `outputs('Build_Search_URL')`
     - Headers:
@@ -925,126 +984,240 @@ This auto-generates the JSON schema. Note the **HTTP POST URL** shown at the top
       }
       ```
 
-### Step 5: Store Response Body
+### Step 5 (inside Try): Store Response Body
 
-14. Click **+ New step** → **Set variable**
+19. Click **Add an action** (inside Try) → **Set variable**
     - Name: `ResponseBody`
     - Value: click → **Expression**: `body('HTTP')`
 
-### Step 6: Extract Page Title
+### Step 6 (inside Try): Extract Page Title
 
-15. Click **+ New step** → **Compose**
-16. Name: `Extract Page Title`
-17. Input: click → **Expression**:
+20. Click **Add an action** (inside Try) → **Compose**
+21. Name: `Extract Page Title`
+22. Input: click → **Expression**:
     ```
     if(contains(body('HTTP'), '<title>'), first(split(first(skip(split(body('HTTP'), '<title>'), 1)), '</title>')), 'No title found')
     ```
 
-### Step 7: Check HTTP Status Code
+### Step 7 (inside Try): Check HTTP Status Code
 
-18. Click **+ New step** → **Compose**
-19. Name: `HTTP Status Code`
-20. Input: click → **Expression**: `outputs('HTTP')['statusCode']`
+23. Click **Add an action** (inside Try) → **Compose**
+24. Name: `HTTP Status Code`
+25. Input: click → **Expression**: `outputs('HTTP')['statusCode']`
 
-### Step 8: Simplified Cloudflare Check
+### Step 8 (inside Try): Cloudflare Check — 4 OR Conditions
 
-21. Click **+ New step** → **Condition**
-22. Name: `Cloudflare Check`
-23. **OR** conditions:
+26. Click **Add an action** (inside Try) → **Condition**
+27. Name: `Cloudflare Check`
+28. **OR** conditions (any one true = blocked):
     - `outputs('Extract_Page_Title')` contains `Just a moment`
     - `outputs('Extract_Page_Title')` contains `Attention Required`
-    - `outputs('HTTP_Status_Code')` not equals `200`
+    - `outputs('HTTP')['statusCode']` **is equal to** `403`
+    > Checking specifically for HTTP 403 (Forbidden) — Cloudflare returns 403 when it blocks a request. This is more precise than checking for any non-200 status.
 
-### Step 9: If Blocked — Return Error
+### Step 8a (inside Try, If yes — blocked): Terminate (Succeeded) + Response (-1)
 
-**In If yes (blocked):**
+29. In the **If yes** branch (blocked), add these two actions:
 
-24. Click **Add an action** → **Respond to a PowerApp or flow**
-25. Configure:
-    - Status Code: `200` (to avoid CORS/fetch errors — indicate success with error flag)
-    - Headers: `{ "Content-Type": "application/json" }`
+    **8a(i) — Terminate:**
+    - Action: **Terminate**
+    - Status: **Succeeded** (not Failed)
+    - Reason: `YallaMotor not accessible`
+
+    **8a(ii) — Response with -1 sentinel:**
+    - Action: **Response** (placed after Terminate)
+    - Status Code: `200`
+    - Headers:
+      ```json
+      {
+        "Content-Type": "application/json"
+      }
+      ```
     - Body:
-    ```json
-    {
-      "success": false,
-      "error": "YallaMotor not accessible",
-      "url": "@{outputs('Build_Search_URL')}",
-      "statusCode": "@{outputs('HTTP_Status_Code')}"
-    }
-    ```
+      ```json
+      {
+        "Min Price": "0",
+        "Max Price": "0",
+        "Count": "-1"
+      }
+      ```
+    > The Terminate stops the flow, but the Response action still sends the -1 payload back to the caller. The frontend detects `Count < 0` and shows the amber "Live Data Unavailable" UI.
 
-26. Click **Add an action** → **Terminate**
-    - Status: **Succeeded** (response already sent)
-
-### Step 10: If Accessible — Extract Heading
+### Step 9 (inside Try, If no — accessible): Extract Heading
 
 **In If no (accessible):**
 
-27. Click **Add an action** → **Compose**
-28. Name: `Extract Heading`
-29. Input: click **Expression**:
+30. Click **Add an action** → **Compose**
+31. Name: `Extract Heading`
+32. Input: click **Expression**:
     ```
     if(contains(variables('ResponseBody'), 'heading-h2-content'), trim(first(split(first(skip(split(variables('ResponseBody'), 'heading-h2-content'), 1)), '</div>'))), 'No heading found')
     ```
 
-### Step 11: Condition — Heading Found?
+### Step 9a (inside Try, If no — accessible): Is Heading Available (Nested Condition)
 
-30. Click **+ New step** → **Condition**
-31. Name: `Is Heading Available`
-32. Row:
-    - Left: `outputs('Extract_Heading')`
-    - Operator: `is not equal to`
-    - Right: `No heading found`
+33. Click **Add an action** → **Condition**
+34. Name: `Is Heading Available`
+35. Condition:
+    - `outputs('Extract_Heading')` **is not equal to** `No heading found`
 
-### Step 12: Parse Heading — Extract Prices
+    **9a(i) — If yes (heading found): Extract & Parse Prices**
 
-**In If yes (heading found):**
+    Add these actions inside the **If yes** branch:
 
-33. Click **Add an action** → **Compose**
-34. Name: `Extract After AED`
-35. Input: `trim(first(skip(split(outputs('Extract_Heading'), 'AED '), 1)))`
+    36. **Compose** — Name: `Extract After AED`
+        Input: `trim(first(skip(split(outputs('Extract_Heading'), 'AED '), 1)))`
 
-36. Click **Add an action** → **Compose**
-37. Name: `Extract Min Price`
-38. Input: **`replace(trim(first(split(outputs('Extract_After_AED'), ' –'))), ',', '')`**
-    > Strips commas: `95,000` → `95000` ✅
+    37. **Compose** — Name: `Extract Min Price`
+        Input: `replace(trim(first(split(outputs('Extract_After_AED'), ' –'))), ',', '')`
 
-39. Click **Add an action** → **Compose**
-40. Name: `Extract Max Price`
-41. Input: **`replace(trim(first(split(first(skip(split(outputs('Extract_After_AED'), '– '), 1)), ' ·'))), ',', '')`**
-    > Strips commas: `145,000` → `145000` ✅
+    38. **Compose** — Name: `Extract Max Price`
+        Input: `replace(trim(first(split(first(skip(split(outputs('Extract_After_AED'), '– '), 1)), ' ·'))), ',', '')`
 
-42. Click **Add an action** → **Compose**
-43. Name: `Extract Listing Count`
-44. Input: **`replace(trim(first(split(outputs('Extract_Heading'), ' listings'))), '>', '')`**
-    > Strips `>` prefix: `>294` → `294` ✅
+    39. **Compose** — Name: `Extract Listing Count`
+        Input: **`replace(replace(trim(first(split(outputs('Extract_Heading'), ' listings'))), '>', ''), '"', '')`**
+        > Strips `>` prefix: `>294` → `294`, then strips `"` wrapping: `"\"7"` → `7` ✅
+        >
+        > ⚠️ **Do NOT wrap with `int()`** — it fails silently inside a Scope and returns 0. The frontend handles numeric conversion robustly.
 
-### Step 13: Build Response JSON
+    40. **Compose** — Name: `Build Response JSON`
+        Input: use the **Expression** tab and wrap with `@{...}`:
+        ```
+        @{concat('{"success": true, "make": "', triggerBody()?['make'], '", "model": "', triggerBody()?['model'], '", "trim": "', triggerBody()?['trim'], '", "year": ', triggerBody()?['year'], ', "count": ', outputs('Extract_Listing_Count'), ', "minPrice": ', outputs('Extract_Min_Price'), ', "maxPrice": ', outputs('Extract_Max_Price'), ', "heading": "', outputs('Extract_Heading'), '", "sourceUrl": "', outputs('Build_Search_URL'), '"}')}
+        ```
+        > This builds a complete JSON payload with all fields: success flag, make/model/trim/year from the trigger input, and count/minPrice/maxPrice/heading/sourceUrl from the extraction steps.
 
-45. Click **+ New step** → **Compose**
-46. Name: `Build Response JSON`
-47. Input: click **Expression**:
-    ```
-    concat('{"success": true, "make": "', triggerBody()?['make'], '", "model": "', triggerBody()?['model'], '", "trim": "', triggerBody()?['trim'], '", "year": ', triggerBody()?['year'], ', "count": ', outputs('Extract_Listing_Count'), ', "minPrice": ', outputs('Extract_Min_Price'), ', "maxPrice": ', outputs('Extract_Max_Price'), ', "heading": "', outputs('Extract_Heading'), '", "sourceUrl": "', outputs('Build_Search_URL'), '"}')
-    ```
+    **9a(ii) — If no (heading not found):** (leave empty)
 
-### Step 14: Respond to Caller
+    > When heading is not found, the extraction Compose steps are skipped entirely. The Try scope's Response action (Step 10) will receive empty `outputs()` references, which Power Automate resolves as null. If this causes the Try scope to fail, the Catch scope's Response fires instead with the -1 sentinel.
 
-48. Click **+ New step** → **Respond to a PowerApp or flow**
-49. Configure:
+### Step 10 (inside Try): Response — Success Path
+
+The Try scope ends with a Response action that sends the extracted values back to the caller.
+
+41. Click **Add an action** (inside Try, after the Cloudflare Check condition block ends) → **Response**
+42. Name: `Response` (optional)
+43. Configure:
     - Status Code: `200`
-    - Headers: `{ "Content-Type": "application/json" }`
-    - Body: click **Expression**: `outputs('Build_Response_JSON')` 
+    - Headers:
+      ```json
+      {
+        "Content-Type": "application/json"
+      }
+      ```
+    - Body — use `@{...}` string interpolation syntax:
+      ```json
+      {
+        "Min Price": "@{outputs('Extract_Min_Price')}",
+        "Max Price": "@{outputs('Extract_Max_Price')}",
+        "Count": "@{outputs('Extract_Listing_Count')}"
+      }
+      ```
+    - **Configure run after:** Only **is successful** checked (default)
+    > ⚠️ **Must use `@{...}` template syntax**, not bare `outputs('...')`. Without the `@{...}` wrapping, the values are not interpolated correctly into the JSON response.
+    >
+    > This Response only fires when YallaMotor is accessible and the heading was found and parsed. If any preceding step fails, this Response is skipped and the Catch scope handles it.
 
-### Step 15: Fallback — JSON-LD (If heading not found)
+### Step 11: Catch Scope — Response with -1 Sentinel
 
-If heading is empty, add the same JSON-LD and BDI fallback steps from Flow 2 (Steps 60-77), then build the response JSON with fallback values.
+44. After the Try scope ends, click **+ New step** → search **Scope**
+45. Rename to **`Catch`**
+46. Click **...** on the Catch scope → **Configure run after**
+47. Check ONLY: **has failed**, **is skipped**, **has timed out** — leave **is successful** UNCHECKED
+48. Click **Done**
+
+49. Inside Catch, click **Add an action** → **Response**
+50. Configure:
+    - Status Code: `200`
+    - Headers:
+      ```json
+      {
+        "Content-Type": "application/json"
+      }
+      ```
+    - Body (hardcoded — not dynamic):
+      ```json
+      {
+        "Min Price": "0",
+        "Max Price": "0",
+        "Count": "-1"
+      }
+      ```
+    > ⚠️ **Configure run after cannot be modified** on the first action inside a Scope — the Catch scope itself controls when it runs (step 47). The Response inside always executes when the Catch scope fires.
+    >
+    > The frontend detects `Count < 0` and shows the amber "Live Data Unavailable" UI with manual price inputs.
+
+### ⚠️ Why Only 3 Values?
+
+Only 3 values (`Min Price`, `Max Price`, `Count`) are returned from the flow. The frontend handles the rest:
+
+1. **Constructs the heading** from count, minPrice, maxPrice, make, model, year
+2. **Builds the source URL** using the hyphenated slug pattern
+3. **Detects unreachable** by checking `count < 0` (either the Cloudflare block branch returned -1, the Catch scope fired with -1, or heading wasn't found and extraction outputs were empty)
+
+> **Why not more values in the Catch Response?** The Catch scope Response has hardcoded `0/0/-1` — it cannot reference Try's action outputs because those actions failed or were skipped. The hardcoded -1 sentinel is all the frontend needs to show the "Live Data Unavailable" UI.
+
+See `src/lib/yallaMotorHttpScraper.ts` for the full client-side implementation.
+
+### Frontend Implementation (`src/lib/yallaMotorHttpScraper.ts`)
+
+```typescript
+const FLOW_3_URL = 'https://[env]...&sig=[token]';
+
+export interface Flow3ScrapeResult {
+  success: true;
+  make: string;
+  model: string;
+  trim: string;
+  year: number;
+  count: number;
+  minPrice: number;
+  maxPrice: number;
+  heading: string;
+  sourceUrl: string;
+  _unavailable?: boolean;
+}
+
+export async function scrapeViaFlow3(params: { make, model, trim, year }) {
+  const response = await fetch(FLOW_3_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const result = await response.json();
+  
+  // Strip non-numeric chars — handles Scope-wrapping quotes
+  const count = Number(String(result['Count'] ?? result['count'] ?? '')
+    .replace(/[^0-9-]/g, '')) || 0;
+  const minPrice = Number(result['Min Price'] ?? result['Min price'] ?? 0);
+  const maxPrice = Number(result['Max Price'] ?? result['Max price'] ?? 0);
+  
+  // count < 0 = Catch scope fired = YallaMotor unreachable
+  if (count < 0) {
+    return { success: true, ..., _unavailable: true };
+  }
+  
+  // Build heading + URL client-side
+  const sourceUrl = `https://uae.yallamotor.com/used-cars/${makeSlug}/...`;
+  return { success: true, count, minPrice, maxPrice, heading, sourceUrl };
+}
+```
+
+### Step3Result.tsx — Three-State UI
+
+The valuation page handles three possible outcomes:
+
+| State | Condition | UI |
+|---|---|---|
+| **Unavailable** | `flow3Result._unavailable === true` | Amber "Live Data Unavailable" banner with manual price inputs + "Submit Request" |
+| **Error** | `scrapeError && !flow3Result` | Red error box with "Try Again" button (network/fetch errors) |
+| **Success** | `flow3Result` (normal) | Green price estimate card with count, min/max, source link + price suggestion + "Confirm & Submit" |
 
 ### Test the Flow
 
-50. Click **Save** (top-left)
-51. Copy the **HTTP POST URL** from the trigger step
-52. Test with any HTTP client:
+51. Click **Save** (top-left)
+52. Copy the **HTTP POST URL** from the trigger step
+53. Test with any HTTP client:
     ```
     POST [your-flow-url]
     Content-Type: application/json
@@ -1053,28 +1226,68 @@ If heading is empty, add the same JSON-LD and BDI fallback steps from Flow 2 (St
       "make": "Mercedes Benz",
       "model": "C-Class",
       "trim": "C 200",
-      "year": 2021
+      "year": 2024
     }
     ```
 
-### Expected Response
+### ✅ Actual Test Results
 
+**Test 1 (2026-07-17) — Before fixes:**
+
+Request:
+```json
+{"make": "Mercedes Benz", "model": "C-Class", "trim": "C 200", "year": 2021}
+```
+Response:
 ```json
 {
-  "success": true,
-  "make": "Mercedes Benz",
-  "model": "C-Class",
-  "trim": "C 200",
-  "year": 2021,
-  "count": 7,
-  "minPrice": 95000,
-  "maxPrice": 145000,
-  "heading": "7 listings · AED 95,000 – 145,000 · 2021–2021 · updated 16 July 2026",
-  "sourceUrl": "https://uae.yallamotor.com/used-cars/mercedes-benz/c-class/vr_c-200/yr_2021_2021"
+  "Min Price": "95000",
+  "Max Price": "145000",
+  "Count": "\"7"
 }
 ```
+**Issue:** Count had extra wrapping quotes (`"\"7"`) from Scope wrapping.
 
----
+**Test 2 (2026-07-17) — After adding `int()` wrapper:**
+
+Frontend showed count = 0 instead of 6. Root cause: `int()` fails silently inside a Scope.
+
+**Test 3 (2026-07-20) ✅ — After final fixes (double `replace()` + `@{...}` syntax):**
+
+Request:
+```json
+{"make": "Mercedes Benz", "model": "C-Class", "trim": "C 200", "year": 2024}
+```
+Response:
+```json
+{
+  "Min Price": "127000",
+  "Max Price": "275000",
+  "Count": "6"
+}
+```
+Status: `200 OK`
+
+**Result:** ✅ **All values correct.** Count = 6, Min Price = 127,000, Max Price = 275,000.
+
+**Frontend Display:**
+```
+Live Market Data — YallaMotor
+AED 127,000 — AED 275,000
+6 listings found · 2024 Mercedes Benz C-Class
+6 listings · AED 127,000 – 275,000 · 2024–2024
+```
+
+### ✅ Resolved Issue: Count Shows 0
+
+The count issue is now **resolved** with two Power Automate fixes:
+
+| Fix | What It Does |
+|---|---|
+| **Double `replace()`** on Extract Listing Count: `replace(replace(..., '>', ''), '"', '')` | Strips both `>` prefix (`>294` → `294`) and `"` wrapping (`"\"7"` → `7`) |
+| **`@{outputs('...')}` template syntax** in Response body | Ensures values are interpolated correctly as JSON strings instead of raw expressions |
+
+> ⚠️ **Do NOT wrap `Extract_Listing_Count` with `int()`** — it fails silently inside a Scope and returns 0. The frontend's `.replace(/[^0-9-]/g, '')` handles the numeric conversion.
 
 ## MVR Schema Reference (Scrape Columns Only)
 
