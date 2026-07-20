@@ -2,6 +2,7 @@ import { useDeferredValue } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { analyticsRepository } from '@repositories';
 import { useDashboardStore } from '@stores';
+import type { DashboardFilters } from '@types';
 
 const DASHBOARD_ANALYTICS_KEY = 'dashboard-analytics';
 
@@ -39,5 +40,25 @@ export function useDashboardAnalytics() {
     isLoading,
     isRefetching: isFetching && !isLoading,
     error,
+  };
+}
+
+/** Fetch only the value-trend slice for a make/model chart filter. */
+export function useValueTrendAnalytics(make?: string, model?: string) {
+  const filters: DashboardFilters | undefined = make
+    ? { make, ...(model ? { model } : {}) }
+    : undefined;
+
+  const query = useQuery({
+    queryKey: [DASHBOARD_ANALYTICS_KEY, 'value-trend', make ?? 'all', model ?? 'all'],
+    queryFn: () => analyticsRepository.getDashboardAnalytics(filters),
+    enabled: !!make,
+    staleTime: 30_000,
+    placeholderData: (previous) => previous,
+  });
+
+  return {
+    valueTrend: query.data?.valueTrend ?? [],
+    isLoading: query.isFetching,
   };
 }

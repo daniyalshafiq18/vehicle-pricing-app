@@ -311,7 +311,7 @@ function MissingVehicleDetailModal({
               { label: 'Contact Email', value: request.contactEmail },
             ].map((item) => (
               <div key={item.label} className="rounded-xl border bg-card p-3.5">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                <p className="text-[10px] text-slate-800 dark:text-slate-200">
                   {item.label}
                 </p>
                 <p className="mt-1 text-sm font-medium text-foreground break-words">
@@ -339,11 +339,11 @@ function MissingVehicleDetailModal({
                     return (
                       <>
                         <div className="rounded-xl border bg-card p-3.5">
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Listings Found</p>
+                          <p className="text-[10px] text-slate-800 dark:text-slate-200">Listings Found</p>
                           <p className="mt-1 text-sm font-bold text-foreground">{String(parsed.count ?? '—')}</p>
                         </div>
                         <div className="rounded-xl border bg-card p-3.5">
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Source</p>
+                          <p className="text-[10px] text-slate-800 dark:text-slate-200">Source</p>
                           <p className="mt-1 text-sm font-medium text-foreground">{String(parsed.source ?? '—')}</p>
                         </div>
                       </>
@@ -353,7 +353,7 @@ function MissingVehicleDetailModal({
                 })()}
                 {request.scrapedMinPrice != null && (
                   <div className="rounded-xl border bg-card p-3.5">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Scraped Min Price</p>
+                    <p className="text-[10px] text-slate-800 dark:text-slate-200">Scraped Min Price</p>
                     <p className="mt-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">
                       {formatCurrency(request.scrapedMinPrice)}
                     </p>
@@ -361,7 +361,7 @@ function MissingVehicleDetailModal({
                 )}
                 {request.scrapedMaxPrice != null && (
                   <div className="rounded-xl border bg-card p-3.5">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Scraped Max Price</p>
+                    <p className="text-[10px] text-slate-800 dark:text-slate-200">Scraped Max Price</p>
                     <p className="mt-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">
                       {formatCurrency(request.scrapedMaxPrice)}
                     </p>
@@ -369,7 +369,7 @@ function MissingVehicleDetailModal({
                 )}
                 {request.scrapedSources && (
                   <div className="col-span-2 rounded-xl border bg-card p-3.5">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Source URL</p>
+                    <p className="text-[10px] text-slate-800 dark:text-slate-200">Source URL</p>
                     <a
                       href={request.scrapedSources}
                       target="_blank"
@@ -384,7 +384,7 @@ function MissingVehicleDetailModal({
                 )}
                 {request.scrapedListings && !parseScrapedListings(request.scrapedListings) && (
                   <div className="col-span-2 rounded-xl border bg-card p-3.5">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Raw Scraped Data</p>
+                    <p className="text-[10px] text-slate-800 dark:text-slate-200">Raw Scraped Data</p>
                     <pre className="mt-1 max-h-32 overflow-auto rounded-lg bg-muted/50 p-2 text-[11px] text-foreground break-all whitespace-pre-wrap">
                       {request.scrapedListings}
                     </pre>
@@ -477,7 +477,7 @@ function MissingVehicleCard({
               { label: 'Drive Type', value: request.driveType },
             ].map((spec) => (
               <div key={spec.label} className="rounded-xl bg-muted/40 p-3 transition-colors hover:bg-muted/60">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{spec.label}</p>
+                <p className="text-[10px] font-medium text-slate-800 dark:text-slate-200">{spec.label}</p>
                 <p className="mt-0.5 text-sm font-semibold text-foreground truncate">
                   {spec.value || '—'}
                 </p>
@@ -489,14 +489,14 @@ function MissingVehicleCard({
           {(request.minPrice != null || request.maxPrice != null) && (
             <div className="mt-3 flex items-center gap-3 rounded-xl border bg-card p-3 shrink-0">
               <div className="flex-1">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Min Price</p>
+                <p className="text-[10px] text-slate-800 dark:text-slate-200">Min Price</p>
                 <p className="text-sm font-bold text-foreground">
                   {request.minPrice != null ? formatCurrency(request.minPrice) : '—'}
                 </p>
               </div>
               <div className="h-8 w-px bg-border" />
               <div className="flex-1">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Max Price</p>
+                <p className="text-[10px] text-slate-800 dark:text-slate-200">Max Price</p>
                 <p className="text-sm font-bold text-foreground">
                   {request.maxPrice != null ? formatCurrency(request.maxPrice) : '—'}
                 </p>
@@ -515,7 +515,7 @@ function MissingVehicleCard({
                 <div className="flex items-center gap-3 rounded-xl border bg-card p-3">
                   {request.scrapedMinPrice != null && (
                     <div className="flex-1">
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Scraped Min</p>
+                      <p className="text-[10px] text-slate-800 dark:text-slate-200">Scraped Min</p>
                       <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                         {formatCurrency(request.scrapedMinPrice)}
                       </p>
@@ -526,7 +526,7 @@ function MissingVehicleCard({
                   )}
                   {request.scrapedMaxPrice != null && (
                     <div className="flex-1">
-                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Scraped Max</p>
+                      <p className="text-[10px] text-slate-800 dark:text-slate-200">Scraped Max</p>
                       <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                         {formatCurrency(request.scrapedMaxPrice)}
                       </p>
@@ -543,7 +543,7 @@ function MissingVehicleCard({
           {/* Footer: requested by + action */}
           <div className="mt-3 flex items-center justify-between border-t pt-3 shrink-0">
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Requested by</p>
+              <p className="text-[10px] font-medium text-slate-800 dark:text-slate-200">Requested by</p>
               <p className="text-xs font-medium text-foreground truncate" title={request.contactName || request.contactEmail || ''}>
                 <User className="mr-1 inline h-3 w-3 text-muted-foreground/60" />
                 {request.contactName || request.contactEmail || '—'}
@@ -797,19 +797,19 @@ export function AdminMissingVehiclesPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/20">
-                      <th className="w-10 px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</th>
-                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Make</th>
-                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Model</th>
-                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Year</th>
-                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Spec / Trim</th>
-                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Body Type</th>
-                      <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Min Price</th>
-                      <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Max Price</th>
-                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
-                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Scrape</th>
-                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Requested By</th>
-                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Requested</th>
-                      <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
+                      <th className="w-10 px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">#</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Make</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Model</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Year</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Spec / Trim</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Body Type</th>
+                      <th className="px-4 py-3.5 text-right text-sm font-semibold text-slate-800 dark:text-slate-200">Min Price</th>
+                      <th className="px-4 py-3.5 text-right text-sm font-semibold text-slate-800 dark:text-slate-200">Max Price</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Status</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Scrape</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Requested By</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Requested</th>
+                      <th className="px-4 py-3.5 text-right text-sm font-semibold text-slate-800 dark:text-slate-200">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">

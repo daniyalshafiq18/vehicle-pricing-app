@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react';
 import { ErrorBoundary, LoadingScreen } from '@components/ui';
 import { AppProviders } from '@providers';
 import { useDataSource } from '@data';
+import { useStartupData } from '@hooks';
 import { AppRouter } from './router';
 
 /**
@@ -10,7 +11,8 @@ import { AppRouter } from './router';
  * Once data is ready, the app renders.
  */
 function SplashGate({ children }: { children: ReactNode }) {
-  const { isInitialized, isInitializing, error, triggerInit } = useDataSource();
+  const { isInitialized, isInitializing, error, triggerInit, progress } = useDataSource();
+  const { progress: startupProgress, isReady: isStartupReady } = useStartupData(isInitialized);
 
   // Start DataSource init on app mount
   useEffect(() => {
@@ -19,9 +21,18 @@ function SplashGate({ children }: { children: ReactNode }) {
     }
   }, [isInitialized, isInitializing, triggerInit]);
 
-  // Loading state — show branded splash
-  if (isInitializing) {
-    return <LoadingScreen message="Loading vehicle data..." />;
+  // Vehicle pagination owns the first 85%; the three startup APIs own the
+  // final 15%, so 100% is shown only after every request has settled.
+  if (!error && (!isInitialized || !isStartupReady)) {
+    const combinedProgress = isInitialized
+      ? 85 + Math.round(startupProgress * 0.15)
+      : Math.round(progress * 0.85);
+    return (
+      <LoadingScreen
+        message={!isInitialized ? 'Loading vehicle data...' : 'Loading application data...'}
+        progress={combinedProgress}
+      />
+    );
   }
 
   // Error state

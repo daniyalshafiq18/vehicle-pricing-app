@@ -7,6 +7,10 @@ metadata:
 
 # Cleanup History
 
+## 2026-07-20 — Dirham Symbol Integration Removed
+- Removed the `dirham` package, web-font import, Tailwind font fallbacks, Unicode symbol constants, and embedded PDF font at the user's request
+- Restored the simpler `AED` text convention across all currency displays
+
 ## 2026-07-13 — Scraper Service Removal (Abandoned Path B)
 
 ### Removed — Puppeteer Scraping Microservice

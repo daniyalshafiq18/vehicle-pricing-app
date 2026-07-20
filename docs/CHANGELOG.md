@@ -2,6 +2,132 @@
 
 ## 2026-07-20
 
+### UI — Inline AED Price Suggestion Inputs
+- Updated both Step 3 price-suggestion forms to display `AED` inside the minimum and maximum price fields
+- Added live thousands separators while users type, while keeping submitted price values numeric
+- Removed the duplicate formatted price rows beneath the inputs
+
+### Fixed — Startup Progress and Vehicle Price Alignment
+- Reserved the final 15% of splash progress for inquiries, missing vehicle requests, and price suggestions; each completed startup API advances the percentage and 100% appears only after all three settle
+- Added React Query prefetching so admin hooks reuse startup responses instead of firing the same requests after the splash disappears
+- Kept the completed 100% state visible briefly before rendering the application
+- Prevented AED prices from wrapping in the Vehicles table and gave the Price column a consistent minimum width with tabular numerals
+
+### UI — Currency Display Restored to AED
+- Removed the Dirham SVG/web-font integration and its `dirham` package dependency
+- Restored `AED` across shared currency formatting, price inputs, filter chips, settings, chart tooltips, valuation results, and generated PDFs
+
+### Dashboard — Price by Model Year Make/Model Filters
+- Replaced the year-range selector with searchable Make and Model `CustomSelect` filters
+- Model options are constrained by the selected Make, and changing Make clears the previous Model selection
+- Added a dedicated React Query analytics request so only the Price by Model Year chart recalculates while the other dashboard charts remain unchanged
+
+### UI — Official UAE Dirham Currency Symbol
+- Replaced the Arabic abbreviation (`د.إ`) with the official UAE Dirham symbol across shared currency formatting, admin filter chips, price input prefixes, regional settings, and valuation PDFs
+- Added the `dirham` package so the Unicode 18.0 `U+20C3` glyph renders consistently before native operating-system font support is widespread
+- Embedded the bundled Dirham font in PDF exports and retained comma-separated, zero-decimal price formatting
+
+### UI — Hero Badge Background Darkened
+- Changed the landing hero badge to a solid dark violet treatment (`bg-violet-700`, `dark:bg-violet-600`) with white semibold text, a light icon, stronger border, and subtle shadow for clear contrast against the background grid
+
+### UI — Formatted Price Previews on Suggestion Inputs
+- Added live formatted preview text below all price suggestion input fields showing comma-separated values with Dirham symbol (e.g., `97,066 د.إ.`)
+- Applies to: "Suggest Your Own Price" section (valuation result), "Suggest Market Price" dialog (valuation result), and admin edit dialog (price suggestions page)
+- Users now see the properly formatted value as they type, even though `type="number"` inputs display raw digits
+
+### UI — Currency Symbol Change (AED → Dirham Symbol)
+- Updated `formatCurrency()` in `formatters.ts`: locale changed from `en-AE` to `ar-AE` with `currencyDisplay: 'symbol'` so AED displays as Dirham symbol (`د.إ`) with comma-separated numbers
+- Added RTL/LRM mark stripping (`/[‎‏‍‌﻿]/g`) for clean LTR display
+- Replaced 7 hardcoded `AED` strings across 4 files: AdminVehiclesPage.tsx (filter chips + price input prefixes), AdminPriceSuggestionsPage.tsx (edit input prefixes), AdminSettingsPage.tsx (currency select label), pdfExport.ts (price output)
+
+### UI — KPI Card Dynamic Heading Colors
+- Added `headingColor` field to `KPICardStyle` interface
+- Each dashboard KPI card's uppercase heading text now matches its accent color: Total Vehicles=blue, Total Makes=violet, Total Models=emerald, Body Types=pink, Queries=sky, Missing Vehicles=orange
+- Updated heading span from generic `text-muted-foreground/70` to per-card `style.headingColor`
+
+### UI — Landing Page Section Backgrounds
+- Changed How It Works and CTA section backgrounds from `bg-card/30` to warm off-white `bg-[#FCF8F7]` with `dark:bg-slate-950` fallback
+- Both sections now share the identical warm background for visual uniformity
+
+## 2026-07-17
+
+### UI — Form Required Field Indicators & Validation UX
+- Added red asterisk (`*`) indicators on all required field labels (First Name, Last Name, Email, Phone, Country, City)
+- Added `required` HTML attribute on all `<input>` and `<select>` elements for browser-level validation
+- Added live inline error styling: touched + empty fields show a subtle red border (`border-red-300`) while validated errors show destructive red (`border-destructive`)
+- Added `mode: 'onTouched'` to React Hook Form config so fields validate on blur
+- Updated `Input` component to render the red asterisk when `required` prop is set, with onBlur touched tracking for inline error display
+- Phone and City custom selectors now track touched state with inline "required" error messaging
+
+### UI — Admin Dashboard Inline Status Distribution
+- Added inline status distribution toggle for Queries and Missing Vehicles KPI cards
+- Clicking Queries card: hides charts, shows inquiry status breakdown (Pending, Reviewed, Contacted, Closed) with color-coded status badges
+- Clicking Missing Vehicles card: hides charts, shows request status breakdown (Pending, Approved, In Progress, Reject) with color-coded status badges
+- Clicking the same card again (or the X button) returns to default dashboard view
+- Active card shows a colored ring indicator; all charts are hidden while a status breakdown is visible
+- Empty states handled with messaging when no records exist
+
+### UI — Admin Filter Chip Currency Fix
+- Fixed admin Vehicles filter chips using `$` (USD) instead of `AED` for min/max price labels
+
+### UI — Dark Mode Text Contrast Fix (Comprehensive)
+- Fixed dark mode text contrast on all LandingPage text elements: headings (`h1`, `h2`s) now use `dark:text-white`, card titles (`h3`s) use `dark:text-slate-100`, subtitle/description paragraphs use `dark:text-slate-300`, card descriptions and stat labels use `dark:text-slate-400`, stat values use `dark:text-white`. Every text-bearing element now has an explicit dark mode color class for guaranteed readability.
+
+### UI — Live Loading Percentage on Splash Screen
+- Added `progress` prop (0–100) to `LoadingScreen` component showing a determinate progress bar and live percentage text (e.g. "Loading vehicle data... 45%")
+- `fetchAllVehicles()` now includes `$count=true` on the first page to get the total record count, and fires an `onProgress` callback after each page with `(fetched, total)`
+- `DataverseDataSource.initialize()` accepts an `onProgress` callback and reports progress across 4 phases: fetching (3–78%), pricing extraction (80–85%), vehicle parsing (85–90%), pricing index (90–95%), hierarchy (95–100%)
+- `DataSourceContext` tracks `progress` as React state and wires it through the context value
+- `SplashGate` passes `progress` to `LoadingScreen` during init
+- Graceful fallback: when no progress prop is provided, the component retains its original indeterminate animation
+
+### UI — Landing Page Polish
+- **Hero badge**: Replaced `Badge variant="secondary"` (muddy gray) with a custom premium pill — semi-transparent violet background, subtle border, glowing text (`bg-violet-50/80 dark:bg-violet-950/30 border-violet-200/50 dark:border-violet-800/50`)
+- **Cards (Stats, How It Works, Features)**: Added `bg-white/90 dark:bg-slate-900/90`, explicit `border-slate-100 dark:border-slate-800` so cards lift off the background grid
+- **Card hover state**: Added violet border transition on hover via `.interactive-card:hover` in `globals.css` (`border-color: hsl(252 87% 70% / 0.5)` light, `hsl(252 87% 50% / 0.4)` dark)
+- **Header**: Changed from `bg-background/80 backdrop-blur-xl` to `bg-white/70 dark:bg-slate-950/70 backdrop-blur-md border-slate-100 dark:border-slate-900` for cohesive background flow
+- **Footer**: Changed from `bg-card/50` to `bg-white/70 dark:bg-slate-950/70 border-slate-100 dark:border-slate-900` — matches header exactly
+- Removed unused `Badge` import from `LandingPage.tsx`
+
+### Feature — Real PDF Export (jsPDF)
+- Added `jspdf` + `jspdf-autotable` dependencies
+- Created `src/utils/pdfExport.ts` with a `downloadValuationPdf()` function that generates a clean A4 PDF containing:
+  - Brand header bar (violet)
+  - Vehicle identity (year / make / model / spec)
+  - Price summary card (min / average / max in AED)
+  - Technical specifications table (11 specs) with alternating row shading
+  - Date-generated footer with disclaimer
+- Replaced `window.print()` in both `Step3Result.tsx` and `ValuationResultPage.tsx` with the proper PDF download
+- File naming: `{year}-{make}-{model}-valuation.pdf`
+
+### UI — VehicleSelect Clearable Dropdown
+- **Clear X button in trigger**: When a value is selected, a small `X` icon appears between the value text and chevron. Clicking it calls `onChange('')` with `e.stopPropagation()` so the dropdown does not open
+- **Toggle-off on re-click**: Clicking an already-selected item in the dropdown list now calls `onChange('')` (deselects) instead of being a no-op
+- **"Clear Selection" row**: When a value is selected and no search query is active, a "Clear Selection" option appears at the top of the dropdown list for an explicit reset path
+- All three pathways cleanly reset the field to empty, cascading downstream fields (Model, Spec, Year, Body Type) as per the existing `setVehicleSelection` reset logic
+
+### UI — Valuation Wizard Card Container & Premium Wizard Indicator
+- **Page background offset**: Added `bg-slate-50/50 dark:bg-slate-950` to the valuation page section so the form card visually lifts off the background
+- **Form card container**: Wrapped the step indicator + form content in a `bg-white border-slate-100 shadow-xl shadow-slate-100/50 rounded-2xl p-8 md:p-10 dark:bg-slate-900 dark:border-slate-800 dark:shadow-none` card — makes the form distinct from the page body
+- **WizardStepIndicator upgrade**: Active step now uses `bg-violet-600 text-white shadow-lg shadow-violet-500/30` with bold text; completed steps show a `Check` icon in `bg-violet-100 dark:bg-violet-900/40`; upcoming steps use muted border circles; connector lines use `bg-gradient-to-r from-violet-500 to-violet-400` when completed
+
+### UI — Header & Footer Polish
+- **Header nav links**: Replaced background-tint active state with a clean underline indicator that animates from center (`after:absolute after:-bottom-[9px] after:left-1/2 after:h-[2px] after:w-0 after:-translate-x-1/2 after:rounded-full after:bg-primary after:transition-all after:duration-300 hover:after:w-4/5`)
+- **Footer background**: Changed to `bg-slate-50 dark:bg-slate-900/50` for a slightly darker offset from the page body; added 3-column grid layout (Brand, Quick Links with `hover:text-violet-600` transitions, Legal) with balanced padding
+
+### UI — Fix Filter Dropdown Overflow Clipping in Admin Vehicles
+- **Portal-based dropdown panel in CustomSelect** (`custom-select.tsx`): The dropdown panel now renders via `createPortal` at `document.body` with `position: fixed` positioning computed from the trigger button's bounding rect. This completely sidesteps any ancestor `overflow` / `z-index` stacking context, preventing dropdowns from being clipped by parent containers.
+- **Scroll/resize-aware repostioning**: The portal position updates on scroll and resize events so the dropdown always tracks the trigger button.
+- **Removed `overflow-hidden`** from the advanced filters animated `motion.div` in `AdminVehiclesPage.tsx` — no longer needed since the dropdown escapes via the portal.
+- **Dynamic z-index on filter wrappers**: Added `relative` positioning to all filter wrapper divs with conditional `z-50`/`z-0` so the active dropdown's stacking context stays above siblings (defensive measure alongside the portal).
+- **Applied consistently** to all 10 CustomSelect filters (Year, Make, Model, Body Type, Transmission, Category, Drive Type, Spec, Powertrain, Vehicle Type).
+
+### UI — Text Styling & Case Consistency Across Admin Tabs
+- **All filter labels across Vehicles tab**: Removed `uppercase tracking-wider text-muted-foreground`, replaced with `text-[11px] font-semibold text-slate-800 dark:text-slate-200` — labels now read in Camel Case with high-contrast dark color.
+- **All table headers across 4 admin tabs** (Vehicles, Queries, Missing Vehicles, Price Suggestions): Removed `uppercase` class, changed color from `text-muted-foreground` (gray) to `text-slate-800 dark:text-slate-200 font-semibold`.
+- **Specific header text fixes**: "Body" → "Body Type", "HP" → "Hp" in the Vehicles table; "Body" → "Body Type" in the Queries table.
+- **Modal detail labels** in Vehicles, Queries, Missing Vehicles, and Price Suggestions detail dialogs: same class replacement for all `text-[10px] uppercase tracking-wider text-muted-foreground` patterns → dark Camel Case.
+- **Unified table header font size**: Changed all table header font sizes across the 4 admin tabs to `text-base` (16px) — was `text-xs` (12px) in Vehicles tab and `text-[10px]` (10px) in Queries, Missing Vehicles, and Price Suggestions tabs.
 ### Flow 3 — Count Fix: Double `replace()` + `@{...}` Template Syntax
 - **User fixed `Extract Listing Count` expression** — added second `replace()` to strip double quotes: `replace(replace(..., '>', ''), '"', '')`. Both `>` prefix (`>294` → `294`) and `"` wrapping (`"\"7"` → `7`) are now stripped.
 - **User fixed Response body syntax** — changed from bare `outputs('Extract_Min_Price')` to `@{outputs('Extract_Min_Price')}` template interpolation syntax. Without `@{...}`, values were not interpolated correctly into the JSON response.

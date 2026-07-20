@@ -71,8 +71,7 @@ function bodyTypesForVehicle(
 }
 
 // ── cascade step definitions ────────────────────────────────────────
-
-const CASCADE_STEPS = ['Make', 'Model', 'Spec', 'Year', 'Body Type'] as const;
+// (removed — fields are now directly selectable in any order)
 
 // ── main component ──────────────────────────────────────────────────
 
@@ -217,39 +216,11 @@ export function Step2VehicleSelection() {
         </div>
 
       <form onSubmit={handleSubmit} className="space-y-10">
-        {/* Cascade visual indicator */}
-        <div className="flex flex-wrap items-center justify-center gap-1.5 text-xs text-muted-foreground/60">
-          {CASCADE_STEPS.map((step, i) => {
-            let active = false;
-            if (step === 'Make') active = !!vehicleSelection.make;
-            else if (step === 'Model') active = !!vehicleSelection.model;
-            else if (step === 'Spec') active = !!vehicleSelection.spec;
-            else if (step === 'Year') active = !!vehicleSelection.year;
-            else if (step === 'Body Type') active = !!vehicleSelection.bodyType;
-
-            return (
-              <div key={step} className="flex items-center gap-1.5">
-                {i > 0 && (
-                  <ArrowRight className="h-3 w-3 text-muted-foreground/30" />
-                )}
-                <span
-                  className={`rounded-full px-2.5 py-0.5 transition-colors ${
-                    active
-                      ? 'bg-primary/10 text-primary font-medium'
-                      : 'text-muted-foreground/40'
-                  }`}
-                >
-                  {step}
-                </span>
-              </div>
-            );
-          })}
-        </div>
 
         {/* Vehicle Details section */}
         <section>
           <div className="mb-5 flex items-center gap-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground/70">
+            <h2 className="text-sm font-semibold tracking-wider text-slate-800 dark:text-slate-200">
               Vehicle Details
             </h2>
             <div className="h-px flex-1 bg-border/50" />

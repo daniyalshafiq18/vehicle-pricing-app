@@ -103,8 +103,14 @@ function parseRawRecord(result: Record<string, unknown>): RawVehicleRecord {
  * the primary key (`vpi_vehicledataid`) and filters for IDs greater than the
  * last record from the previous page. This avoids the portal API's lack of
  * `@odata.nextLink` and `$skip` support.
+ *
+ * @param onProgress Optional callback fired after each page with
+ *   `(fetchedSoFar, totalEstimate)`. The total comes from `@odata.count` on the
+ *   first page; it is 0 when no count was returned.
  */
-export async function fetchAllVehicles(): Promise<RawVehicleRecord[]> {
+export async function fetchAllVehicles(
+  onProgress?: (fetched: number, total: number) => void,
+): Promise<RawVehicleRecord[]> {
   const all: RawVehicleRecord[] = [];
   const baseUrl = `${API_BASE}/vpi_vehicledatas` +
     `?$select=${VEHICLE_SELECT}` +
@@ -112,19 +118,27 @@ export async function fetchAllVehicles(): Promise<RawVehicleRecord[]> {
     `&$top=${MAX_PAGE_SIZE}`;
 
   let lastId: string | null = null;
+  let totalRecords = 0;
 
   while (true) {
+    // First page includes $count=true so we know the total upfront
+    const countParam = lastId ? '' : '&$count=true';
     const filter = lastId ? `&$filter=vpi_vehicledataid gt '${lastId}'` : '';
-    const resp: ODataResponse = await safeFetch<ODataResponse>({
-      url: baseUrl + filter,
+    const resp = await safeFetch<ODataResponse & { '@odata.count'?: number }>({
+      url: baseUrl + filter + countParam,
       headers: { Prefer: 'odata.include-annotations=*' },
     });
 
     const page = resp.value ?? [];
     if (!page.length) break;
 
+    // Capture total record count from the first response
+    if (!lastId && typeof resp['@odata.count'] === 'number') {
+      totalRecords = resp['@odata.count'];
+    }
+
     all.push(...page.map(parseRawRecord));
-    console.log(`[fetchAllVehicles] Page fetched — ${all.length} total so far`);
+    onProgress?.(all.length, totalRecords);
 
     // If we got fewer records than the page size, we've reached the end
     if (page.length < MAX_PAGE_SIZE) break;

@@ -123,6 +123,22 @@ export function VehicleSelect({
               {placeholder}
             </span>
           )}
+
+          {/* Clear button — visible only when a value is selected */}
+          {isSelected && !disabled && (
+            <button
+              type="button"
+              tabIndex={-1}
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange('');
+              }}
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground/40 transition-colors hover:bg-muted/60 hover:text-muted-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+
           <ChevronDown
             className={cn(
               'h-4 w-4 shrink-0 transition-transform duration-200',
@@ -166,6 +182,23 @@ export function VehicleSelect({
 
             {/* Options list */}
             <div className="max-h-52 overflow-y-auto">
+              {/* "Clear Selection" row at top when a value is set and not searching */}
+              {isSelected && !searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange('');
+                    setOpen(false);
+                  }}
+                  className="flex w-full items-center gap-3 border-b border-border/30 px-4 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/50"
+                >
+                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-muted-foreground/20">
+                    <X className="h-3 w-3" />
+                  </div>
+                  <span className="flex-1">Clear Selection</span>
+                </button>
+              )}
+
               {filteredOptions.length > 0 ? (
                 filteredOptions.map((opt) => {
                   const selected = String(opt.value) === String(value);
@@ -174,7 +207,12 @@ export function VehicleSelect({
                       key={opt.value}
                       type="button"
                       onClick={() => {
-                        onChange(opt.value);
+                        // Toggle off if already selected, otherwise select
+                        if (selected) {
+                          onChange('');
+                        } else {
+                          onChange(opt.value);
+                        }
                         setOpen(false);
                       }}
                       className={cn(

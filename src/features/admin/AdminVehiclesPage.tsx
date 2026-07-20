@@ -101,7 +101,7 @@ function PricingDetailSection({ vehicleId }: { vehicleId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
           <DollarSign className="h-4 w-4" />
           Pricing Overview
         </h4>
@@ -120,7 +120,7 @@ function PricingDetailSection({ vehicleId }: { vehicleId: string }) {
           { label: 'P90', value: formatCurrency(range.p90) },
         ].map((item) => (
           <div key={item.label} className="rounded-xl border bg-card p-3">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{item.label}</p>
+            <p className="text-[10px] text-slate-800 dark:text-slate-200">{item.label}</p>
             <p className="mt-0.5 text-sm font-semibold text-foreground">{item.value}</p>
           </div>
         ))}
@@ -208,7 +208,7 @@ function VehicleDetailDialog({
     >
       <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
         <div>
-          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
             <Info className="h-4 w-4" />
             Vehicle Identity
           </h4>
@@ -225,7 +225,7 @@ function VehicleDetailDialog({
         <PricingDetailSection vehicleId={vehicle.id} />
 
         <div>
-          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
             <Gauge className="h-4 w-4" />
             Technical Specifications
           </h4>
@@ -245,7 +245,7 @@ function VehicleDetailDialog({
         </div>
 
         <div>
-          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
             <Layers className="h-4 w-4" />
             Classification
           </h4>
@@ -261,7 +261,7 @@ function VehicleDetailDialog({
 
         {vehicle.description && (
           <div>
-            <h4 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Description</h4>
+            <h4 className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-200">Description</h4>
             <p className="text-sm text-muted-foreground leading-relaxed">{vehicle.description}</p>
           </div>
         )}
@@ -282,6 +282,7 @@ function FilterBar({
 }) {
   const { data: hierarchy } = useVehicleHierarchy();
   const [expanded, setExpanded] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   // ── Build all valid (year, make, model) tuples from hierarchy ──────
 
@@ -516,39 +517,42 @@ function FilterBar({
   if (filters.spec) filterChips.push({ key: 'spec', label: `Spec: ${filters.spec}` });
   if (filters.powertrain) filterChips.push({ key: 'powertrain', label: `Power: ${filters.powertrain}` });
   if (filters.vehicleType) filterChips.push({ key: 'vehicleType', label: `Type: ${filters.vehicleType}` });
-  if (filters.minPrice) filterChips.push({ key: 'minPrice', label: `Min: $${Number(filters.minPrice).toLocaleString()}` });
-  if (filters.maxPrice) filterChips.push({ key: 'maxPrice', label: `Max: $${Number(filters.maxPrice).toLocaleString()}` });
+  if (filters.minPrice) filterChips.push({ key: 'minPrice', label: `Min: AED ${Number(filters.minPrice).toLocaleString()}` });
+  if (filters.maxPrice) filterChips.push({ key: 'maxPrice', label: `Max: AED ${Number(filters.maxPrice).toLocaleString()}` });
 
   return (
     <div className="rounded-2xl border bg-card shadow-lg">
       {/* Primary filters — always visible, all independent */}
       <div className="p-4">
         <div className="flex flex-wrap items-end gap-3">
-          <div className="flex-1 min-w-[140px]">
-            <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Year</label>
+          <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'year' ? 'z-50' : 'z-0')}>
+            <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Year</label>
             <CustomSelect
               placeholder="All Years"
               options={yearOptions}
               value={filters.year}
               onChange={(v) => onFilterChange('year', v)}
+              onOpenChange={(o) => setOpenDropdown(o ? 'year' : null)}
             />
           </div>
-          <div className="flex-1 min-w-[140px]">
-            <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Make</label>
+          <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'make' ? 'z-50' : 'z-0')}>
+            <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Make</label>
             <CustomSelect
               placeholder="All Makes"
               options={makeOptions}
               value={filters.make}
               onChange={(v) => onFilterChange('make', v)}
+              onOpenChange={(o) => setOpenDropdown(o ? 'make' : null)}
             />
           </div>
-          <div className="flex-1 min-w-[140px]">
-            <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Model</label>
+          <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'model' ? 'z-50' : 'z-0')}>
+            <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Model</label>
             <CustomSelect
               placeholder="All Models"
               options={modelOptions}
               value={filters.model}
               onChange={(v) => onFilterChange('model', v)}
+              onOpenChange={(o) => setOpenDropdown(o ? 'model' : null)}
             />
           </div>
           <div className="flex items-center gap-2 pb-0.5">
@@ -587,52 +591,51 @@ function FilterBar({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="overflow-hidden"
           >
             <div className="border-t border-border" />
             <div className="p-4">
-              <span className="mb-3 block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">Advanced Filters</span>
+              <span className="mb-3 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Advanced Filters</span>
               <div className="flex flex-wrap items-end gap-3">
-                <div className="flex-1 min-w-[140px]">
-                  <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Body Type</label>
-                  <CustomSelect placeholder="All Types" options={bodyTypeOptions} value={filters.bodyType} onChange={(v) => onFilterChange('bodyType', v)} />
+                <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'bodyType' ? 'z-50' : 'z-0')}>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Body Type</label>
+                  <CustomSelect placeholder="All Types" options={bodyTypeOptions} value={filters.bodyType} onChange={(v) => onFilterChange('bodyType', v)} onOpenChange={(o) => setOpenDropdown(o ? 'bodyType' : null)} />
+                </div>
+                <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'transmission' ? 'z-50' : 'z-0')}>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Transmission</label>
+                  <CustomSelect placeholder="All" options={transmissionOptions} value={filters.transmission} onChange={(v) => onFilterChange('transmission', v)} onOpenChange={(o) => setOpenDropdown(o ? 'transmission' : null)} />
+                </div>
+                <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'category' ? 'z-50' : 'z-0')}>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Category</label>
+                  <CustomSelect placeholder="All" options={categoryOptions} value={filters.category} onChange={(v) => onFilterChange('category', v)} onOpenChange={(o) => setOpenDropdown(o ? 'category' : null)} />
+                </div>
+                <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'driveType' ? 'z-50' : 'z-0')}>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Drive Type</label>
+                  <CustomSelect placeholder="All" options={driveTypeOptions} value={filters.driveType} onChange={(v) => onFilterChange('driveType', v)} onOpenChange={(o) => setOpenDropdown(o ? 'driveType' : null)} />
+                </div>
+                <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'spec' ? 'z-50' : 'z-0')}>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Spec</label>
+                  <CustomSelect placeholder="All" options={specOptions} value={filters.spec} onChange={(v) => onFilterChange('spec', v)} onOpenChange={(o) => setOpenDropdown(o ? 'spec' : null)} />
+                </div>
+                <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'powertrain' ? 'z-50' : 'z-0')}>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Powertrain</label>
+                  <CustomSelect placeholder="All" options={powertrainOptions} value={filters.powertrain} onChange={(v) => onFilterChange('powertrain', v)} onOpenChange={(o) => setOpenDropdown(o ? 'powertrain' : null)} />
+                </div>
+                <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'vehicleType' ? 'z-50' : 'z-0')}>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Vehicle Type</label>
+                  <CustomSelect placeholder="All" options={vehicleTypeOptions} value={filters.vehicleType} onChange={(v) => onFilterChange('vehicleType', v)} onOpenChange={(o) => setOpenDropdown(o ? 'vehicleType' : null)} />
                 </div>
                 <div className="flex-1 min-w-[140px]">
-                  <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Transmission</label>
-                  <CustomSelect placeholder="All" options={transmissionOptions} value={filters.transmission} onChange={(v) => onFilterChange('transmission', v)} />
-                </div>
-                <div className="flex-1 min-w-[140px]">
-                  <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Category</label>
-                  <CustomSelect placeholder="All" options={categoryOptions} value={filters.category} onChange={(v) => onFilterChange('category', v)} />
-                </div>
-                <div className="flex-1 min-w-[140px]">
-                  <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Drive Type</label>
-                  <CustomSelect placeholder="All" options={driveTypeOptions} value={filters.driveType} onChange={(v) => onFilterChange('driveType', v)} />
-                </div>
-                <div className="flex-1 min-w-[140px]">
-                  <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Spec</label>
-                  <CustomSelect placeholder="All" options={specOptions} value={filters.spec} onChange={(v) => onFilterChange('spec', v)} />
-                </div>
-                <div className="flex-1 min-w-[140px]">
-                  <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Powertrain</label>
-                  <CustomSelect placeholder="All" options={powertrainOptions} value={filters.powertrain} onChange={(v) => onFilterChange('powertrain', v)} />
-                </div>
-                <div className="flex-1 min-w-[140px]">
-                  <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Vehicle Type</label>
-                  <CustomSelect placeholder="All" options={vehicleTypeOptions} value={filters.vehicleType} onChange={(v) => onFilterChange('vehicleType', v)} />
-                </div>
-                <div className="flex-1 min-w-[140px]">
-                  <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Min Price</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Min Price</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
-                    <input type="number" placeholder="No min" value={filters.minPrice ?? ''} onChange={(e) => onFilterChange('minPrice', e.target.value || undefined)} className="flex h-10 w-full rounded-xl border border-input bg-card pl-6 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">AED</span>
+                    <input type="number" placeholder="No min" value={filters.minPrice ?? ''} onChange={(e) => onFilterChange('minPrice', e.target.value || undefined)} className="flex h-10 w-full rounded-xl border border-input bg-card pl-12 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                   </div>
                 </div>
                 <div className="flex-1 min-w-[140px]">
-                  <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Max Price</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Max Price</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
-                    <input type="number" placeholder="No max" value={filters.maxPrice ?? ''} onChange={(e) => onFilterChange('maxPrice', e.target.value || undefined)} className="flex h-10 w-full rounded-xl border border-input bg-card pl-6 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">AED</span>
+                    <input type="number" placeholder="No max" value={filters.maxPrice ?? ''} onChange={(e) => onFilterChange('maxPrice', e.target.value || undefined)} className="flex h-10 w-full rounded-xl border border-input bg-card pl-12 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                   </div>
                 </div>
               </div>
@@ -759,7 +762,7 @@ function VehicleCard({ vehicle, pricing, onClick }: {
           {/* Bottom: price + actions */}
           <div className="mt-4 flex items-center justify-between border-t pt-4 shrink-0">
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Market Price</p>
+              <p className="text-[10px] font-medium text-slate-800 dark:text-slate-200">Market Price</p>
               <p className="text-lg font-bold text-primary">
                 {pricing?.averagePrice ? formatCurrency(pricing.averagePrice) : '—'}
               </p>
@@ -979,32 +982,32 @@ export function AdminVehiclesPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">#</th>
-                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">#</th>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">
                       <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('year')}>
                         Year <SortIcon field="year" />
                       </span>
                     </th>
-                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">
                       <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('make')}>
                         Make <SortIcon field="make" />
                       </span>
                     </th>
-                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">
                       <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('model')}>
                         Model <SortIcon field="model" />
                       </span>
                     </th>
-                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">Spec</th>
-                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">Body</th>
-                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">Engine</th>
-                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">HP</th>
-                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">Spec</th>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">Body Type</th>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">Engine</th>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">Hp</th>
+                    <th className="min-w-[110px] px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">
                       <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('price')}>
                         Price <SortIcon field="price" />
                       </span>
                     </th>
-                    <th className="px-4 py-3.5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">Actions</th>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -1039,7 +1042,7 @@ export function AdminVehiclesPage() {
                       <td className="px-4 py-3 text-center text-xs text-muted-foreground">
                         {vehicle.horsepower}
                       </td>
-                      <td className="px-4 py-3 text-center font-medium text-foreground">
+                      <td className="whitespace-nowrap px-4 py-3 text-center font-medium tabular-nums text-foreground">
                         {pricingMap?.get(vehicle.id)?.averagePrice ? formatCurrency(pricingMap.get(vehicle.id)!.averagePrice) : '—'}
                       </td>
                       <td className="px-4 py-3 text-center">

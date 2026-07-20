@@ -18,6 +18,9 @@ metadata:
 - **No unused dependencies** — `@types/jquery` was removed since jQuery isn't used
 - **No dead path aliases** — `@services` was removed because the directory was empty
 - **Strict TypeScript** — `noUnusedLocals`, `noUnusedParameters`, `noUncheckedIndexedAccess` are enabled
+- **Centralize currency display** — use `formatCurrency()` for user-facing prices and display the `AED` ISO currency code consistently; do not add a Dirham SVG or custom currency font
+- **Price entry UX** — show `AED` inside price inputs and format thousands separators while typing; keep state and submitted payloads digit-only, without a duplicate formatted preview below the fields
+- **Splash progress represents complete startup** — vehicle pagination must not consume 100%; reserve the final progress segment for API data that layouts/pages request immediately, and prefetch it into React Query before routes mount
 
 ## Documentation Standards
 - All documentation goes in `docs/` — nothing at root except `README.md`
