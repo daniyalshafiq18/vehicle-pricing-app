@@ -128,6 +128,44 @@
 - **Specific header text fixes**: "Body" → "Body Type", "HP" → "Hp" in the Vehicles table; "Body" → "Body Type" in the Queries table.
 - **Modal detail labels** in Vehicles, Queries, Missing Vehicles, and Price Suggestions detail dialogs: same class replacement for all `text-[10px] uppercase tracking-wider text-muted-foreground` patterns → dark Camel Case.
 - **Unified table header font size**: Changed all table header font sizes across the 4 admin tabs to `text-base` (16px) — was `text-xs` (12px) in Vehicles tab and `text-[10px]` (10px) in Queries, Missing Vehicles, and Price Suggestions tabs.
+### Flow 3 — Count Fix: Double `replace()` + `@{...}` Template Syntax
+- **User fixed `Extract Listing Count` expression** — added second `replace()` to strip double quotes: `replace(replace(..., '>', ''), '"', '')`. Both `>` prefix (`>294` → `294`) and `"` wrapping (`"\"7"` → `7`) are now stripped.
+- **User fixed Response body syntax** — changed from bare `outputs('Extract_Min_Price')` to `@{outputs('Extract_Min_Price')}` template interpolation syntax. Without `@{...}`, values were not interpolated correctly into the JSON response.
+- **Test 3 confirmed ✅** — 2024 Mercedes-Benz C-Class C 200 returns: `Count: 6`, `Min Price: 127000`, `Max Price: 275000`
+- Frontend display now shows correctly: *"6 listings · AED 127,000 – 275,000 · 2024–2024"*
+- Updated `docs/power-automate-cloud-only-design.md` — Extract Listing Count step, Response body section, and Test Results section all updated with working expressions
+- Updated `memory/learned-conventions.md` — added `@{...}` template syntax and double `replace()` patterns
+
+## 2026-07-17
+
+### Flow 3 — Final Architecture: SAS Token Auth + Try/Catch Scope + Direct Flow URL
+- **Authentication resolved**: Changed Flow 3 trigger to "When an HTTP request is received" with **"Anyone can trigger"** setting — generates a SAS token (`sig=...`) embedded in the URL, eliminating the 401 OAuth error
+- **Direct browser-to-flow approach adopted**: Frontend calls the flow HTTP POST URL directly via `fetch()` — no Power Pages proxy, no server logic middleware
+- **Try/Catch Scope pattern added**: All scraping actions (Build Search URL → HTTP GET → Extract Heading → Extract Prices) placed inside a **Try Scope**. A **Catch Scope** (configured to run on failure/skip/timeout) contains only the **Response (PREMIUM)** action — returns Count: -1 to signal YallaMotor was unreachable
+- **Response (PREMIUM) returns only 3 values**: `Min Price`, `Max Price`, `Count` — heading and source URL are constructed client-side to keep the response lightweight
+- **`_unavailable` graceful error UI**: When Count = -1 (Catch scope fired), the frontend shows an amber "Live Data Unavailable" banner with manual price inputs and "Submit Request" button instead of a red error box — users can still submit their request without scraped data
+- **Count parsing fix (scope-wrapping quotes)**: Power Automate `outputs('ActionName')` inside a Scope wraps values in extra quotes (`"\"7"` instead of `7`). Frontend applies `String(result['Count']).replace(/[^0-9-]/g, '')` to strip non-numeric characters. Flow's `int()` wrapper was inconsistent — frontend handles it robustly
+- **Current issue**: After user added `int()` to Extract Listing Count expression, it returns 0 instead of the actual count (e.g., 6 for 2024 Mercedes-Benz C-Class). The frontend fix already handles the raw expression output — user needs to **revert the flow's Extract_Listing_Count expression back to the original** (remove `int()` wrapper)
+
+### `yallaMotorHttpScraper.ts` — Final Implementation
+- Created `src/lib/yallaMotorHttpScraper.ts` with `scrapeViaFlow3()` function calling the Power Automate HTTP trigger URL directly
+- `Flow3ScrapeResult` interface with `success`, `make`, `model`, `trim`, `year`, `count`, `minPrice`, `maxPrice`, `heading`, `sourceUrl`, and optional `_unavailable` flag
+- Constructs YallaMotor URL client-side using the hyphenated slug pattern (`replace(/\s+/g, '-')` for multi-word makes/models/trims)
+- Builds `heading` string locally: `"6 listings · AED 127,000 – 275,000 · 2024–2024"`
+- Uses `satisfies Flow3ScrapeResult` type assertion for type safety
+
+### Step3Result.tsx — Scraped Data Display
+- Three-state UI for scrape results:
+  - `flow3Result._unavailable === true` → amber "Live Data Unavailable" banner + manual price inputs
+  - `scrapeError && !flow3Result` → red error box with "Try Again" button (network errors)
+  - `flow3Result` → live price display from YallaMotor + price suggestion fields + "Confirm & Submit"
+- Created MVR now includes all scraped fields: `scrapedMinPrice`, `scrapedMaxPrice`, `scrapedListings` (JSON with count/min/max/url/heading), `scrapedSources`, `scrapeStatusValue: 4` (Scraped)
+
+### Documentation Updated
+- `docs/power-automate-cloud-only-design.md` — Flow 3 section rewritten to reflect actual Try/Catch scope architecture, SAS token auth, and 3-output Response
+- `CLAUDE.md` — Added `yallaMotorHttpScraper.ts` to project structure lib/ section
+- `memory/learned-conventions.md` — Added SAS token pattern, scope-wrapping quotes issue, `_unavailable` UI pattern
+- `memory/power-automate-flow-design.md` — Updated Flow 3 status to reflect final architecture
 
 ## 2026-07-16
 

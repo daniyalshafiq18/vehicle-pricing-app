@@ -553,7 +553,84 @@ export function Step3Result() {
           {/* ── Phase 3: Results ── */}
           {dialogPhase === 'results' && (
             <div className="space-y-5 px-6 pb-6">
-              {scrapeError && !flow3Result ? (
+              {flow3Result?._unavailable ? (
+                /* YallaMotor unavailable — friendly message + allow manual submission */
+                <>
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 text-center">
+                    <div className="mb-2 flex items-center justify-center gap-2">
+                      <Globe className="h-4 w-4 text-amber-500" />
+                      <p className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                        Live Data Unavailable
+                      </p>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      We couldn't fetch live market prices right now. You can still submit your
+                      request and we'll look into it.
+                    </p>
+                  </div>
+
+                  {/* Price Suggestion */}
+                  <div className="rounded-xl border bg-muted/20 p-4">
+                    <div className="mb-3 flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-amber-500" />
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        Your Price Estimate (Optional)
+                      </p>
+                    </div>
+                    <p className="mb-3 text-xs text-muted-foreground">
+                      Know the market? Enter your own price range.
+                    </p>
+                    <div className="flex items-center gap-3 mb-3">
+                      <input
+                        type="number"
+                        placeholder="Min Price"
+                        value={suggestedMinPrice}
+                        onChange={(e) => setSuggestedMinPrice(e.target.value)}
+                        className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                      />
+                      <span className="text-muted-foreground/40">—</span>
+                      <input
+                        type="number"
+                        placeholder="Max Price"
+                        value={suggestedMaxPrice}
+                        onChange={(e) => setSuggestedMaxPrice(e.target.value)}
+                        className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowRequestDialog(false);
+                        setDialogPhase('form');
+                      }}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="gradient"
+                      onClick={handleConfirmAndCreate}
+                      disabled={upsertRequest.isPending}
+                      className="flex-1"
+                    >
+                      {upsertRequest.isPending ? (
+                        <>
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          Submit Request
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </>
+              ) : scrapeError && !flow3Result ? (
                 /* Error state */
                 <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5 text-center">
                   <p className="text-sm font-medium text-red-600 dark:text-red-400">
