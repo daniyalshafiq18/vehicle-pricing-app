@@ -4,6 +4,8 @@ import { Car } from 'lucide-react';
 interface LoadingScreenProps {
   message?: string;
   className?: string;
+  /** 0–100. When provided the bar is determinate; omit for indeterminate. */
+  progress?: number;
 }
 
 /**
@@ -11,8 +13,15 @@ interface LoadingScreenProps {
  *
  * Features a glowing purple→orange gradient progress bar, animated
  * scanning rings, ambient glow orbs, and the brand car icon.
+ *
+ * Pass `progress` (0–100) for a determinate bar with a live percentage;
+ * omit it to keep the current indeterminate animation.
  */
-export function LoadingScreen({ message = 'Loading...', className }: LoadingScreenProps) {
+export function LoadingScreen({
+  message = 'Loading...',
+  className,
+  progress,
+}: LoadingScreenProps) {
   return (
     <div
       className={cn(
@@ -92,25 +101,56 @@ export function LoadingScreen({ message = 'Loading...', className }: LoadingScre
           </p>
         </div>
 
-        {/* Glowing indeterminate progress bar — purple → orange */}
+        {/* Progress bar — determinate when progress is given, else indeterminate */}
         <div className="w-72 space-y-3">
           <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]">
             <div
-              className="absolute inset-0 h-full rounded-full"
-              style={{
-                background: 'linear-gradient(90deg, #8B5CF6 0%, #A855F7 30%, #F97316 70%, #F59E0B 100%)',
-                animation: 'indeterminate-bar 1.8s ease-in-out infinite',
-                width: '40%',
-                boxShadow: '0 0 12px rgba(139, 92, 246, 0.4), 0 0 24px rgba(249, 115, 22, 0.2)',
-              }}
+              className="absolute inset-0 h-full rounded-full transition-all duration-500 ease-out"
+              style={
+                progress !== undefined
+                  ? {
+                      width: `${Math.min(100, Math.max(0, progress))}%`,
+                      background:
+                        'linear-gradient(90deg, #8B5CF6 0%, #A855F7 30%, #F97316 70%, #F59E0B 100%)',
+                      boxShadow:
+                        '0 0 12px rgba(139, 92, 246, 0.4), 0 0 24px rgba(249, 115, 22, 0.2)',
+                    }
+                  : {
+                      background:
+                        'linear-gradient(90deg, #8B5CF6 0%, #A855F7 30%, #F97316 70%, #F59E0B 100%)',
+                      animation: 'indeterminate-bar 1.8s ease-in-out infinite',
+                      width: '40%',
+                      boxShadow:
+                        '0 0 12px rgba(139, 92, 246, 0.4), 0 0 24px rgba(249, 115, 22, 0.2)',
+                    }
+              }
             />
           </div>
           <div className="flex items-center justify-center gap-2">
-            <span
-              className="inline-block h-1.5 w-1.5 animate-pulse rounded-full"
-              style={{ backgroundColor: '#8B5CF6' }}
-            />
-            <p className="text-sm text-muted-foreground">{message}</p>
+            {progress !== undefined ? (
+              <>
+                <span
+                  className="inline-block h-1.5 w-1.5 rounded-full"
+                  style={{
+                    backgroundColor: progress >= 100 ? '#22C55E' : '#8B5CF6',
+                  }}
+                />
+                <p className="text-sm text-muted-foreground">
+                  {message}{' '}
+                  <span className="font-medium tabular-nums text-foreground/80">
+                    {Math.min(100, Math.max(0, progress))}%
+                  </span>
+                </p>
+              </>
+            ) : (
+              <>
+                <span
+                  className="inline-block h-1.5 w-1.5 animate-pulse rounded-full"
+                  style={{ backgroundColor: '#8B5CF6' }}
+                />
+                <p className="text-sm text-muted-foreground">{message}</p>
+              </>
+            )}
           </div>
         </div>
       </div>

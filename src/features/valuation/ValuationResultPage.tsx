@@ -11,7 +11,7 @@ import {
   Shield,
   Download,
 } from 'lucide-react';
-import { formatCurrency, getConfidenceColor, getTrendColor } from '@utils';
+import { formatCurrency, getConfidenceColor, getTrendColor, downloadValuationPdf } from '@utils';
 import { EmptyState } from '@components/ui';
 
 export function ValuationResultPage() {
@@ -146,7 +146,7 @@ export function ValuationResultPage() {
         )}
 
         <div className="flex justify-end">
-          <Button variant="outline" onClick={() => window.print()}>
+          <Button variant="outline" onClick={() => downloadValuationPdf({ vehicle, pricing })}>
             <Download className="mr-2 h-4 w-4" />
             Export PDF
           </Button>

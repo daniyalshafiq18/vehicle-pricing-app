@@ -7,6 +7,8 @@ interface DataSourceContextValue {
   isInitialized: boolean;
   isInitializing: boolean;
   error: string | null;
+  /** 0–100 progress percentage during initialization (0 when idle). */
+  progress: number;
   triggerInit: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -32,6 +34,7 @@ export function DataSourceProvider({ children }: DataSourceProviderProps) {
     isInitializing: boolean;
     error: string | null;
   }>({ isInitialized: false, isInitializing: false, error: null });
+  const [progress, setProgress] = useState(0);
   const dsRef = useRef<IDataSource | null>(null);
   const initStarted = useRef(false);
 
@@ -41,11 +44,13 @@ export function DataSourceProvider({ children }: DataSourceProviderProps) {
     initStarted.current = true;
 
     setState((s) => ({ ...s, isInitializing: true, error: null }));
+    setProgress(0);
     try {
       const ds = new DataverseDataSource();
-      await ds.initialize();
+      await ds.initialize((pct) => setProgress(pct));
       dsRef.current = ds;
       globalDataSource = ds;
+      setProgress(100);
       setState({ isInitialized: true, isInitializing: false, error: null });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to initialize data source';
@@ -59,6 +64,7 @@ export function DataSourceProvider({ children }: DataSourceProviderProps) {
     isInitialized: state.isInitialized,
     isInitializing: state.isInitializing,
     error: state.error,
+    progress,
     triggerInit: initialize,
     refresh: initialize,
   };

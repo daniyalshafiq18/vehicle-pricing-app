@@ -60,6 +60,10 @@ Data flows **downward** only. Components import hooks, hooks import repositories
 
 ### App Bootstrap
 
+- `SplashGate` keeps routes unmounted while `DataverseDataSource` loads paginated vehicles (0–85% progress).
+- `useStartupData` prefetches inquiries, missing vehicle requests, and price suggestions into React Query for the final 15%.
+- The splash reaches 100% only after all startup requests settle, then briefly holds before rendering routes.
+
 ```
 index.html → main.tsx
     ↓
@@ -189,6 +193,7 @@ src/
 - **10 charts**: Top Makes, Price Distribution, Value Trend, Powertrain Donut, Performance vs Value Scatter, Body Type Bar, Age Distribution, Price Volatility Box, Top Models
 - **Premium Vehicle Leaderboard**: Top 100 vehicles by market value
 - **Vehicle Intelligence Modal**: Opens from scatter plot dot click — full vehicle + pricing details
+- **Price by Model Year filters**: Searchable Make and dependent Model dropdowns run a dedicated cached analytics query for the selected vehicle group
 - All data from `useDashboardAnalytics` hook with `DashboardFilters`
 
 ### Admin Queries (`/admin/queries`)

@@ -33,8 +33,16 @@ import {
   Loader2,
   Globe,
 } from 'lucide-react';
-import { cn, formatCurrency } from '@utils';
+import { cn, formatCurrency, downloadValuationPdf } from '@utils';
 import { scrapeViaFlow3, type Flow3ScrapeResult } from '@lib/yallaMotorHttpScraper';
+
+function sanitizePriceInput(value: string): string {
+  return value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+}
+
+function formatPriceInput(value: string): string {
+  return value.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
 
 export function Step3Result() {
   const [searchParams] = useSearchParams();
@@ -684,22 +692,34 @@ export function Step3Result() {
                     <p className="mb-3 text-xs text-muted-foreground">
                       Know the market better? Enter your own price range for this vehicle.
                     </p>
-                    <div className="flex items-center gap-3 mb-3">
-                      <input
-                        type="number"
-                        placeholder="Min Price"
-                        value={suggestedMinPrice}
-                        onChange={(e) => setSuggestedMinPrice(e.target.value)}
-                        className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
-                      />
+                    <div className="flex items-center gap-3">
+                      <div className="relative min-w-0 flex-1">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                          AED
+                        </span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="Min Price"
+                          value={formatPriceInput(suggestedMinPrice)}
+                          onChange={(e) => setSuggestedMinPrice(sanitizePriceInput(e.target.value))}
+                          className="h-9 w-full rounded-lg border bg-background pl-14 pr-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                        />
+                      </div>
                       <span className="text-muted-foreground/40">—</span>
-                      <input
-                        type="number"
-                        placeholder="Max Price"
-                        value={suggestedMaxPrice}
-                        onChange={(e) => setSuggestedMaxPrice(e.target.value)}
-                        className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
-                      />
+                      <div className="relative min-w-0 flex-1">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                          AED
+                        </span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="Max Price"
+                          value={formatPriceInput(suggestedMaxPrice)}
+                          onChange={(e) => setSuggestedMaxPrice(sanitizePriceInput(e.target.value))}
+                          className="h-9 w-full rounded-lg border bg-background pl-14 pr-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -898,7 +918,7 @@ export function Step3Result() {
           <Button
             variant="outline"
             onClick={() => {
-              window.print();
+              downloadValuationPdf({ vehicle, pricing });
             }}
           >
             <Download className="mr-2 h-4 w-4" />
@@ -935,21 +955,33 @@ export function Step3Result() {
               Suggested Price Range
             </p>
             <div className="flex items-center gap-3">
-              <input
-                type="number"
-                placeholder="Min Price"
-                value={suggestMinPrice}
-                onChange={(e) => setSuggestMinPrice(e.target.value)}
-                className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
-              />
+              <div className="relative min-w-0 flex-1">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                  AED
+                </span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Min Price"
+                  value={formatPriceInput(suggestMinPrice)}
+                  onChange={(e) => setSuggestMinPrice(sanitizePriceInput(e.target.value))}
+                  className="h-9 w-full rounded-lg border bg-background pl-14 pr-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                />
+              </div>
               <span className="text-muted-foreground/40">—</span>
-              <input
-                type="number"
-                placeholder="Max Price"
-                value={suggestMaxPrice}
-                onChange={(e) => setSuggestMaxPrice(e.target.value)}
-                className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
-              />
+              <div className="relative min-w-0 flex-1">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+                  AED
+                </span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Max Price"
+                  value={formatPriceInput(suggestMaxPrice)}
+                  onChange={(e) => setSuggestMaxPrice(sanitizePriceInput(e.target.value))}
+                  className="h-9 w-full rounded-lg border bg-background pl-14 pr-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                />
+              </div>
             </div>
           </div>
 

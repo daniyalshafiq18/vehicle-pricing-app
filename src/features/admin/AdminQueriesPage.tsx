@@ -231,14 +231,14 @@ function InquiryDetailModal({
           {/* Contact Info */}
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+              <p className="flex items-center gap-1.5 text-[10px] text-slate-800 dark:text-slate-200">
                 <Mail className="h-3 w-3" />
                 Email
               </p>
               <p className="mt-1 text-sm font-medium text-foreground truncate">{inquiry.email}</p>
             </div>
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+              <p className="flex items-center gap-1.5 text-[10px] text-slate-800 dark:text-slate-200">
                 <Phone className="h-3 w-3" />
                 Phone
               </p>
@@ -248,7 +248,7 @@ function InquiryDetailModal({
 
           {/* Location */}
           <div className="mb-4 rounded-xl border bg-card p-3.5">
-            <p className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <p className="flex items-center gap-1.5 text-[10px] text-slate-800 dark:text-slate-200">
               <MapPin className="h-3 w-3" />
               Location
             </p>
@@ -273,7 +273,7 @@ function InquiryDetailModal({
                 { label: 'Trim', value: vehicleDisplay },
               ].map((item) => (
                 <div key={item.label} className="px-4 py-2.5">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{item.label}</p>
+                  <p className="text-[10px] text-slate-800 dark:text-slate-200">{item.label}</p>
                   <p className="mt-0.5 text-xs font-medium text-foreground truncate" title={String(item.value)}>{item.value}</p>
                 </div>
               ))}
@@ -289,19 +289,19 @@ function InquiryDetailModal({
               </div>
               <div className="grid grid-cols-3 divide-x divide-border">
                 <div className="bg-gradient-to-br from-primary/5 to-transparent p-4">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Min Price</p>
+                  <p className="text-[10px] text-slate-800 dark:text-slate-200">Min Price</p>
                   <p className="mt-0.5 text-lg font-bold text-primary">
                     {formatCurrency(inquiry.valuationResult.pricing.minimumPrice)}
                   </p>
                 </div>
                 <div className="p-4">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Median Price</p>
+                  <p className="text-[10px] text-slate-800 dark:text-slate-200">Median Price</p>
                   <p className="mt-0.5 text-lg font-bold text-foreground">
                     {formatCurrency(inquiry.valuationResult.pricing.medianPrice)}
                   </p>
                 </div>
                 <div className="p-4">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Max Price</p>
+                  <p className="text-[10px] text-slate-800 dark:text-slate-200">Max Price</p>
                   <p className="mt-0.5 text-lg font-bold text-foreground">
                     {formatCurrency(inquiry.valuationResult.pricing.maximumPrice)}
                   </p>
@@ -499,14 +499,14 @@ export function AdminQueriesPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/20">
-                    <th className="w-10 px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Customer</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Contact</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Vehicle</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Body</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
-                    <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Date</th>
-                    <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
+                    <th className="w-10 px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">#</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Customer</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Contact</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Vehicle</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Body Type</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Status</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Date</th>
+                    <th className="px-4 py-3.5 text-right text-sm font-semibold text-slate-800 dark:text-slate-200">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">

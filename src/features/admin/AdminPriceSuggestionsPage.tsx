@@ -256,7 +256,7 @@ function PriceSuggestionDetailModal({
           {/* Vehicle info */}
           {suggestion.vehicleName && (
             <div className="mb-4 rounded-xl border bg-gradient-to-r from-blue-500/5 to-transparent p-3.5">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Vehicle</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Vehicle</p>
               <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-foreground">
                 <DollarSign className="h-4 w-4 text-blue-500" />
                 {suggestion.vehicleName}
@@ -267,19 +267,19 @@ function PriceSuggestionDetailModal({
           <div className="grid grid-cols-2 gap-3">
             {/* Submitted By (read-only) */}
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Submitted By</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Submitted By</p>
               <p className="mt-1 text-sm font-medium text-foreground break-words">{suggestion.submittedBy || '—'}</p>
             </div>
 
             {/* Status (read-only) */}
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Status</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Status</p>
               <p className="mt-1 text-sm font-medium text-foreground">{suggestion.status || 'Pending'}</p>
             </div>
 
             {/* Min Price (editable) */}
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Min Price</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Min Price</p>
               <div className="relative mt-1">
                 <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground/50">AED</span>
                 <input
@@ -289,11 +289,16 @@ function PriceSuggestionDetailModal({
                   className="h-9 w-full rounded-lg border bg-background pl-10 pr-3 text-sm font-medium text-foreground outline-none transition-colors focus:border-primary/50"
                 />
               </div>
+              {editMinPrice > 0 && (
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  Formatted: <span className="font-medium text-foreground/80">{formatCurrency(editMinPrice)}</span>
+                </p>
+              )}
             </div>
 
             {/* Max Price (editable) */}
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Max Price</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Max Price</p>
               <div className="relative mt-1">
                 <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground/50">AED</span>
                 <input
@@ -303,11 +308,16 @@ function PriceSuggestionDetailModal({
                   className="h-9 w-full rounded-lg border bg-background pl-10 pr-3 text-sm font-medium text-foreground outline-none transition-colors focus:border-primary/50"
                 />
               </div>
+              {editMaxPrice > 0 && (
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  Formatted: <span className="font-medium text-foreground/80">{formatCurrency(editMaxPrice)}</span>
+                </p>
+              )}
             </div>
 
             {/* Source URL (read-only) */}
             <div className="rounded-xl border bg-card p-3.5 col-span-2">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Source URL</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Source URL</p>
               {suggestion.sourceUrl ? (
                 <a
                   href={suggestion.sourceUrl}
@@ -327,7 +337,7 @@ function PriceSuggestionDetailModal({
           {/* Comment (read-only) */}
           {suggestion.comment && (
             <div className="mt-3 rounded-xl border bg-card p-3.5">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Comment</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Comment</p>
               <p className="mt-1 text-sm font-medium text-foreground">{suggestion.comment}</p>
             </div>
           )}
@@ -409,13 +419,13 @@ function PriceSuggestionCard({
           {/* Price details */}
           <div className="flex items-stretch gap-3">
             <div className="flex-1 rounded-xl border bg-gradient-to-br from-emerald-500/10 to-transparent p-3.5">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Min Price</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Min Price</p>
               <p className="mt-1 text-lg font-bold text-emerald-600 dark:text-emerald-400">
                 {suggestion.minPrice ? formatCurrency(suggestion.minPrice) : '—'}
               </p>
             </div>
             <div className="flex-1 rounded-xl border bg-gradient-to-br from-blue-500/10 to-transparent p-3.5">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Max Price</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Max Price</p>
               <p className="mt-1 text-lg font-bold text-blue-600 dark:text-blue-400">
                 {suggestion.maxPrice ? formatCurrency(suggestion.maxPrice) : '—'}
               </p>
@@ -425,7 +435,7 @@ function PriceSuggestionCard({
           {/* Source URL */}
           {suggestion.sourceUrl && (
             <div className="mt-3 rounded-xl bg-muted/40 p-3 shrink-0">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Source</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Source</p>
               <p className="mt-0.5 truncate text-xs text-primary">{suggestion.sourceUrl}</p>
             </div>
           )}
@@ -445,7 +455,7 @@ function PriceSuggestionCard({
           {/* Footer: date + action */}
           <div className="mt-3 flex items-center justify-between border-t pt-3 shrink-0">
             <div>
-              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Submitted</p>
+              <p className="text-[10px] font-medium text-slate-800 dark:text-slate-200">Submitted</p>
               <p className="text-xs text-foreground">
                 {suggestion.createdOn
                   ? new Date(suggestion.createdOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -722,14 +732,14 @@ export function AdminPriceSuggestionsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/20">
-                      <th className="w-10 px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">#</th>
-                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Vehicle</th>
-                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Submitted By</th>
-                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Min Price</th>
-                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Max Price</th>
-                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
-                      <th className="px-4 py-3.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Submitted</th>
-                      <th className="px-4 py-3.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
+                      <th className="w-10 px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">#</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Vehicle</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Submitted By</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Min Price</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Max Price</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Status</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Submitted</th>
+                      <th className="px-4 py-3.5 text-right text-sm font-semibold text-slate-800 dark:text-slate-200">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
