@@ -1,10 +1,9 @@
 # Phase 3 Revised Plan — Vehicle Pricing Intelligence Platform
 
-> **Date:** 2026-07-09 (Updated 2026-07-17)
-> **Status:** Path B (Puppeteer) ❌ Abandoned → Path C (Power Automate Cloud-only) ✅ Working (Flow 1 ✅, Flow 2 ✅, Flow 3 ✅)
-> > **Flow 3 fully built:** SAS token auth resolves 401 OAuth error, Try/Catch Scope for Cloudflare resilience, direct `fetch()` from browser, `_unavailable` graceful degradation UI
-> **Previous Plan:** `docs/PHASE-3-PLAN.md` (original, superseded by this revision)
-> **Key Change:** Simplified flow, real-time scraping replaces mock, user price suggestions merged into missing vehicle flow
+> **Date:** 2026-07-09 (Updated 2026-07-20)
+> **Status:** Path B (Puppeteer) ❌ Abandoned → Path C (Power Automate Cloud-only) ✅ Fully Working (Flow 1 ✅, Flow 2 ✅, Flow 3 ✅)
+> > **Flow 3 fully working end-to-end:** SAS token auth, Try/Catch Scope, Cloudflare Check (3 OR conditions), nested "Is Heading Available" condition, double `replace()` for clean count, `@{...}` template syntax in Response, hardcoded -1 sentinel in Catch. **Tested: 6 listings · AED 127,000 – 275,000 · 2024 Mercedes-Benz C-Class** ✅
+> > **Count fix (2026-07-20):** Double `replace()` strips both `>` and `"` from count value. `@{outputs('...')}` template syntax ensures proper JSON interpolation in Response body. All three Power Automate flows are now built, tested, and working.
 >
 > **⚠️ Update 2026-07-15 (v2):** Flow 2 was built and tested. Both Flow 1 and 2 initially failed with Cloudflare challenge pages, but further investigation revealed YallaMotor's own Next.js backend was down (`backend_error`, `Backend fetch failed`). The Power Automate Cloud-only approach remains viable — YallaMotor's server outage was the cause of test failures, not Cloudflare blocking.
 >
