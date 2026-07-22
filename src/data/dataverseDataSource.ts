@@ -146,10 +146,13 @@ export class DataverseDataSource implements IDataSource {
     // The fetch covers 0-98% of progress. Each API page contributes a roughly
     // equal share, so the bar advances consistently as data arrives.
     const records = await fetchAllVehicles((fetched, total) => {
+      // If @odata.count is reliable (> page size), trust it exactly.
+      // Otherwise estimate: at least 7 pages (35000 records) to match the
+      // current ~30000-34000 record count, growing as more pages arrive.
       const effectiveTotal =
         total > MAX_PAGE_SIZE
           ? total
-          : Math.max(fetched + MAX_PAGE_SIZE, MAX_PAGE_SIZE * 8); // ~40K for 7-8 pages
+          : Math.max(fetched + MAX_PAGE_SIZE, MAX_PAGE_SIZE * 7);
       const pct = Math.min(98, Math.round((fetched / effectiveTotal) * 100));
       onProgress?.(pct);
     });

@@ -1,77 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
 import { cn } from '@utils';
 import { Car } from 'lucide-react';
 
 interface LoadingScreenProps {
   message?: string;
   className?: string;
-  /** 0–100. When provided the bar is determinate; omit for indeterminate. */
+  /** 0–100. When provided the bar is determinate. */
   progress?: number;
 }
 
-/**
- * LoadingScreen — Premium full-screen loading overlay.
- *
- * Features a glowing purple→orange gradient progress bar, animated
- * scanning rings, ambient glow orbs, and the brand car icon.
- *
- * Pass `progress` (0–100) for a determinate bar with a live percentage;
- * omit it to keep the current indeterminate animation.
- *
- * When determinate, the displayed percentage eases smoothly toward the
- * real progress value so the bar never jumps abruptly. A persistent
- * rAF loop crawls at a constant speed, decoupling the visual from
- * discrete API-call jumps (each one returns 5000 records at once).
- */
-export function LoadingScreen({
-  message = 'Loading...',
-  className,
-  progress,
-}: LoadingScreenProps) {
-  // Smooth animation: displayed value crawls at a CONSTANT fixed rate
-  // toward the real progress target. This decouples the visual from the
-  // discrete API‑call jumps.
-  const [displayed, setDisplayed] = useState(0);
-  const rafRef = useRef<number | null>(null);
-  const targetRef = useRef(progress);
-
-  // Keep the ref in sync without triggering re-renders or effect restarts
-  targetRef.current = progress;
-
-  useEffect(() => {
-    // Reset if we switch from determinate → indeterminate
-    if (progress === undefined) {
-      setDisplayed(0);
-    }
-  }, [progress === undefined]);
-
-  // Persistent rAF loop — runs once on mount, stops on unmount.
-  // NEVER restarts when `progress` changes.
-  useEffect(() => {
-    let running = true;
-    const STEP = 0.35; // % per frame at 60fps ≈ 21%/second
-    const animate = () => {
-      if (!running) return;
-      setDisplayed((prev) => {
-        const target = targetRef.current;
-        if (target === undefined) return 0;
-        if (target <= prev) return prev;
-        const diff = target - prev;
-        // Snap the last tiny gap so we don't creep forever
-        if (diff < 0.3) return target;
-        return prev + STEP;
-      });
-      rafRef.current = requestAnimationFrame(animate);
-    };
-    rafRef.current = requestAnimationFrame(animate);
-    return () => {
-      running = false;
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-    };
-  }, []); // ← mount only — never re-run
-
-  const showProgress = progress !== undefined;
-  const displayValue = showProgress ? Math.min(100, Math.max(0, displayed)) : 0;
+export function LoadingScreen({ message = 'Loading...', className, progress }: LoadingScreenProps) {
+  const displayProgress = progress ?? 0;
 
   return (
     <div
@@ -137,53 +75,19 @@ export function LoadingScreen({
           </p>
         </div>
 
-        {/* Progress bar — determinate when progress is given, else indeterminate */}
+        {/* Progress bar with percentage */}
         <div className="w-72 space-y-3">
-          <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="absolute inset-0 h-full rounded-full"
-              style={
-                showProgress
-                  ? {
-                      width: `${displayValue}%`,
-                      background: 'linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%)',
-                      boxShadow: '0 0 12px hsl(var(--primary)/0.3), 0 0 24px hsl(var(--accent)/0.15)',
-                      transition: 'width 0.15s ease-out',
-                    }
-                  : {
-                      background: 'linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%)',
-                      animation: 'indeterminate-bar 1.8s ease-in-out infinite',
-                      width: '40%',
-                      boxShadow: '0 0 12px hsl(var(--primary)/0.3), 0 0 24px hsl(var(--accent)/0.15)',
-                    }
-              }
+              className="h-full rounded-full bg-gradient-to-r from-primary via-accent to-primary transition-all duration-75 ease-out"
+              style={{ width: `${displayProgress}%` }}
             />
           </div>
-          <div className="flex items-center justify-center gap-2">
-            {showProgress ? (
-              <>
-                <span
-                  className="inline-block h-1.5 w-1.5 rounded-full"
-                  style={{
-                    backgroundColor: Math.round(displayValue) >= 100 ? '#22C55E' : 'hsl(var(--primary))',
-                  }}
-                />
-                <p className="text-sm text-muted-foreground">
-                  {message}
-                  <span className="font-medium tabular-nums text-foreground/80">
-                    {' '}{Math.round(displayValue)}%
-                  </span>
-                </p>
-              </>
-            ) : (
-              <>
-                <span
-                  className="inline-block h-1.5 w-1.5 animate-pulse rounded-full"
-                  style={{ backgroundColor: 'hsl(var(--primary))' }}
-                />
-                <p className="text-sm text-muted-foreground">{message}</p>
-              </>
-            )}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">{message}</p>
+            <span className="text-xs font-medium text-muted-foreground tabular-nums">
+              {Math.round(displayProgress)}%
+            </span>
           </div>
         </div>
       </div>

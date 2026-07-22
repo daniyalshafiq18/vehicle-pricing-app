@@ -1,18 +1,19 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { cn } from '@utils';
 import { ErrorBoundary, LoadingScreen } from '@components/ui';
 import { AppProviders } from '@providers';
 import { useDataSource } from '@data';
-import { useStartupData } from '@hooks';
 import { AppRouter } from './router';
 
 /**
  * SplashGate — shows a branded full-screen loading animation
  * while the Dataverse data source initializes (loading all ~14K vehicles).
- * Once data is ready, the app renders.
+ * Once data is ready, the app renders immediately with a smooth fade-out
+ * of the splash over the newly-rendered content.
  */
 function SplashGate({ children }: { children: ReactNode }) {
   const { isInitialized, isInitializing, error, triggerInit, progress } = useDataSource();
-  const { progress: startupProgress, isReady: isStartupReady } = useStartupData(isInitialized);
+  const [fadingOut, setFadingOut] = useState(false);
 
   // Start DataSource init on app mount
   useEffect(() => {
@@ -21,17 +22,35 @@ function SplashGate({ children }: { children: ReactNode }) {
     }
   }, [isInitialized, isInitializing, triggerInit]);
 
-  // Vehicle pagination owns the first 85%; the three startup APIs own the
-  // final 15%, so 100% is shown only after every request has settled.
-  if (!error && (!isInitialized || !isStartupReady)) {
-    const combinedProgress = isInitialized
-      ? 85 + Math.round(startupProgress * 0.15)
-      : Math.round(progress * 0.85);
+  // When data is ready, fade out the splash over 400ms so the app content
+  // renders underneath without a visible "flash" of empty page.
+  useEffect(() => {
+    if (isInitialized) {
+      setFadingOut(true);
+    }
+  }, [isInitialized]);
+
+  // Show splash while initializing — or fading out
+  if (!error && (!isInitialized || fadingOut)) {
     return (
-      <LoadingScreen
-        message={!isInitialized ? 'Loading vehicle data...' : 'Loading application data...'}
-        progress={combinedProgress}
-      />
+      <div className="relative">
+        {/* App renders underneath — always mounted once initialized */}
+        {isInitialized && <div className="contents">{children}</div>}
+        {/* Splash overlay fades out */}
+        <div
+          className={cn(
+            'fixed inset-0 z-50 transition-opacity duration-500',
+            fadingOut ? 'opacity-0 pointer-events-none' : '',
+          )}
+        >
+          <LoadingScreen
+            message="Loading vehicle data..."
+            progress={progress}
+          />
+        </div>
+        {/* Remove splash from DOM once fade completes */}
+        {fadingOut && <FadeCleanup onDone={() => setFadingOut(false)} />}
+      </div>
     );
   }
 
@@ -55,6 +74,15 @@ function SplashGate({ children }: { children: ReactNode }) {
 
   // Ready — render app
   return <>{children}</>;
+}
+
+/** Calls `onDone` after the 500ms CSS fade-out finishes. */
+function FadeCleanup({ onDone }: { onDone: () => void }) {
+  useEffect(() => {
+    const id = setTimeout(onDone, 600);
+    return () => clearTimeout(id);
+  }, [onDone]);
+  return null;
 }
 
 export function App() {
