@@ -40,6 +40,7 @@ import type {
 import {
   API_BASE,
   ENTITIES,
+  MAX_PAGE_SIZE,
   VEHICLE_FIELDS,
   VEHICLE_SELECT_FIELDS,
   CONTACT_FIELDS,
@@ -135,26 +136,43 @@ export class DataverseDataSource implements IDataSource {
   // ─── Lifecycle ────────────────────────────────────────
 
   async initialize(onProgress?: (progress: number) => void): Promise<void> {
-    onProgress?.(3);
-
+    // ── Phase 1: Fetch all vehicle records (0 → 98%) ────────
+    //
+    // Power Pages $count=true is unreliable — it often returns the page size
+    // (5000) instead of the real total (~34 000). We guard against that:
+    //  • If $count > MAX_PAGE_SIZE (5000), trust it as the real total.
+    //  • Otherwise estimate based on page count, assuming ~7-8 pages.
+    //
+    // The fetch covers 0-98% of progress. Each API page contributes a roughly
+    // equal share, so the bar advances consistently as data arrives.
     const records = await fetchAllVehicles((fetched, total) => {
-      // Map fetch progress from 3% → 78% of the overall bar
-      const phaseStart = 3;
-      const phaseEnd = 78;
-      const pct =
-        total > 0
-          ? Math.round(phaseStart + ((fetched / total) * (phaseEnd - phaseStart)))
-          : Math.min(phaseStart + Math.round(fetched / 200), phaseEnd);
+      const effectiveTotal =
+        total > MAX_PAGE_SIZE
+          ? total
+          : Math.max(fetched + MAX_PAGE_SIZE, MAX_PAGE_SIZE * 8); // ~40K for 7-8 pages
+      const pct = Math.min(98, Math.round((fetched / effectiveTotal) * 100));
       onProgress?.(pct);
     });
 
-    onProgress?.(80);
+    const total = records.length;
+    let lastSentPct = 0;
 
-    // Extract pricing data from raw API records before parsing
+    /** Report progress, but only on whole‑percentage changes so we don't
+     *  flood React with 68 000 setState calls for 34 000 records. */
+    const send = (pct: number) => {
+      const clamped = Math.round(Math.min(100, Math.max(0, pct)));
+      if (clamped > lastSentPct) {
+        onProgress?.(clamped);
+        lastSentPct = clamped;
+      }
+    };
+
+    // ── Phase 2: Extract pricing maps per record (98 → 99%) ─
     this.rawPrices.clear();
     this.rawMinPrices.clear();
     this.rawMaxPrices.clear();
-    for (const r of records) {
+    for (let i = 0; i < total; i++) {
+      const r = records[i]!;
       const id = r[VEHICLE_FIELDS.ID] as string | undefined;
       const price = r[VEHICLE_FIELDS.AVG_PRICE] as number | undefined;
       const minPrice = r[VEHICLE_FIELDS.MIN_PRICE] as number | undefined;
@@ -164,24 +182,26 @@ export class DataverseDataSource implements IDataSource {
         if (typeof minPrice === 'number' && minPrice > 0) this.rawMinPrices.set(id, minPrice);
         if (typeof maxPrice === 'number' && maxPrice > 0) this.rawMaxPrices.set(id, maxPrice);
       }
+      send(98 + (i / total) * 0.5);
     }
 
-    onProgress?.(85);
+    // ── Phase 3: Parse records into Vehicle objects (99 → 99.5%) ─
+    const parsed: Vehicle[] = [];
+    for (let i = 0; i < total; i++) {
+      const v = this.parseVehicle(records[i]!, i);
+      if (v) parsed.push(v);
+      send(99 + (i / total) * 0.5);
+    }
+    this.vehicles = parsed;
 
-    this.vehicles = records
-      .map((r, i) => this.parseVehicle(r, i))
-      .filter((v): v is Vehicle => v !== null);
-
-    onProgress?.(90);
-
+    // ── Phase 4: Build pricing index (99.5%) ─────────────────
     this.pricing = this.buildPricingIndex();
+    send(99.5);
 
-    onProgress?.(95);
-
+    // ── Phase 5: Build hierarchy (99.5 → 100%) ──────────────
     this.hierarchy = this.buildHierarchy();
     this.initialized = true;
-
-    onProgress?.(100);
+    send(100);
   }
 
   isInitialized(): boolean {

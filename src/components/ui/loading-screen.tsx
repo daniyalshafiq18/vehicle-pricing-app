@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@utils';
 import { Car } from 'lucide-react';
 
@@ -16,12 +17,62 @@ interface LoadingScreenProps {
  *
  * Pass `progress` (0–100) for a determinate bar with a live percentage;
  * omit it to keep the current indeterminate animation.
+ *
+ * When determinate, the displayed percentage eases smoothly toward the
+ * real progress value so the bar never jumps abruptly. A persistent
+ * rAF loop crawls at a constant speed, decoupling the visual from
+ * discrete API-call jumps (each one returns 5000 records at once).
  */
 export function LoadingScreen({
   message = 'Loading...',
   className,
   progress,
 }: LoadingScreenProps) {
+  // Smooth animation: displayed value crawls at a CONSTANT fixed rate
+  // toward the real progress target. This decouples the visual from the
+  // discrete API‑call jumps.
+  const [displayed, setDisplayed] = useState(0);
+  const rafRef = useRef<number | null>(null);
+  const targetRef = useRef(progress);
+
+  // Keep the ref in sync without triggering re-renders or effect restarts
+  targetRef.current = progress;
+
+  useEffect(() => {
+    // Reset if we switch from determinate → indeterminate
+    if (progress === undefined) {
+      setDisplayed(0);
+    }
+  }, [progress === undefined]);
+
+  // Persistent rAF loop — runs once on mount, stops on unmount.
+  // NEVER restarts when `progress` changes.
+  useEffect(() => {
+    let running = true;
+    const STEP = 0.35; // % per frame at 60fps ≈ 21%/second
+    const animate = () => {
+      if (!running) return;
+      setDisplayed((prev) => {
+        const target = targetRef.current;
+        if (target === undefined) return 0;
+        if (target <= prev) return prev;
+        const diff = target - prev;
+        // Snap the last tiny gap so we don't creep forever
+        if (diff < 0.3) return target;
+        return prev + STEP;
+      });
+      rafRef.current = requestAnimationFrame(animate);
+    };
+    rafRef.current = requestAnimationFrame(animate);
+    return () => {
+      running = false;
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, []); // ← mount only — never re-run
+
+  const showProgress = progress !== undefined;
+  const displayValue = showProgress ? Math.min(100, Math.max(0, displayed)) : 0;
+
   return (
     <div
       className={cn(
@@ -31,7 +82,7 @@ export function LoadingScreen({
     >
       {/* Technical grid background */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.04]"
+        className="pointer-events-none absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage: `
             linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
@@ -41,53 +92,38 @@ export function LoadingScreen({
         }}
       />
 
-      {/* Ambient glow orbs — purple + orange */}
-      <div className="absolute left-1/4 top-1/4 h-80 w-80 rounded-full bg-violet-500/10 blur-3xl" />
-      <div className="absolute bottom-1/3 right-1/4 h-64 w-64 rounded-full bg-orange-500/8 blur-3xl" />
-      <div className="absolute bottom-1/4 left-1/3 h-48 w-48 rounded-full bg-fuchsia-500/6 blur-3xl" />
+      {/* Ambient glow orbs */}
+      <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full bg-primary/8 blur-3xl" />
+      <div className="absolute bottom-1/3 right-1/4 h-56 w-56 rounded-full bg-accent/8 blur-3xl" />
 
       <div className="relative flex flex-col items-center gap-8">
-        {/* Car icon with rotating rings */}
+        {/* Car icon with rotating ring */}
         <div className="relative flex items-center justify-center">
-          {/* Outer scanning ring — purple */}
+          {/* Outer scanning ring */}
           <div
-            className="absolute h-28 w-28 animate-spin rounded-full border-2"
+            className="absolute h-28 w-28 rounded-full border-2 border-primary/20"
             style={{
-              animationDuration: '3s',
-              borderColor: 'transparent',
-              borderTopColor: '#8B5CF6',
+              animation: 'spin 3s linear infinite',
+              borderTopColor: 'hsl(var(--primary))',
               borderRightColor: 'transparent',
               borderBottomColor: 'transparent',
               borderLeftColor: 'transparent',
-              filter: 'drop-shadow(0 0 6px rgba(139, 92, 246, 0.4))',
             }}
           />
-          {/* Middle scanning ring — orange */}
           <div
-            className="absolute h-24 w-24 animate-spin rounded-full border"
+            className="absolute h-24 w-24 rounded-full border border-primary/10"
             style={{
-              animationDuration: '2s',
-              animationDirection: 'reverse',
-              borderColor: 'transparent',
-              borderTopColor: '#F97316',
+              animation: 'spin 2s linear infinite reverse',
+              borderTopColor: 'hsl(var(--accent))',
               borderRightColor: 'transparent',
               borderBottomColor: 'transparent',
               borderLeftColor: 'transparent',
-              filter: 'drop-shadow(0 0 6px rgba(249, 115, 22, 0.3))',
-            }}
-          />
-          {/* Inner glow ring */}
-          <div
-            className="absolute h-20 w-20 rounded-full"
-            style={{
-              background:
-                'radial-gradient(circle, rgba(139,92,246,0.15) 0%, rgba(249,115,22,0.05) 50%, transparent 70%)',
             }}
           />
 
           {/* Car icon */}
           <div className="animate-bounce-gentle">
-            <Car className="h-16 w-16 text-violet-600 drop-shadow-[0_0_20px_rgba(139,92,246,0.35)] dark:text-violet-400" />
+            <Car className="h-16 w-16 text-primary drop-shadow-[0_0_15px_hsl(var(--primary)/0.35)]" />
           </div>
         </div>
 
@@ -105,40 +141,37 @@ export function LoadingScreen({
         <div className="w-72 space-y-3">
           <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]">
             <div
-              className="absolute inset-0 h-full rounded-full transition-all duration-500 ease-out"
+              className="absolute inset-0 h-full rounded-full"
               style={
-                progress !== undefined
+                showProgress
                   ? {
-                      width: `${Math.min(100, Math.max(0, progress))}%`,
-                      background:
-                        'linear-gradient(90deg, #8B5CF6 0%, #A855F7 30%, #F97316 70%, #F59E0B 100%)',
-                      boxShadow:
-                        '0 0 12px rgba(139, 92, 246, 0.4), 0 0 24px rgba(249, 115, 22, 0.2)',
+                      width: `${displayValue}%`,
+                      background: 'linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%)',
+                      boxShadow: '0 0 12px hsl(var(--primary)/0.3), 0 0 24px hsl(var(--accent)/0.15)',
+                      transition: 'width 0.15s ease-out',
                     }
                   : {
-                      background:
-                        'linear-gradient(90deg, #8B5CF6 0%, #A855F7 30%, #F97316 70%, #F59E0B 100%)',
+                      background: 'linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%)',
                       animation: 'indeterminate-bar 1.8s ease-in-out infinite',
                       width: '40%',
-                      boxShadow:
-                        '0 0 12px rgba(139, 92, 246, 0.4), 0 0 24px rgba(249, 115, 22, 0.2)',
+                      boxShadow: '0 0 12px hsl(var(--primary)/0.3), 0 0 24px hsl(var(--accent)/0.15)',
                     }
               }
             />
           </div>
           <div className="flex items-center justify-center gap-2">
-            {progress !== undefined ? (
+            {showProgress ? (
               <>
                 <span
                   className="inline-block h-1.5 w-1.5 rounded-full"
                   style={{
-                    backgroundColor: progress >= 100 ? '#22C55E' : '#8B5CF6',
+                    backgroundColor: Math.round(displayValue) >= 100 ? '#22C55E' : 'hsl(var(--primary))',
                   }}
                 />
                 <p className="text-sm text-muted-foreground">
-                  {message}{' '}
+                  {message}
                   <span className="font-medium tabular-nums text-foreground/80">
-                    {Math.min(100, Math.max(0, progress))}%
+                    {' '}{Math.round(displayValue)}%
                   </span>
                 </p>
               </>
@@ -146,7 +179,7 @@ export function LoadingScreen({
               <>
                 <span
                   className="inline-block h-1.5 w-1.5 animate-pulse rounded-full"
-                  style={{ backgroundColor: '#8B5CF6' }}
+                  style={{ backgroundColor: 'hsl(var(--primary))' }}
                 />
                 <p className="text-sm text-muted-foreground">{message}</p>
               </>

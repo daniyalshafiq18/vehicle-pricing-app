@@ -1,5 +1,49 @@
 # Changelog
 
+## 2026-07-22
+
+### Splash Screen — Smooth Equal Distribution 0→100%
+- **loading-screen.tsx** — Combined original Phase-1 visual style (CSS variable colors, simpler bar) with the smooth rAF animation from the current version; bar now crawls at constant 21%/sec between discrete updates so there are no abrupt jumps
+- **dataverseDataSource.ts** — Fixed progress distribution: fetch phase now covers 0→98% (was 0→80%), with each API page contributing ~14% (was ~8%); estimate changed from hardcoded 50K to `MAX_PAGE_SIZE * 8` (~40K for 7-8 pages); post-processing compacted to 98→100% so the bar approaches fully before the page renders
+
+## 2026-07-21
+
+### Missing Vehicle Request — UI & Data Fixes
+
+- **Step2VehicleSelection** — Added red asterisk required indicators on Make, Model, Specification, Year fields; removed Body Type field entirely; updated `canProceed` to no longer require bodyType; removed unused `bodyTypesForVehicle` helper, `allBodyTypes`/`allBodyTypesFromDB` memos, and auto-populate useEffect
+- **VehicleSelect** — Added `required` prop that renders a red asterisk next to the label
+- **Step3Result** — Removed Additional Details section (Cylinders, Fuel Type, Transmission, Drive Type) from the missing vehicle request dialog; removed Mileage Range inputs; removed Body Type from both the Vehicle Not Found summary card and dialog prefilled summary; updated `handleConfirmAndCreate` to exclude removed fields
+- **Step3Result success messages** — Differentiated completion messages: users who click "Confirm & Submit" (price suggested) see "Request Submitted" with email notification; users who click "Skip" (no price) see "Thank You" message
+- **Step3Result dialog button** — Changed "Search YallaMotor & Submit" to "Search YallaMotor" since additional details were removed
+- **yallaMotorHttpScraper.ts** — Added `slugify` helper to strip non-standard characters from URL slugs; improved robustness (spaces → hyphens + strip special chars)
+
+### Documentation — Full Audit & Cleanup
+- **docs/context.md** — Routes table now includes `/admin/missing-vehicles` and `/admin/price-suggestions`; corrected dashboard chart count from 10→5 (removed Price Distribution, Performance Scatter, Age Distribution, Box Plot); updated chart list to actual (Top Makes, Top Models, Body Type, Powertrain, Value Trend); added admin sections for Missing Vehicles and Price Suggestions pages; updated project structure with `src/lib/`, missing-vehicle/price-suggestion types, and additional hooks/repos
+- **memory/project-identity.md** — Added `/admin/missing-vehicles` and `/admin/price-suggestions` routes
+- **docs/dataverse-schema.md** — Fixed header date from 2026-06-30 to 2026-07-21
+- **docs/PHASE-3-REVISED-PLAN.md** — Added "ARCHIVED" banner before sections 10–14; updated section 11 to reflect actual implementation (yallaMotorHttpScraper.ts instead of scraper microservice); added reality notes contrasting Path B risks with Power Automate outcomes
+- **docs/PHASE-3-PLAN.md** — Added deprecation banner pointing to the revised plan
+
+### Fixed — Splash Progress Jumping to 100% While Data Still Loading
+
+- **Root cause:** Power Pages `$count=true` often returns the page size (5000) instead of the real total (~34 000 records). The old formula — `(fetched / 5000) × 50` — hit 50% after one page and **100% after two pages**, even though 5 of 7 API calls hadn't started yet.
+- **Fetch phase widened** from `0→50%` to `0→80%` so loading the data is the primary visual indicator
+- **$count validation:** If the returned total is ≤ `MAX_PAGE_SIZE` (5000), it's treated as unreliable and replaced with a dynamic estimate (up to 50 000, pulled upward as more pages arrive)
+- **Progress is always capped at 79% during fetch** so the user never sees 100% before the in-memory processing phases even begin
+- **Per-record processing phases** (pricing extraction 80→86%, vehicle parsing 86→96%) now throttle `setProgress` to whole-percentage changes only — no more 34 000 React state updates per phase
+- **Final phases** (pricing index 96→98%, hierarchy 98→100%) complete synchronously
+
+### Premium Leaderboard & Admin Table Cleanup
+- **PremiumLeaderboard** — Removed AVG PRICE column; default sort changed to `maxPrice desc`
+- **AdminMissingVehiclesPage** — Updated column headings (`Spec / Trim` → `Trim`, `Scrape` → `Scraped`, `Requested By` → `Requester`, `Requested` → `Date`), removed Body Type column entirely (13→12 columns), tightened padding to `px-3 py-3` and reduced header font to `text-xs`
+
+### UI — Brand Favicon & Dynamic Page Titles
+- **public/favicon.svg** — Replaced the default Vite logo with the app's own car favicon in brand violet (`#8B5CF6`), matching the loading screen's `Car` icon from Lucide; updated `index.html` `<link rel="icon">` to point to it with `?v=2` cache-buster
+- **SPA-Shell.webtemplate.source.html** — Added `<link rel="icon">` referencing `favicon.svg?v=2` so the browser tab shows the car favicon on Power Pages (the shell controls the app's HTML output)
+- **Home.webpage.copy.html** — Updated favicon reference to `favicon.svg?v=2` for cache-busting
+- **MainLayout.tsx** — Added `useEffect` to set `document.title` based on current route: `Home`, `Valuation`, `Valuation Result` (each suffixed with `· Vehicle Pricing Intelligence Platform`)
+- **AdminLayout.tsx** — Added `useEffect` using the existing `pageTitles` mapping so every admin page shows `{Page} · Admin · Vehicle Pricing Intelligence Platform` in the browser tab
+
 ## 2026-07-20
 
 ### UI — Inline AED Price Suggestion Inputs
