@@ -2,9 +2,10 @@
 
 ## 2026-07-22
 
-### Splash Screen — Smooth Equal Distribution 0→100%
-- **loading-screen.tsx** — Combined original Phase-1 visual style (CSS variable colors, simpler bar) with the smooth rAF animation from the current version; bar now crawls at constant 21%/sec between discrete updates so there are no abrupt jumps
-- **dataverseDataSource.ts** — Fixed progress distribution: fetch phase now covers 0→98% (was 0→80%), with each API page contributing ~14% (was ~8%); estimate changed from hardcoded 50K to `MAX_PAGE_SIZE * 8` (~40K for 7-8 pages); post-processing compacted to 98→100% so the bar approaches fully before the page renders
+### Splash Screen — Original Visual, Equal Progress, Smooth Fade-Out
+- **loading-screen.tsx** — Restored exact Phase-1 visual (CSS theme variable colors, simple `from-primary via-accent to-primary` gradient bar, left-right message/percentage layout, no smooth rAF animation)
+- **dataverseDataSource.ts** — Reduced estimate from `MAX_PAGE_SIZE * 8` (40K) to `MAX_PAGE_SIZE * 7` (35K) so fetch progress ends near ~86-97% instead of stalling at 75%; post-processing compacted to 98→100%
+- **App.tsx** — Added fade-out overlay (500ms opacity transition) so the splash fades while the app renders underneath, eliminating the blank "little load again" flash between splash and page
 
 ## 2026-07-21
 

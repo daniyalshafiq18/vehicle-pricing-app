@@ -60,9 +60,10 @@ Data flows **downward** only. Components import hooks, hooks import repositories
 
 ### App Bootstrap
 
-- `SplashGate` keeps routes unmounted while `DataverseDataSource` loads paginated vehicles (0–85% progress).
-- `useStartupData` prefetches inquiries, missing vehicle requests, and price suggestions into React Query for the final 15%.
-- The splash reaches 100% only after all startup requests settle, then briefly holds before rendering routes.
+- `SplashGate` keeps routes unmounted while `DataverseDataSource` paginates through ~30K–34K vehicle records via `/_api/vpi_vehicledatas`.
+- Progress is reported page-by-page: each of the ~7 pages contributes equally (~14%) across 0–98%, then post-processing completes to 100%.
+- When data is ready, the splash fades out over 500ms while the app renders underneath, preventing a jarring blank flash.
+- After the splash disappears, each page handles its own data loading independently (admin pages show their own loading spinners for inquiries, MVRs, price suggestions).
 
 ```
 index.html → main.tsx
@@ -140,18 +141,19 @@ Mutations use `react-hot-toast` for success/error feedback (configured globally 
 src/
 ├── app/                    # App entry + router config
 ├── components/
-│   └── ui/                 # Reusable primitives — Button, Dialog, Card, LazyChart, SkeletonTable, ThemeSwitcher
+│   └── ui/                 # Reusable primitives — Button, Dialog, Card, LazyChart, SkeletonTable, ThemeSwitcher, NotificationDropdown, CustomSelect
 ├── features/
 │   ├── landing/            # Landing page — hero, stats, CTA
-│   ├── valuation/          # 3-step wizard — Step1PersonalInfo, Step2VehicleSelection, Step3Result
-│   └── admin/              # Admin pages — Dashboard, Vehicles, Queries, Settings + chart components
+│   ├── valuation/          # 3-step wizard — Step1PersonalInfo, Step2VehicleSelection, Step3Result + components
+│   └── admin/              # Admin pages — Dashboard, Vehicles, Queries, MissingVehicles, PriceSuggestions, Settings + chart components
 ├── layouts/                # MainLayout (public), AdminLayout (sidebar + top bar)
-├── hooks/                  # React Query hooks — useVehicles, useInquiries, useDashboardAnalytics, etc.
-├── repositories/           # Data access wrappers — vehicleRepository, inquiryRepository
+├── hooks/                  # React Query hooks — useVehicles, useInquiries, useDashboardAnalytics, useStartupData, etc.
+├── repositories/           # Data access wrappers — vehicleRepository, inquiryRepository, missingVehicleRepository, priceSuggestionRepository
 ├── providers/              # AppProviders, DataSourceContext, ThemeProvider
 ├── stores/                 # Zustand stores — adminStore, inquiryStore, vehicleStore, themeStore, dashboardStore
-├── types/                  # All TS interfaces — datasource.ts, vehicle.ts, inquiry.ts, analytics.ts
-├── utils/                  # Helpers — formatCurrency, formatNumber, cn, memoize, validators
+├── types/                  # All TS interfaces — datasource.ts, vehicle.ts, inquiry.ts, analytics.ts, priceSuggestion.ts, missingVehicleRequest.ts
+├── utils/                  # Helpers — formatCurrency, formatNumber, cn, memoize, debounce, validators, pdfExport
+├── lib/                    # API modules — safeAjax, vehicleApi, contactApi, inquiryApi, priceSuggestionApi, missingVehicleApi, optionSetApi, yallaMotorHttpScraper
 ├── data/                   # Data source context + DataverseDataSource + config + option sets
 ├── styles/                 # globals.css (CSS variables, Tailwind layers)
 └── testing/                # Test setup (Vitest)
@@ -166,10 +168,12 @@ src/
 | `/` | MainLayout | LandingPage | Hero section, stats, call to action |
 | `/valuation` | MainLayout | ValuationPage | 3-step wizard: personal info → vehicle → result |
 | `/result` | MainLayout | ValuationResultPage | Standalone valuation result (accessed from wizard or direct link) |
-| `/admin` | AdminLayout | AdminDashboardPage | KPI cards, 10 charts, premium leaderboard |
+| `/admin` | AdminLayout | AdminDashboardPage | KPI cards, 5 charts, premium leaderboard |
 | `/admin/dashboard` | AdminLayout | AdminDashboardPage | Same as `/admin` |
 | `/admin/vehicles` | AdminLayout | AdminVehiclesPage | Paginated vehicle table with pricing lookup |
 | `/admin/queries` | AdminLayout | AdminQueriesPage | Inquiry table, filter tabs, detail modal, export |
+| `/admin/missing-vehicles` | AdminLayout | AdminMissingVehiclesPage | Missing vehicle requests with scrape results + status management |
+| `/admin/price-suggestions` | AdminLayout | AdminPriceSuggestionsPage | User-submitted pricing suggestions with review workflow |
 | `/admin/settings` | AdminLayout | AdminSettingsPage | Data source config, theme toggle, reset |
 
 ### Removed Routes
@@ -185,15 +189,16 @@ src/
 |---|---|---|
 | 1 — Personal Info | `Step1PersonalInfo.tsx` | Collects name, email, phone, city, country, consent → stored in `inquiryStore.personalInfo` |
 | 2 — Vehicle Selection | `Step2VehicleSelection.tsx` | Cascading selects (Make → Model → Spec → Year → Body Type) via `useVehicleHierarchy` → stored in `inquiryStore.vehicleSelection` |
-| 3 — Result | `Step3Result.tsx` | Displays price range, vehicle specs, market insights, and export/restart actions. Auto-saves inquiry to data source on first load (guarded by `useRef(false)` to prevent duplicates) |
+| 3 — Result | `Step3Result.tsx` | Displays price range, vehicle specs, market insights, and PDF export/restart actions. Auto-saves inquiry to data source on first load (guarded by `useRef(false)`). If vehicle not found, shows "Missing Vehicle" request dialog (specs + mileage) → triggers Flow 3 real-time YallaMotor scraping via `yallaMotorHttpScraper.ts` → displays live prices or "Unavailable" fallback with manual price inputs |
 
 ### Admin Dashboard (`/admin`)
 
-- **6 KPI cards**: Total Vehicles, Total Makes, Total Models, Highest Value, Avg Market Price, Lowest Value — each with colour-coded gradient accent
-- **10 charts**: Top Makes, Price Distribution, Value Trend, Powertrain Donut, Performance vs Value Scatter, Body Type Bar, Age Distribution, Price Volatility Box, Top Models
+- **6 KPI cards**: Total Vehicles, Total Makes, Total Models, Highest Value, Avg Market Price, Lowest Value — each with colour-coded gradient accent and heading colour
+  - Queries and Missing Vehicles KPI cards are clickable — open inline status distribution breakdown (Pending/Reviewed/Contacted/Closed for Queries, Pending/Approved/In Progress/Reject for Missing Vehicles)
+- **5 charts**: Top Makes (horizontal bar, top 10), Top Models (horizontal bar, top 10), Body Type (horizontal bar), Powertrain Donut, Value Trend (area chart)
 - **Premium Vehicle Leaderboard**: Top 100 vehicles by market value
-- **Vehicle Intelligence Modal**: Opens from scatter plot dot click — full vehicle + pricing details
-- **Price by Model Year filters**: Searchable Make and dependent Model dropdowns run a dedicated cached analytics query for the selected vehicle group
+- **Price by Model Year chart**: Searchable Make and dependent Model dropdowns run a dedicated cached analytics query for the selected vehicle group
+- All charts use a unified brand-coordinated palette (indigo/teal/amber/violet/cyan/orange) via shared colour rotation
 - All data from `useDashboardAnalytics` hook with `DashboardFilters`
 
 ### Admin Queries (`/admin/queries`)
@@ -205,6 +210,24 @@ src/
 - **Status management**: Inline `StatusSelect` dropdown in both table and detail modal — optimistic React Query mutation with toast feedback
 - **Detail modal**: Clean layout — header (name, date, status dropdown, close) → contact info → location → vehicle grid → valuation pricing (Min / Median / Max)
 - **Export**: Button downloads all inquiries as `.csv` with full columns — generated client-side
+
+### Admin Missing Vehicles (`/admin/missing-vehicles`)
+
+- **Table**: #, Make, Model, Year, Spec, Body Type, Requested By, Scrape status badge, Listing count, Min/Max Price, Submitted date, View action
+- **Card/Grid view**: Toggle with `LayoutList`/`LayoutGrid` icons — responsive grid (`sm:grid-cols-2 lg:grid-cols-3`)
+- **Status filter tabs**: All · Pending · Approved · In Progress · Reject — each with count badge
+- **Detail modal**: Vehicle info, Contact details, Scrape Results section (parsed JSON listing data, clickable source URL), Status dropdown
+- **Scrape status**: Displays badge with listing count in table; scraped min/max prices shown in card mode and detail modal
+- Statuses: Pending · Testing · In Progress · Scraped · Failed · Unreachable
+
+### Admin Price Suggestions (`/admin/price-suggestions`)
+
+- **Table**: Submitted By, Min Price, Max Price, Source URL, Status (colour badge), Submitted date, Comment, View action
+- **Card/Grid view**: Toggle between table and responsive card grid
+- **Status filter tabs**: All · Pending · Edit & Approve · Rejected — built dynamically from Dataverse optionset
+- **Search**: Filters by submitter name, vehicle name, and URL
+- **Detail modal**: Editable min/max price inputs pre-filled from current values with "Save Changes" button; saving auto-sets status to "Edit & Approve"
+- Statuses: Pending=4 · Approve=1 · Reject=2 · Edit & Approve=3
 
 ---
 
