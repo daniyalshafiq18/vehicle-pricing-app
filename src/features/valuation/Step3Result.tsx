@@ -5,7 +5,6 @@ import { useValuation, useSaveInquiry, useUpsertMissingVehicleRequest, useUpsert
 import { useVehicleStore } from '@stores';
 import type { Inquiry } from '@types';
 import { Button, Card, CardContent, Badge, Skeleton, Dialog } from '@components/ui';
-import { VehicleSelect } from './components/VehicleSelect';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
@@ -30,6 +29,7 @@ import {
   ExternalLink,
   Sparkles,
   MessageSquare,
+  Heart,
   Loader2,
   Globe,
 } from 'lucide-react';
@@ -64,6 +64,8 @@ export function Step3Result() {
   const [scrapeError, setScrapeError] = useState<string | null>(null);
   /** ID of the final MVR created after user confirms. */
   const [, setMvrCreatedId] = useState<string | null>(null);
+  /** True when user clicked Skip (no price suggestion) — show "Thank You" instead of "Request Submitted" */
+  const [thankYouMode, setThankYouMode] = useState(false);
 
   /** User's price suggestion (optional — shown after scraped results). */
   const [suggestedMinPrice, setSuggestedMinPrice] = useState('');
@@ -74,12 +76,6 @@ export function Step3Result() {
   const [suggestMaxPrice, setSuggestMaxPrice] = useState('');
   const [suggestSourceUrl, setSuggestSourceUrl] = useState('');
   const [suggestComment, setSuggestComment] = useState('');
-  const [requestCylinders, setRequestCylinders] = useState('');
-  const [requestFuelType, setRequestFuelType] = useState('');
-  const [requestTransmissionType, setRequestTransmissionType] = useState('');
-  const [requestDriveType, setRequestDriveType] = useState('');
-  const [requestMinMileage, setRequestMinMileage] = useState('');
-  const [requestMaxMileage, setRequestMaxMileage] = useState('');
 
   const { data: valuation, isLoading, error, isFetched } = useValuation(
     vehicleSelection.year,
@@ -153,28 +149,21 @@ export function Step3Result() {
   }, [vehicleSelection]);
 
   /** User confirmed — create the MVR with scraped + suggested prices. */
-  const handleConfirmAndCreate = useCallback(async () => {
+  const handleConfirmAndCreate = useCallback(async (thankYou = false) => {
     if (!flow3Result) return;
 
     try {
       const mvrId = await upsertRequest.mutateAsync({
         make: vehicleSelection.make,
         model: vehicleSelection.model,
-        bodyType: vehicleSelection.bodyType,
         trim: vehicleSelection.spec,
         modelYear: vehicleSelection.year ?? 0,
-        cylinders: requestCylinders || undefined,
-        fuelType: requestFuelType || undefined,
-        transmissionType: requestTransmissionType || undefined,
-        driveType: requestDriveType || undefined,
         contactEmail: personalInfo.email || undefined,
         contactName: personalInfo.firstName && personalInfo.lastName
           ? `${personalInfo.firstName} ${personalInfo.lastName}`
           : personalInfo.firstName || undefined,
         minPrice: suggestedMinPrice ? Number(suggestedMinPrice) : undefined,
         maxPrice: suggestedMaxPrice ? Number(suggestedMaxPrice) : undefined,
-        minMileage: requestMinMileage ? Number(requestMinMileage) : undefined,
-        maxMileage: requestMaxMileage ? Number(requestMaxMileage) : undefined,
         // Scrape results from Flow 3
         scrapedMinPrice: flow3Result.minPrice,
         scrapedMaxPrice: flow3Result.maxPrice,
@@ -195,10 +184,10 @@ export function Step3Result() {
     }
 
     setShowRequestDialog(false);
+    setThankYouMode(thankYou);
     setRequestSubmitted(true);
   }, [flow3Result, vehicleSelection, personalInfo, upsertRequest,
-    requestCylinders, requestFuelType, requestTransmissionType, requestDriveType,
-    requestMinMileage, requestMaxMileage, suggestedMinPrice, suggestedMaxPrice]);
+    suggestedMinPrice, suggestedMaxPrice]);
 
   const handleSubmitSuggestion = () => {
     const vehicleId = valuationResult?.vehicle.id;
@@ -254,17 +243,32 @@ export function Step3Result() {
               animate={{ opacity: 1, scale: 1 }}
               className="text-center"
             >
-              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10">
-                <MessageSquare className="h-10 w-10 text-emerald-500" />
-              </div>
-              <h2 className="mb-2 text-2xl font-bold tracking-tight">Request Submitted!</h2>
-              <p className="mb-2 text-muted-foreground">
-                We'll send you a message on{' '}
-                <span className="font-semibold text-foreground">
-                  {personalInfo.email || 'your email'}
-                </span>{' '}
-                once this vehicle is available.
-              </p>
+              {thankYouMode ? (
+                <>
+                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10">
+                    <Heart className="h-10 w-10 text-emerald-500" />
+                  </div>
+                  <h2 className="mb-2 text-2xl font-bold tracking-tight">Thank You!</h2>
+                  <p className="mb-6 text-muted-foreground">
+                    We appreciate your interest. We'll continue expanding our catalogue and may
+                    reach out if this vehicle becomes available.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10">
+                    <MessageSquare className="h-10 w-10 text-emerald-500" />
+                  </div>
+                  <h2 className="mb-2 text-2xl font-bold tracking-tight">Request Submitted!</h2>
+                  <p className="mb-2 text-muted-foreground">
+                    We'll send you a message on{' '}
+                    <span className="font-semibold text-foreground">
+                      {personalInfo.email || 'your email'}
+                    </span>{' '}
+                    once this vehicle is available.
+                  </p>
+                </>
+              )}
               {/* Show scraped data from Flow 3 if available */}
               {flow3Result && (
                 <div className="mx-auto mt-4 mb-6 max-w-xs rounded-xl border bg-card p-4">
@@ -320,7 +324,6 @@ export function Step3Result() {
                       { label: 'Model', value: vehicleSelection.model },
                       { label: 'Year', value: vehicleSelection.year },
                       { label: 'Spec', value: vehicleSelection.spec },
-                      { label: 'Body Type', value: vehicleSelection.bodyType },
                     ].filter((item) => item.value).map((item) => (
                       <div key={item.label} className="rounded-lg bg-background/60 px-3 py-2">
                         <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -407,7 +410,6 @@ export function Step3Result() {
                     { label: 'Make', value: vehicleSelection.make },
                     { label: 'Model', value: vehicleSelection.model },
                     { label: 'Year', value: vehicleSelection.year },
-                    { label: 'Body Type', value: vehicleSelection.bodyType },
                     { label: 'Spec', value: vehicleSelection.spec },
                   ]
                     .filter((item) => item.value)
@@ -419,90 +421,6 @@ export function Step3Result() {
                         <p className="text-sm font-semibold text-foreground">{String(item.value)}</p>
                       </div>
                     ))}
-                </div>
-              </div>
-
-              {/* Additional details */}
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Additional Details
-                </p>
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-                  <VehicleSelect
-                    value={requestCylinders}
-                    onChange={setRequestCylinders}
-                    placeholder="Cylinders"
-                    searchable={false}
-                    options={[
-                      { value: '3', label: '3' },
-                      { value: '4', label: '4' },
-                      { value: '5', label: '5' },
-                      { value: '6', label: '6' },
-                      { value: '8', label: '8' },
-                      { value: '10', label: '10' },
-                      { value: '12', label: '12' },
-                      { value: '16', label: '16' },
-                    ]}
-                  />
-                  <VehicleSelect
-                    value={requestFuelType}
-                    onChange={setRequestFuelType}
-                    placeholder="Fuel Type"
-                    searchable={false}
-                    options={[
-                      { value: 'Electric', label: 'Electric' },
-                      { value: 'Hybrid', label: 'Hybrid' },
-                      { value: 'Petrol/Diesel', label: 'Petrol/Diesel' },
-                    ]}
-                  />
-                  <VehicleSelect
-                    value={requestTransmissionType}
-                    onChange={setRequestTransmissionType}
-                    placeholder="Transmission"
-                    searchable={false}
-                    options={[
-                      { value: 'Automatic', label: 'Automatic' },
-                      { value: 'Manual', label: 'Manual' },
-                      { value: 'CVT', label: 'CVT' },
-                    ]}
-                  />
-                  <VehicleSelect
-                    value={requestDriveType}
-                    onChange={setRequestDriveType}
-                    placeholder="Drive Type"
-                    searchable={false}
-                    options={[
-                      { value: '4X4', label: '4X4' },
-                      { value: 'AWD', label: 'AWD' },
-                      { value: 'FWD', label: 'FWD' },
-                      { value: 'RWD', label: 'RWD' },
-                      { value: 'Unknown', label: 'Unknown' },
-                    ]}
-                  />
-                </div>
-              </div>
-
-              {/* Mileage range */}
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Mileage Range (km)
-                </p>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="number"
-                    placeholder="Min"
-                    value={requestMinMileage}
-                    onChange={(e) => setRequestMinMileage(e.target.value)}
-                    className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
-                  />
-                  <span className="text-muted-foreground/40">—</span>
-                  <input
-                    type="number"
-                    placeholder="Max"
-                    value={requestMaxMileage}
-                    onChange={(e) => setRequestMaxMileage(e.target.value)}
-                    className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
-                  />
                 </div>
               </div>
 
@@ -528,7 +446,7 @@ export function Step3Result() {
                   ) : (
                     <>
                       <Globe className="mr-2 h-4 w-4" />
-                      Search YallaMotor &amp; Submit
+                      Search YallaMotor
                     </>
                   )}
                 </Button>
@@ -612,7 +530,7 @@ export function Step3Result() {
                     </Button>
                     <Button
                       variant="gradient"
-                      onClick={handleConfirmAndCreate}
+                      onClick={() => handleConfirmAndCreate()}
                       disabled={upsertRequest.isPending}
                       className="flex-1"
                     >
@@ -729,7 +647,7 @@ export function Step3Result() {
                       variant="outline"
                       onClick={() => {
                         // Skip: Create MVR with scraped prices only (no user suggestion)
-                        handleConfirmAndCreate();
+                        handleConfirmAndCreate(true);
                       }}
                       className="flex-1"
                       disabled={upsertRequest.isPending}
@@ -738,7 +656,7 @@ export function Step3Result() {
                     </Button>
                     <Button
                       variant="gradient"
-                      onClick={handleConfirmAndCreate}
+                      onClick={() => handleConfirmAndCreate()}
                       disabled={upsertRequest.isPending}
                       className="flex-1"
                     >

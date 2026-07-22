@@ -22,7 +22,7 @@ interface PremiumLeaderboardProps {
 const columnHelper = createColumnHelper<TopVehicle>();
 
 export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboardProps) {
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'averagePrice', desc: true }]);
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'maxPrice', desc: true }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
@@ -68,13 +68,6 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
         <span className="font-mono text-xs text-muted-foreground">{formatCurrency(info.getValue() || 0)}</span>
       ),
     }),
-    columnHelper.accessor('averagePrice', {
-      header: 'Avg Price',
-      size: 110,
-      cell: (info) => (
-        <span className="font-mono text-sm font-semibold text-foreground">{formatCurrency(info.getValue())}</span>
-      ),
-    }),
     columnHelper.accessor('maxPrice', {
       header: 'Max Price',
       size: 100,
@@ -101,8 +94,8 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
 
   // ─── Export CSV ─────────────────────────────────────
   const exportCSV = () => {
-    const headers = ['Rank', 'Year', 'Make', 'Model', 'Spec', 'Min Price', 'Avg Price', 'Max Price'];
-    const rows = data.map((v) => [v.rank, v.year, v.make, v.model, v.spec, v.minPrice, v.averagePrice, v.maxPrice]);
+    const headers = ['Rank', 'Year', 'Make', 'Model', 'Spec', 'Min Price', 'Max Price'];
+    const rows = data.map((v) => [v.rank, v.year, v.make, v.model, v.spec, v.minPrice, v.maxPrice]);
     const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -115,8 +108,8 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
 
   // ─── Export TSV (opens in spreadsheet apps) ──────────
   const exportTSV = () => {
-    const headers = ['Rank', 'Year', 'Make', 'Model', 'Spec', 'Min Price', 'Avg Price', 'Max Price'];
-    const rows = data.map((v) => [v.rank, v.year, v.make, v.model, v.spec, v.minPrice, v.averagePrice, v.maxPrice]);
+    const headers = ['Rank', 'Year', 'Make', 'Model', 'Spec', 'Min Price', 'Max Price'];
+    const rows = data.map((v) => [v.rank, v.year, v.make, v.model, v.spec, v.minPrice, v.maxPrice]);
     const csv = [headers.join('\t'), ...rows.map((r) => r.join('\t'))].join('\n');
     const blob = new Blob([csv], { type: 'text/tab-separated-values' });
     const url = URL.createObjectURL(blob);
@@ -204,7 +197,7 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
             ))}
             {table.getRowModel().rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-3 py-12 text-center text-sm text-muted-foreground">
+                <td colSpan={7} className="px-3 py-12 text-center text-sm text-muted-foreground">
                   No vehicles match your search
                 </td>
               </tr>

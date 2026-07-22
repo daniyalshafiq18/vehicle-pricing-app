@@ -1,8 +1,10 @@
 
-# Phase 3 — Vehicle Pricing Intelligence Platform
+# ⚠️ SUPERSEDED — Phase 3 Original Plan
 
+> **⚠️ This document is the ORIGINAL Phase 3 plan. It has been superseded by `docs/PHASE-3-REVISED-PLAN.md` which reflects the actual scraper architecture (Power Automate Cloud-only flows) after Path B (Puppeteer) was abandoned.**
+>
 > **Date:** 2026-07-02
-> **Status:** Implementation Plan
+> **Status:** ❌ Superseded (see revised plan)
 
 ---
 

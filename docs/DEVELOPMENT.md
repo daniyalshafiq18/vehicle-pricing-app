@@ -21,9 +21,9 @@ Component → React Query Hook → Repository → IDataSource → DataverseDataS
 - Pages compose features with layouts
 
 ### Startup Loading
-- `DataverseDataSource.initialize()` loads paginated vehicle records and builds in-memory indexes; this phase occupies 0–85% of the splash progress
-- `useStartupData()` then prefetches inquiries, missing vehicle requests, and price suggestions into React Query; each settled request advances the final 15%
-- The router mounts only after startup prefetching reaches 100%, preventing immediate duplicate admin API requests after the splash
+- `DataverseDataSource.initialize()` loads paginated vehicle records from `/_api/vpi_vehicledatas` and builds in-memory pricing indexes
+- The splash screen shows progress (0–100%) as each page of vehicles is fetched, with a brief hold at 100% before the app renders
+- No admin data (inquiries, missing vehicles, price suggestions) is prefetched during splash — each page handles its own data loading
 
 ### Currency Formatting
 - Use `formatCurrency()` from `@utils` for every displayed vehicle price so values consistently use the `AED` ISO currency code

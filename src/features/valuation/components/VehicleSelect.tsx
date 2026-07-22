@@ -14,6 +14,8 @@ export interface VehicleSelectProps {
   onChange: (value: string) => void;
   /** Show search input inside the dropdown (default: true) */
   searchable?: boolean;
+  /** Show a red asterisk indicating the field is required */
+  required?: boolean;
 }
 
 // ── Component ─────────────────────────────────────────────────────────
@@ -27,6 +29,7 @@ export function VehicleSelect({
   disabled = false,
   onChange,
   searchable = true,
+  required = false,
 }: VehicleSelectProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -91,7 +94,12 @@ export function VehicleSelect({
 
   return (
     <div className="space-y-2" ref={ref}>
-      {label && <label className="text-sm font-medium">{label}</label>}
+      {label && (
+        <label className="text-sm font-medium">
+          {label}
+          {required && <span className="ml-0.5 text-destructive">*</span>}
+        </label>
+      )}
       <div className="relative">
         <button
           ref={buttonRef}

@@ -797,19 +797,18 @@ export function AdminMissingVehiclesPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/20">
-                      <th className="w-10 px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">#</th>
-                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Make</th>
-                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Model</th>
-                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Year</th>
-                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Spec / Trim</th>
-                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Body Type</th>
-                      <th className="px-4 py-3.5 text-right text-sm font-semibold text-slate-800 dark:text-slate-200">Min Price</th>
-                      <th className="px-4 py-3.5 text-right text-sm font-semibold text-slate-800 dark:text-slate-200">Max Price</th>
-                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Status</th>
-                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Scrape</th>
-                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Requested By</th>
-                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Requested</th>
-                      <th className="px-4 py-3.5 text-right text-sm font-semibold text-slate-800 dark:text-slate-200">Actions</th>
+                      <th className="w-10 px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">#</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">Make</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">Model</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">Year</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">Trim</th>
+                      <th className="px-3 py-3 text-right text-xs font-semibold text-slate-800 dark:text-slate-200">Min Price</th>
+                      <th className="px-3 py-3 text-right text-xs font-semibold text-slate-800 dark:text-slate-200">Max Price</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">Status</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">Scraped</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">Requester</th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">Date</th>
+                      <th className="px-3 py-3 text-right text-xs font-semibold text-slate-800 dark:text-slate-200">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -819,61 +818,58 @@ export function AdminMissingVehiclesPage() {
                         className="group/row transition-colors hover:bg-muted/30 cursor-pointer"
                         onClick={() => setSelectedRequest(req)}
                       >
-                        <td className="px-4 py-3 text-xs text-muted-foreground">
+                        <td className="px-3 py-3 text-xs text-muted-foreground">
                           {(page - 1) * pageSize + i + 1}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                              <Car className="h-4 w-4 text-primary" />
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-2.5">
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                              <Car className="h-3.5 w-3.5 text-primary" />
                             </div>
                             <span className="font-medium text-foreground">{req.make}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-3 py-3 whitespace-nowrap">
                           <span className="text-foreground">{req.model}</span>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="inline-flex items-center rounded-full border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-foreground">
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <span className="inline-flex items-center rounded-full border bg-muted/50 px-2 py-0.5 text-xs font-medium text-foreground">
                             {req.modelYear}
                           </span>
                         </td>
-                        <td className="px-4 py-3 max-w-[160px]">
-                          <p className="text-sm text-foreground truncate" title={req.trim}>
+                        <td className="px-3 py-3 max-w-[140px]">
+                          <p className="text-xs text-foreground truncate" title={req.trim}>
                             {req.trim || '—'}
                           </p>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="text-xs text-foreground/80">{req.bodyType || '—'}</span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-right">
+                        <td className="px-3 py-3 whitespace-nowrap text-right">
                           <span className="text-xs font-medium text-foreground">
                             {req.minPrice != null ? formatCurrency(req.minPrice) : '—'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-right">
+                        <td className="px-3 py-3 whitespace-nowrap text-right">
                           <span className="text-xs font-medium text-foreground">
                             {req.maxPrice != null ? formatCurrency(req.maxPrice) : '—'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-3 py-3 whitespace-nowrap">
                           <StatusBadge status={req.status} />
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-3 py-3 whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
                             <ScrapeStatusBadge status={req.scrapeStatus} />
                             <ScrapedListingCount listings={req.scrapedListings} />
                           </div>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <p className="text-xs text-foreground truncate max-w-[140px]" title={req.contactName || req.contactEmail || ''}>
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <p className="text-xs text-foreground truncate max-w-[130px]" title={req.contactName || req.contactEmail || ''}>
                             {req.contactName || req.contactEmail || '—'}
                           </p>
                           {req.contactName && req.contactEmail && req.contactEmail !== req.contactName && (
-                            <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">{req.contactEmail}</p>
+                            <p className="text-[10px] text-muted-foreground truncate max-w-[130px]">{req.contactEmail}</p>
                           )}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-3 py-3 whitespace-nowrap">
                           <div className="flex flex-col">
                             <span className="text-xs text-foreground">
                               {req.createdOn ? formatShortDate(req.createdOn) : '—'}
@@ -885,7 +881,7 @@ export function AdminMissingVehiclesPage() {
                             )}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                        <td className="px-3 py-3 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
                             <Button
                               variant="ghost"

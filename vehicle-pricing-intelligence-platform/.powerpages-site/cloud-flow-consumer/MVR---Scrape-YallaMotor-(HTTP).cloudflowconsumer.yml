@@ -1,0 +1,9 @@
+adx_CloudFlowConsumer_adx_webrole:
+- 2d255b08-3a0e-466d-95a9-a5452f58fc5c
+- b0ecfd4e-57d2-4044-8d82-82b6f0cdae91
+flowapiurl: /_api/cloudflow/v1.0/trigger/b902ab0f-e780-f111-ab0f-000d3aca8c3a
+flowtriggerurl: ''
+id: 923f72ad-1581-f111-ab0f-0022489551d3
+metadata: ''
+name: MVR - Scrape YallaMotor (HTTP)
+processid: b902ab0f-e780-f111-ab0f-000d3aca8c3a

@@ -15,7 +15,7 @@ import {
   LogOut,
   Search,
 } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 const sidebarItems = [
   { label: 'Dashboard', path: '/admin', icon: LayoutDashboard },
@@ -55,6 +55,11 @@ function AdminLayoutContent() {
   const actualWidth = collapsed ? 'w-16' : 'w-64';
 
   const currentPageTitle = pageTitles[location.pathname] ?? 'Admin';
+
+  // Update browser tab title on route change
+  useEffect(() => {
+    document.title = `${currentPageTitle} · Admin · Vehicle Pricing Intelligence Platform`;
+  }, [currentPageTitle]);
 
   const handleNavigate = useCallback(
     (path: string) => {

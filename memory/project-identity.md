@@ -44,6 +44,8 @@ All configured in both `tsconfig.json` and `vite.config.ts`: `@`, `@app`, `@comp
 - `/admin` or `/admin/dashboard` — KPI cards + charts
 - `/admin/vehicles` — Vehicle table
 - `/admin/queries` — Inquiry management (filter, search, paginate, export)
+- `/admin/missing-vehicles` — Missing vehicle requests with scrape results
+- `/admin/price-suggestions` — User-submitted pricing suggestions
 - `/admin/settings` — Settings page
 
 ## State Management

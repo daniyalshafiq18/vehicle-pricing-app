@@ -1,6 +1,6 @@
 # Dataverse Schema Documentation — Vehicle Pricing Intelligence Platform
 
-> **Last updated:** 2026-06-30
+> **Last updated:** 2026-07-21
 > **Platform:** Microsoft Dataverse (Power Pages)
 
 ---

@@ -1,7 +1,7 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { ThemeSwitcher } from '@components/ui';
 import { Car, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -11,9 +11,21 @@ const navLinks = [
   { label: 'Admin', path: '/admin' },
 ];
 
+const pageTitles: Record<string, string> = {
+  '/': 'Home',
+  '/valuation': 'Valuation',
+  '/result': 'Valuation Result',
+};
+
 export function MainLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+
+  // Update browser tab title on route change
+  useEffect(() => {
+    const page = pageTitles[location.pathname] ?? '';
+    document.title = page ? `${page} · Vehicle Pricing Intelligence Platform` : 'Vehicle Pricing Intelligence Platform';
+  }, [location.pathname]);
 
   return (
     <div className="relative flex min-h-screen flex-col">

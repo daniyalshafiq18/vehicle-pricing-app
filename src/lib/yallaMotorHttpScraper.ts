@@ -93,10 +93,12 @@ export async function scrapeViaFlow3(params: {
       };
     }
 
-    // Construct the YallaMotor URL client-side
-    const makeSlug = params.make.toLowerCase().replace(/\s+/g, '-');
-    const modelSlug = params.model.toLowerCase().replace(/\s+/g, '-');
-    const trimSlug = params.trim.toLowerCase().replace(/\s+/g, '-');
+    // Construct the YallaMotor URL client-side.
+    // Replace spaces with hyphens and strip non-standard characters for clean slugs.
+    const slugify = (s: string) => s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const makeSlug = slugify(params.make);
+    const modelSlug = slugify(params.model);
+    const trimSlug = slugify(params.trim);
     const sourceUrl = `https://uae.yallamotor.com/used-cars/${makeSlug}/${modelSlug}/vr_${trimSlug}/yr_${params.year}_${params.year}`;
 
     return {

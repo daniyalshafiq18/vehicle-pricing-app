@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useInquiryStore } from '@stores';
 import { Button } from '@components/ui';
 import { useVehicleHierarchy } from '@hooks';
@@ -11,7 +11,6 @@ import {
   Tag,
   SlidersHorizontal,
   Calendar,
-  LayoutGrid,
   Loader2,
 } from 'lucide-react';
 
@@ -59,17 +58,6 @@ function yearsForMakeModelSpec(
   );
 }
 
-function bodyTypesForVehicle(
-  hierarchy: { bodyTypes: Record<string, string[]> },
-  year: number,
-  make: string,
-  model: string,
-  spec: string,
-): string[] {
-  const key = `${year}-${make.toLowerCase()}-${model.toLowerCase()}-${spec.toLowerCase()}`;
-  return hierarchy.bodyTypes[key] ?? [];
-}
-
 // ── cascade step definitions ────────────────────────────────────────
 // (removed — fields are now directly selectable in any order)
 
@@ -98,15 +86,6 @@ export function Step2VehicleSelection() {
         : [],
     [hierarchy, vehicleSelection.make, vehicleSelection.model],
   );
-  // All unique body types across the entire hierarchy (fallback for missing-vehicle free-text)
-  const allBodyTypesFromDB = useMemo(
-    () =>
-      hierarchy
-        ? [...new Set(Object.values(hierarchy.bodyTypes).flat())].sort()
-        : [],
-    [hierarchy],
-  );
-
   // Years: cascade-filter when make/model/spec combo exists in DB,
   // otherwise show all years (free-text entry for missing vehicles)
   const years = useMemo(
@@ -127,39 +106,11 @@ export function Step2VehicleSelection() {
     [hierarchy, vehicleSelection.make, vehicleSelection.model, vehicleSelection.spec],
   );
 
-  // Body types: cascade-filter when the full combo exists in DB,
-  // otherwise show all body types from the database
-  const allBodyTypes = useMemo(
-    () => {
-      if (!hierarchy) return [];
-      if (vehicleSelection.year && vehicleSelection.make && vehicleSelection.model && vehicleSelection.spec) {
-        const matched = bodyTypesForVehicle(
-          hierarchy,
-          vehicleSelection.year,
-          vehicleSelection.make,
-          vehicleSelection.model,
-          vehicleSelection.spec,
-        );
-        if (matched.length > 0) return matched; // combo found in DB → cascade filter
-      }
-      return allBodyTypesFromDB; // combo not found → show all body types
-    },
-    [hierarchy, vehicleSelection.year, vehicleSelection.make, vehicleSelection.model, vehicleSelection.spec, allBodyTypesFromDB],
-  );
-
-  // auto-populate body type when only one option
-  useEffect(() => {
-    if (allBodyTypes.length === 1 && vehicleSelection.bodyType !== allBodyTypes[0]) {
-      setVehicleSelection({ bodyType: allBodyTypes[0] });
-    }
-  }, [allBodyTypes, vehicleSelection.bodyType, setVehicleSelection]);
-
   const canProceed = !!(
     vehicleSelection.make &&
     vehicleSelection.model &&
     vehicleSelection.spec &&
-    vehicleSelection.year &&
-    vehicleSelection.bodyType
+    vehicleSelection.year
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -234,13 +185,13 @@ export function Step2VehicleSelection() {
               value={vehicleSelection.make}
               placeholder="Select make"
               options={makes.map((m) => ({ value: m, label: m }))}
+              required
               onChange={(v) =>
                 setVehicleSelection({
                   make: v,
                   model: '',
                   spec: '',
                   year: null,
-                  bodyType: '',
                 })
               }
             />
@@ -252,12 +203,12 @@ export function Step2VehicleSelection() {
               value={vehicleSelection.model}
               placeholder="Select or type a model"
               options={models.map((m) => ({ value: m, label: m }))}
+              required
               onChange={(v) =>
                 setVehicleSelection({
                   model: v,
                   spec: '',
                   year: null,
-                  bodyType: '',
                 })
               }
             />
@@ -269,8 +220,9 @@ export function Step2VehicleSelection() {
               value={vehicleSelection.spec}
               placeholder="Select or type a spec"
               options={specs.map((s) => ({ value: s, label: s }))}
+              required
               onChange={(v) =>
-                setVehicleSelection({ spec: v, year: null, bodyType: '' })
+                setVehicleSelection({ spec: v, year: null })
               }
             />
 
@@ -284,26 +236,10 @@ export function Step2VehicleSelection() {
                 value: String(y),
                 label: String(y),
               }))}
+              required
               onChange={(v) => {
-                setVehicleSelection({ year: Number(v), bodyType: '' });
+                setVehicleSelection({ year: Number(v) });
               }}
-            />
-
-            {/* Body Type */}
-            <VehicleSelect
-              label="Body Type"
-              icon={LayoutGrid}
-              value={vehicleSelection.bodyType}
-              placeholder={
-                allBodyTypes.length === 0
-                  ? 'Type a body type'
-                  : 'Select or type a body type'
-              }
-              options={allBodyTypes.map((bt) => ({
-                value: bt,
-                label: bt,
-              }))}
-              onChange={(v) => setVehicleSelection({ bodyType: v })}
             />
           </div>
         </section>

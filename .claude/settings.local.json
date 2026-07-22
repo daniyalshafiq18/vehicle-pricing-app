@@ -29,7 +29,8 @@
       "mcp__ide__executeCode",
       "Bash(npx playwright *)",
       "Bash(curl -s https://vehicle-pricing-app-production.up.railway.app/health)",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "PowerShell(npm run *)"
     ]
   }
 }

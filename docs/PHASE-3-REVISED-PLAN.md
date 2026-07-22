@@ -486,6 +486,8 @@ After admin approves: Power Automate Flow triggered on status = "Approved" sends
 
 ---
 
+> **⛔ The remaining sections (10–14) are ARCHIVED.** They reflect the original Path B (Puppeteer) plan and the overtaken Power Automate Desktop pivot. Everything below is historical record only — the working implementation uses Power Automate Cloud-only flows (see `docs/power-automate-cloud-only-design.md`).
+
 ## 10. Files That Stay Unchanged
 
 | File | Why |
@@ -496,26 +498,28 @@ After admin approves: Power Automate Flow triggered on status = "Approved" sends
 | `Step2VehicleSelection.tsx` / `Step1PersonalInfo.tsx` | Unchanged |
 | `AdminQueriesPage.tsx` / `AdminDashboard.tsx` | Unchanged |
 
-## 11. Files That Need Changes
+## 11. Files That Were Changed (Actual Implementation)
 
-| File | Change Required |
+The following files were updated to use Power Automate Flow 3 (HTTP-triggered real-time scraper) instead of the scraper microservice:
+
+| File | What Actually Happened |
 |---|---|
-| `src/lib/yallaMotorScraper.ts` | **Rewrite** — replace mock with HTTP call to scraper service |
-| `src/features/valuation/Step3Result.tsx` | **Update** — progress indicators, scraped vs user prices |
-| `src/features/admin/AdminMissingVehiclesPage.tsx` | **Update** — side-by-side prices in modal |
-| `src/types/missingVehicleRequest.ts` | **Update** — add scraped fields |
-| `src/types/datasource.ts` | **Update** — add scraped fields to interface |
-| `src/data/dataverseConfig.ts` | **Update** — add scraped price field names |
-| `src/data/dataverseDataSource.ts` | **Update** — pass-through scraped fields |
-| `src/lib/missingVehicleApi.ts` | **Update** — POST/GET scraped fields |
-| `src/repositories/missingVehicleRepository.ts` | **Update** — pass scraped fields |
-| `src/hooks/useMissingVehicleRequests.ts` | **Update** — pass scraped fields |
-| `.env.example` | **Update** — add `VITE_SCRAPER_API_URL` |
-| **NEW: scraper-service/** | **Create** — entire scraping microservice |
+| `src/lib/yallaMotorHttpScraper.ts` | **Created** (new) — calls Flow 3 HTTP trigger URL directly with SAS token auth |
+| `src/lib/yallaMotorScraper.ts` | **Kept** (unused) — mock scraper retained but superseded by Flow 3 |
+| `src/features/valuation/Step3Result.tsx` | **Updated** — three-state UI: live data ✓ / unavailable banner · manual inputs · error |
+| `src/features/admin/AdminMissingVehiclesPage.tsx` | **Updated** — Scrape column with status badge + listing count, detail modal with scrape results |
+| `src/types/missingVehicleRequest.ts` | **Updated** — added scrapeStatus, scrapedListings, scrapedMinPrice, scrapedMaxPrice, scrapedSources |
+| `src/types/datasource.ts` | **Updated** — added scraped fields to interface |
+| `src/data/dataverseConfig.ts` | **Updated** — added scraped price field names |
+| `src/data/dataverseDataSource.ts` | **Updated** — pass-through scraped fields |
+| `src/lib/missingVehicleApi.ts` | **Updated** — POST/GET scraped fields |
+| `src/repositories/missingVehicleRepository.ts` | **Updated** — pass scraped fields |
+| `src/hooks/useMissingVehicleRequests.ts` | **Updated** — pass scraped fields |
+| **NEW: scraper-service/** | ❌ **Not created** — Puppeteer abandoned. Replaced by Power Automate Cloud-only flows |
 
 ---
 
-## 12. Risks & Mitigations
+## 12. Risks & Mitigations (Archived — Path B specific)
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
@@ -526,9 +530,11 @@ After admin approves: Power Automate Flow triggered on status = "Approved" sends
 | CORS misconfiguration | Low | Medium | Test during Phase 3B, configure headers on service |
 | Hosting cost | Low | Low | $5-15/mo for MVP |
 
+**Reality (Power Automate Cloud-only):** None of these materialized — Power Automate flows use Microsoft IPs which bypass Cloudflare, have no CORS issues, and cost only the premium connector license.
+
 ---
 
-## 13. Decision Made: Path B — Dedicated Scraping Microservice
+## 13. Decision Made: Path B — Dedicated Scraping Microservice (Archived)
 
 After evaluating all three paths:
 
@@ -549,7 +555,7 @@ After evaluating all three paths:
 
 ---
 
-## 14. New Approach: Power Automate Desktop (RPA) — Overtaken by Cloud-only
+## 14. New Approach: Power Automate Desktop (RPA) — Overtaken by Cloud-only (Archived)
 
 > **⚠️ Updated 2026-07-15:** This section is **archived**. On 2026-07-15 we discovered that **Power Automate Cloud flows** (HTTP premium connector) work directly — Microsoft cloud IPs are NOT blocked by YallaMotor's Cloudflare. Flow 1 has been built, modified, and tested successfully with full listing record extraction. The Desktop (RPA) approach was never needed. See `docs/power-automate-cloud-only-design.md` for the current design.
 
