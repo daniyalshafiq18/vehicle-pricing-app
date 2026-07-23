@@ -7,6 +7,9 @@ metadata:
 
 # Cleanup History
 
+## 2026-07-23 — Design Language Audit Removed
+- Removed `docs/design-language-audit.md` and `docs/design-language-evolution.md` at user's request
+
 ## 2026-07-20 — Dirham Symbol Integration Removed
 - Removed the `dirham` package, web-font import, Tailwind font fallbacks, Unicode symbol constants, and embedded PDF font at the user's request
 - Restored the simpler `AED` text convention across all currency displays

@@ -2,6 +2,9 @@
 
 ## 2026-07-23
 
+### Power Pages — Fixed deploy failure: missing index-* webfiles in manifest.yml
+- **manifest.yml** — Added 4 missing `adx_webfile` entries (`index-5938Yz8n.js`, `index-TQaPp-Bq.js`, `index-C-KHSPpP.js`, `index-CCnQ0nQq.js`) that existed on disk but were absent from the deployment manifest, causing `PortalFileContentUploadFailed` on upload. Each entry is sorted by RecordId with `IsDeleted: false`.
+
 ### Docs — Color Scheme & Design Language Documentation
 - **docs/color-scheme.md** — Created comprehensive color scheme reference documenting all 52 CSS variables (35 unique light / 34 unique dark), 37 Tailwind utility classes, semantic roles, dark-mode deltas, and a step-by-step guide for modifying the palette
 - **docs/design-language.md** — Created full design language document covering layout, typography, spacing, border radius, shadows, component design (buttons, cards, badges, tabs, dialogs, inputs, progress), motion/animation (18 keyframes + Framer Motion patterns), iconography (all 30+ Lucide icons mapped), states, navigation, data viz, writing style, and accessibility
