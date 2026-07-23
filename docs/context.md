@@ -61,8 +61,8 @@ Data flows **downward** only. Components import hooks, hooks import repositories
 ### App Bootstrap
 
 - `SplashGate` keeps routes unmounted while `DataverseDataSource` paginates through ~30K–34K vehicle records via `/_api/vpi_vehicledatas`.
-- Progress is reported page-by-page: each of the ~7 pages contributes equally (~14%) across 0–98%, then post-processing completes to 100%.
-- When data is ready, the splash fades out over 500ms while the app renders underneath, preventing a jarring blank flash.
+- Progress is reported page-by-page: each of the ~7 pages contributes equally (~14%) across 0–98%. After all pages are fetched, progress is set to 98%, then post-processing completes to 100%. A `useRef`-based rAF animation loop inside `LoadingScreen` smoothly crawls toward each target via exponential decay (10% of remaining gap per frame at 60fps), making the bar and percentage text count up continuously instead of jumping.
+- When data is ready, the app renders behind the splash in a `hidden` div so React Query hooks start fetching immediately. After 900ms (enough for the rAF to reach exactly 100%), the splash is removed from the DOM instantly — no fade, no opacity transition, no intermediate render state that could cause a "0% flash".
 - After the splash disappears, each page handles its own data loading independently (admin pages show their own loading spinners for inquiries, MVRs, price suggestions).
 
 ```

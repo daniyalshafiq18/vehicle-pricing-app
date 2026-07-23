@@ -1,5 +1,4 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { cn } from '@utils';
 import { ErrorBoundary, LoadingScreen } from '@components/ui';
 import { AppProviders } from '@providers';
 import { useDataSource } from '@data';
@@ -7,13 +6,20 @@ import { AppRouter } from './router';
 
 /**
  * SplashGate — shows a branded full-screen loading animation
- * while the Dataverse data source initializes (loading all ~14K vehicles).
- * Once data is ready, the app renders immediately with a smooth fade-out
- * of the splash over the newly-rendered content.
+ * while the Dataverse data source initializes (loading all ~30k–34k vehicles).
+ *
+ * Progress flows: 0 → 14 → 29 → 43 → 57 → 71 → 86 → 98 → 100
+ * (per-page jumps smoothed by a continuous rAF animation inside LoadingScreen).
+ *
+ * When data is ready, the splash stays visible for 900ms so the smooth
+ * progress animation can reach exactly 100%, THEN the splash is removed
+ * instantly. No fade, no opacity transition, no intermediate render state —
+ * the app has been rendering underneath since `isInitialized` became true,
+ * so React Query hooks are already fetching by the time the user sees it.
  */
 function SplashGate({ children }: { children: ReactNode }) {
   const { isInitialized, isInitializing, error, triggerInit, progress } = useDataSource();
-  const [fadingOut, setFadingOut] = useState(false);
+  const [splashDeleted, setSplashDeleted] = useState(false);
 
   // Start DataSource init on app mount
   useEffect(() => {
@@ -22,40 +28,17 @@ function SplashGate({ children }: { children: ReactNode }) {
     }
   }, [isInitialized, isInitializing, triggerInit]);
 
-  // When data is ready, fade out the splash over 400ms so the app content
-  // renders underneath without a visible "flash" of empty page.
+  // When data becomes ready, hold the splash for 900ms so the smooth
+  // rAF progress animation reaches 100%, then remove it cleanly.
   useEffect(() => {
     if (isInitialized) {
-      setFadingOut(true);
+      const id = setTimeout(() => setSplashDeleted(true), 900);
+      return () => clearTimeout(id);
     }
   }, [isInitialized]);
 
-  // Show splash while initializing — or fading out
-  if (!error && (!isInitialized || fadingOut)) {
-    return (
-      <div className="relative">
-        {/* App renders underneath — always mounted once initialized */}
-        {isInitialized && <div className="contents">{children}</div>}
-        {/* Splash overlay fades out */}
-        <div
-          className={cn(
-            'fixed inset-0 z-50 transition-opacity duration-500',
-            fadingOut ? 'opacity-0 pointer-events-none' : '',
-          )}
-        >
-          <LoadingScreen
-            message="Loading vehicle data..."
-            progress={progress}
-          />
-        </div>
-        {/* Remove splash from DOM once fade completes */}
-        {fadingOut && <FadeCleanup onDone={() => setFadingOut(false)} />}
-      </div>
-    );
-  }
-
-  // Error state
-  if (!isInitialized && error) {
+  // Error state — splash couldn't load
+  if (error && !isInitialized) {
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-4 bg-background">
         <p className="text-lg font-medium text-destructive">Failed to load data</p>
@@ -72,17 +55,17 @@ function SplashGate({ children }: { children: ReactNode }) {
     );
   }
 
-  // Ready — render app
-  return <>{children}</>;
-}
+  return (
+    <>
+      {/* App content — hidden behind splash until splashDeleted */}
+      {isInitialized && <div className={splashDeleted ? '' : 'hidden'}>{children}</div>}
 
-/** Calls `onDone` after the 500ms CSS fade-out finishes. */
-function FadeCleanup({ onDone }: { onDone: () => void }) {
-  useEffect(() => {
-    const id = setTimeout(onDone, 600);
-    return () => clearTimeout(id);
-  }, [onDone]);
-  return null;
+      {/* Splash overlay — stays in DOM, fully opaque, no transitions */}
+      {!splashDeleted && (
+        <LoadingScreen message="Loading vehicle data..." progress={progress} />
+      )}
+    </>
+  );
 }
 
 export function App() {

@@ -39,6 +39,13 @@ const pageTitles: Record<string, string> = {
  * Inner component that renders the full admin layout.
  * Only mounted once DataSource is initialized (hooks are safe).
  */
+
+/** Shared notification badge style. */
+const badgeClass = (collapsed: boolean) => cn(
+  'ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-white',
+  collapsed && 'hidden',
+);
+
 function AdminLayoutContent() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -126,26 +133,17 @@ function AdminLayoutContent() {
                   collapsed && 'hidden',
                 )}>{item.label}</span>
                 {(item.label === 'Queries' && pendingCount > 0) && (
-                  <span className={cn(
-                    'ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white',
-                    collapsed && 'hidden',
-                  )}>
+                  <span className={badgeClass(collapsed)}>
                     {pendingCount > 99 ? '99+' : pendingCount}
                   </span>
                 )}
                 {(item.label === 'Missing Vehicles' && pendingMissingCount > 0) && (
-                  <span className={cn(
-                    'ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-white',
-                    collapsed && 'hidden',
-                  )}>
+                  <span className={badgeClass(collapsed)}>
                     {pendingMissingCount > 99 ? '99+' : pendingMissingCount}
                   </span>
                 )}
                 {(item.label === 'Price Suggestions' && pendingPriceSuggestionsCount > 0) && (
-                  <span className={cn(
-                    'ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-500 px-1.5 text-[10px] font-bold text-white',
-                    collapsed && 'hidden',
-                  )}>
+                  <span className={badgeClass(collapsed)}>
                     {pendingPriceSuggestionsCount > 99 ? '99+' : pendingPriceSuggestionsCount}
                   </span>
                 )}

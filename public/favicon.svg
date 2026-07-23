@@ -1,7 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18 10l-2-4c-.3-.6-1-1-1.7-1H9.7c-.7 0-1.4.4-1.7 1L6 10l-2.5.1C2.7 10.3 2 11.1 2 12v3c0 .6.4 1 1 1h2"/>
-  <circle cx="7" cy="17" r="2" fill="#8B5CF6" stroke="none"/>
-  <circle cx="17" cy="17" r="2" fill="#8B5CF6" stroke="none"/>
-  <circle cx="7" cy="17" r="2" fill="white" stroke="none" opacity="0.3"/>
-  <circle cx="17" cy="17" r="2" fill="white" stroke="none" opacity="0.3"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Car body -->
+  <rect x="4" y="13" width="24" height="13" rx="3" fill="#8B5CF6"/>
+  <!-- Cabin -->
+  <rect x="11" y="7" width="10" height="7" rx="2" fill="#7C3AED"/>
+  <!-- Wheels -->
+  <circle cx="10" cy="26" r="3.5" fill="#1F1F2E"/>
+  <circle cx="22" cy="26" r="3.5" fill="#1F1F2E"/>
+  <!-- Hubcaps -->
+  <circle cx="10" cy="26" r="1.5" fill="#8B5CF6"/>
+  <circle cx="22" cy="26" r="1.5" fill="#8B5CF6"/>
 </svg>

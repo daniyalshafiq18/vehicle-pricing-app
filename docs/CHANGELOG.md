@@ -1,11 +1,31 @@
 # Changelog
 
+## 2026-07-23
+
+### Docs — Color Scheme & Design Language Documentation
+- **docs/color-scheme.md** — Created comprehensive color scheme reference documenting all 52 CSS variables (35 unique light / 34 unique dark), 37 Tailwind utility classes, semantic roles, dark-mode deltas, and a step-by-step guide for modifying the palette
+- **docs/design-language.md** — Created full design language document covering layout, typography, spacing, border radius, shadows, component design (buttons, cards, badges, tabs, dialogs, inputs, progress), motion/animation (18 keyframes + Framer Motion patterns), iconography (all 30+ Lucide icons mapped), states, navigation, data viz, writing style, and accessibility
+- **docs/color-scheme.md** — Created comprehensive color scheme reference documenting all 52 CSS variables (35 unique light / 34 unique dark), 37 Tailwind utility classes, semantic roles, dark-mode deltas, and a step-by-step guide for modifying the palette
+
+### Valuation — Suggest Price Dialog Overlay Fix & Field Heading Case
+- **dialog.tsx** — Changed overlay backdrop from `absolute` to `fixed` so the dark scrim covers the full viewport without being cropped at the top (Framer Motion's stacking context was shrinking the overlay)
+- **Step3Result.tsx (Suggest Price modal)** — Removed `uppercase` CSS class from all field headings (`Vehicle`, `Suggested Price Range`, `Source URL`, `Comment`) so they display in proper Camel Case instead of ALL CAPS
+
+### Admin — Unified Sidebar Notification Badges to Single Colour
+- Changed all three notification badges in the Admin sidebar to `bg-amber-500` (previously Queries was `bg-rose-500`, Price Suggestions was `bg-blue-500`, only Missing Vehicles was `bg-amber-500`)
+- Extracted repeated badge className into shared `badgeClass` helper to keep colours consistent in the future
+
+### Favicon — Data URI + JS Injection into `<head>` (Power Pages Body Wrapper Fix)
+- **Deleted `favicon.ico` web file** from Power Pages (set `IsDeleted: true` in manifest + removed folder) — browser auto-fetches `/favicon.ico` regardless of HTML links
+- **Redesigned favicon.svg** from thin stroke-based Lucide car icon to a bold filled car silhouette
+- **Final fix: JavaScript injection** into `document.head` — discovered the root cause: Power Pages wraps SPA Shell (web template) content inside its own page template's `<body>`. Browsers **ignore `<link rel="icon">` in `<body>`** entirely. The data URI `<link>` tags were correct, but in the wrong DOM location. A small inline script now creates the `<link>` elements and appends them directly to `document.head`, which the browser respects
+
 ## 2026-07-22
 
-### Splash Screen — Original Visual, Equal Progress, Smooth Fade-Out
-- **loading-screen.tsx** — Restored exact Phase-1 visual (CSS theme variable colors, simple `from-primary via-accent to-primary` gradient bar, left-right message/percentage layout, no smooth rAF animation)
-- **dataverseDataSource.ts** — Reduced estimate from `MAX_PAGE_SIZE * 8` (40K) to `MAX_PAGE_SIZE * 7` (35K) so fetch progress ends near ~86-97% instead of stalling at 75%; post-processing compacted to 98→100%
-- **App.tsx** — Added fade-out overlay (500ms opacity transition) so the splash fades while the app renders underneath, eliminating the blank "little load again" flash between splash and page
+### Splash Screen — Smooth rAF Animation & Zero-Flash Snap Transition
+- **loading-screen.tsx** — Added a `useRef`-based rAF animation loop that smoothly crawls toward the target progress via exponential decay (10% of remaining gap per frame). This eliminates discrete jumps without changing the original visual at all. Removed CSS `transition-all` class (conflicts with rAF). Progress bar and percentage text both count up smoothly together.
+- **App.tsx** — Replaced all fading/opacity logic with a clean snap approach: when `isInitialized` becomes true, the splash stays for 900ms (giving the rAF time to reach exactly 100%), then is removed instantly. No `opacity-0`, `pointer-events-none`, or any intermediate render state — eliminated the 0% flash at root. App content renders in a `hidden` div behind the splash so React Query hooks start fetching data 900ms before the user sees the page.
+- **dataverseDataSource.ts** — Added `onProgress(98)` call immediately after `fetchAllVehicles` completes, so the per-page stall at ~86% is followed by a smooth rAF crawl from 86% to 100%.
 
 ## 2026-07-21
 

@@ -157,6 +157,11 @@ export class DataverseDataSource implements IDataSource {
       onProgress?.(pct);
     });
 
+    // Report fetch complete at 98% — the per-page progress may have stalled
+    // below 98% (e.g. 86%) if the estimate was higher than actual records.
+    // The CSS transition on the progress bar smooths this final approach.
+    onProgress?.(98);
+
     const total = records.length;
     let lastSentPct = 0;
 

@@ -973,16 +973,23 @@ Where slugs are:
     - Method: **GET**
     - URI: click → **Expression**: `outputs('Build_Search_URL')`
     - Headers:
+      > ⚠️ **Important:** These headers MUST match the complete Chrome browser set. Your Flow 3 may have truncated headers (missing `Sec-Fetch-*`, `Pragma`, `Upgrade-Insecure-Requests`, full Chrome UA) which cause Cloudflare to return HTTP 403. Compare against the headers below and update if any are missing.
       ```json
       {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,...",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
         "Accept-Encoding": "gzip, deflate, br",
         "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Upgrade-Insecure-Requests": "1",
         "Referer": "https://www.google.com/"
       }
       ```
+      These are the same headers that Flow 1 uses successfully. The key additions are `Pragma`, `Sec-Fetch-Dest`, `Sec-Fetch-Mode`, `Sec-Fetch-Site`, `Upgrade-Insecure-Requests`, and the full Chrome UA string (with `(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36`).
 
 ### Step 5 (inside Try): Store Response Body
 

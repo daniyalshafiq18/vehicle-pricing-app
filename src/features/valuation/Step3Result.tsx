@@ -859,7 +859,7 @@ export function Step3Result() {
         <div className="space-y-5">
           {/* Reference vehicle */}
           <div className="rounded-xl border bg-muted/30 p-4">
-            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            <p className="text-[10px] font-semibold tracking-wider text-muted-foreground">
               Vehicle
             </p>
             <p className="mt-1 text-sm font-semibold text-foreground">
@@ -869,7 +869,7 @@ export function Step3Result() {
 
           {/* Price inputs */}
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="mb-2 text-xs font-semibold tracking-wider text-muted-foreground">
               Suggested Price Range
             </p>
             <div className="flex items-center gap-3">
@@ -905,7 +905,7 @@ export function Step3Result() {
 
           {/* Source URL */}
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="mb-2 text-xs font-semibold tracking-wider text-muted-foreground">
               Source URL <span className="text-muted-foreground/50">(optional)</span>
             </p>
             <div className="relative">
@@ -922,7 +922,7 @@ export function Step3Result() {
 
           {/* Comment */}
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="mb-2 text-xs font-semibold tracking-wider text-muted-foreground">
               Comment <span className="text-muted-foreground/50">(optional)</span>
             </p>
             <textarea

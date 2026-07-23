@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@utils';
 import { Car } from 'lucide-react';
 
@@ -9,7 +10,39 @@ interface LoadingScreenProps {
 }
 
 export function LoadingScreen({ message = 'Loading...', className, progress }: LoadingScreenProps) {
-  const displayProgress = progress ?? 0;
+  const target = progress ?? 0;
+  const smoothValue = useRef(target);
+  const rafId = useRef<number | null>(null);
+  const [display, setDisplay] = useState(target);
+
+  useEffect(() => {
+    const animate = () => {
+      const current = smoothValue.current;
+      const diff = target - current;
+
+      if (Math.abs(diff) < 0.3) {
+        // Close enough — snap to target and stop animating
+        smoothValue.current = target;
+        setDisplay(target);
+        rafId.current = null;
+        return;
+      }
+
+      // Exponential decay toward target — produces a smooth crawl
+      smoothValue.current = current + diff * 0.1;
+      setDisplay(smoothValue.current);
+      rafId.current = requestAnimationFrame(animate);
+    };
+
+    rafId.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (rafId.current !== null) {
+        cancelAnimationFrame(rafId.current);
+        rafId.current = null;
+      }
+    };
+  }, [target]);
 
   return (
     <div
@@ -79,14 +112,14 @@ export function LoadingScreen({ message = 'Loading...', className, progress }: L
         <div className="w-72 space-y-3">
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-primary via-accent to-primary transition-all duration-75 ease-out"
-              style={{ width: `${displayProgress}%` }}
+              className="h-full rounded-full bg-gradient-to-r from-primary via-accent to-primary"
+              style={{ width: `${display}%` }}
             />
           </div>
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">{message}</p>
             <span className="text-xs font-medium text-muted-foreground tabular-nums">
-              {Math.round(displayProgress)}%
+              {Math.round(display)}%
             </span>
           </div>
         </div>
