@@ -33,7 +33,7 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
       size: 40,
       enableColumnFilter: false,
       cell: (info) => (
-        <span className="font-mono text-xs text-muted-foreground">{info.getValue()}</span>
+        <span className="font-mono text-sm text-muted-foreground">{info.getValue()}</span>
       ),
     }),
     columnHelper.accessor('year', {
@@ -58,21 +58,21 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
     columnHelper.accessor('spec', {
       header: 'Spec',
       cell: (info) => (
-        <span className="text-xs text-muted-foreground">{info.getValue() || '—'}</span>
+        <span className="text-sm text-muted-foreground">{info.getValue() || '—'}</span>
       ),
     }),
     columnHelper.accessor('minPrice', {
       header: 'Min Price',
       size: 100,
       cell: (info) => (
-        <span className="font-mono text-xs text-muted-foreground">{formatCurrency(info.getValue() || 0)}</span>
+        <span className="font-mono text-sm text-muted-foreground">{formatCurrency(info.getValue() || 0)}</span>
       ),
     }),
     columnHelper.accessor('maxPrice', {
       header: 'Max Price',
       size: 100,
       cell: (info) => (
-        <span className="font-mono text-xs text-muted-foreground">{formatCurrency(info.getValue() || 0)}</span>
+        <span className="font-mono text-sm text-muted-foreground">{formatCurrency(info.getValue() || 0)}</span>
       ),
     }),
   ], []);
@@ -131,7 +131,7 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
             placeholder="Search vehicles..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="w-full rounded-lg border bg-card py-2 pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary/50 transition-colors"
+            className="w-full rounded-lg border bg-card py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary/50 transition-colors"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -189,7 +189,7 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
                 onClick={() => onVehicleSelect(row.original.vehicleId)}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-3 py-2.5 text-xs">
+                  <td key={cell.id} className="px-3 py-2.5 text-sm">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}

@@ -85,11 +85,11 @@ export function NotificationDropdown(_props: NotificationDropdownProps) {
       label: 'Queries',
       icon: <ClipboardList className="h-4 w-4" />,
       route: '/admin/queries',
-      accentColor: 'bg-blue-500',
-      bgLight: 'bg-blue-500/5',
-      borderColor: 'border-blue-500/20',
-      hoverBg: 'hover:bg-blue-50 dark:hover:bg-blue-500/10',
-      textColor: 'text-blue-600 dark:text-blue-400',
+      accentColor: 'bg-primary',
+      bgLight: 'bg-primary/5',
+      borderColor: 'border-primary/20',
+      hoverBg: 'hover:bg-primary-50 dark:hover:bg-primary/10',
+      textColor: 'text-primary',
       count: pendingQueriesCount,
       preview: `${pendingQueriesCount} pending inquiry${pendingQueriesCount !== 1 ? 'ies' : 'y'} awaiting review`,
     },
@@ -98,11 +98,11 @@ export function NotificationDropdown(_props: NotificationDropdownProps) {
       label: 'Missing Vehicles',
       icon: <SearchX className="h-4 w-4" />,
       route: '/admin/missing-vehicles',
-      accentColor: 'bg-amber-500',
-      bgLight: 'bg-amber-500/5',
-      borderColor: 'border-amber-500/20',
-      hoverBg: 'hover:bg-amber-50 dark:hover:bg-amber-500/10',
-      textColor: 'text-amber-600 dark:text-amber-400',
+      accentColor: 'bg-accent',
+      bgLight: 'bg-accent/5',
+      borderColor: 'border-accent/20',
+      hoverBg: 'hover:bg-accent-50 dark:hover:bg-accent/10',
+      textColor: 'text-accent-700 dark:text-accent-600',
       count: pendingMissingCount,
       preview: `${pendingMissingCount} vehicle request${pendingMissingCount !== 1 ? 's' : ''} pending`,
     },
@@ -111,11 +111,11 @@ export function NotificationDropdown(_props: NotificationDropdownProps) {
       label: 'Price Suggestions',
       icon: <DollarSign className="h-4 w-4" />,
       route: '/admin/price-suggestions',
-      accentColor: 'bg-emerald-500',
-      bgLight: 'bg-emerald-500/5',
-      borderColor: 'border-emerald-500/20',
-      hoverBg: 'hover:bg-emerald-50 dark:hover:bg-emerald-500/10',
-      textColor: 'text-emerald-600 dark:text-emerald-400',
+      accentColor: 'bg-success',
+      bgLight: 'bg-success/5',
+      borderColor: 'border-success/20',
+      hoverBg: 'hover:bg-success/10',
+      textColor: 'text-success',
       count: pendingPriceSuggestionsCount,
       preview: `${pendingPriceSuggestionsCount} suggestion${pendingPriceSuggestionsCount !== 1 ? 's' : ''} pending approval`,
     },
@@ -141,8 +141,8 @@ export function NotificationDropdown(_props: NotificationDropdownProps) {
         {/* Pulsing dot */}
         {totalPending > 0 && (
           <span className="absolute right-1.5 top-1.5 flex h-2.5 w-2.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-60" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-destructive" />
           </span>
         )}
       </button>
@@ -209,7 +209,7 @@ export function NotificationDropdown(_props: NotificationDropdownProps) {
                       {section.count > 0 && (
                         <span
                           className={cn(
-                            'flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white shrink-0',
+                            'flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-accent-foreground',
                             section.accentColor,
                           )}
                         >
@@ -217,7 +217,7 @@ export function NotificationDropdown(_props: NotificationDropdownProps) {
                         </span>
                       )}
                     </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground/70 line-clamp-1">
+                    <p className="mt-0.5 text-sm text-muted-foreground/70 line-clamp-1">
                       {totalPending > 0 ? section.preview : 'No pending items'}
                     </p>
                   </div>
@@ -237,7 +237,7 @@ export function NotificationDropdown(_props: NotificationDropdownProps) {
             <div className="border-t px-4 py-2.5">
               <button
                 onClick={() => handleSectionClick('/admin')}
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 <Bell className="h-3.5 w-3.5" />
                 View all notifications in Dashboard

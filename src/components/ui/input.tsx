@@ -19,7 +19,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label htmlFor={inputId} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
             {label}
-            {required && <span className="ml-0.5 text-red-500">*</span>}
+            {required && <span className="ml-0.5 text-destructive">*</span>}
           </label>
         )}
         <input
@@ -32,7 +32,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
             'disabled:cursor-not-allowed disabled:opacity-50',
             showError && 'border-destructive focus-visible:ring-destructive',
-            !showError && required && touched && 'border-red-300 focus-visible:ring-red-500',
+            !showError && required && touched && 'border-destructive/40 focus-visible:ring-destructive',
             className,
           )}
           ref={ref}
@@ -42,8 +42,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           }}
           {...props}
         />
-        {showError && <p className="text-xs text-destructive">{error}</p>}
-        {helperText && !error && <p className="text-xs text-muted-foreground">{helperText}</p>}
+        {showError && <p className="text-sm text-destructive">{error}</p>}
+        {helperText && !error && <p className="text-sm text-muted-foreground">{helperText}</p>}
       </div>
     );
   },

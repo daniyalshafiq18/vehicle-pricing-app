@@ -150,7 +150,7 @@ export function Step2VehicleSelection() {
             </div>
             <div className="space-y-1 text-center">
               <p className="text-sm font-semibold text-foreground">Loading vehicle data</p>
-              <p className="text-xs text-muted-foreground">Fetching makes, models &amp; specifications</p>
+              <p className="text-sm text-muted-foreground">Fetching makes, models &amp; specifications</p>
             </div>
           </div>
         </div>
@@ -158,7 +158,7 @@ export function Step2VehicleSelection() {
 
       <div className={cn(isLoading && 'pointer-events-none select-none', 'transition-opacity duration-300', isLoading && 'opacity-40')}>
         <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-lg font-bold tracking-tight">
             Vehicle Selection
           </h1>
           <p className="mt-2 text-muted-foreground">
@@ -171,7 +171,7 @@ export function Step2VehicleSelection() {
         {/* Vehicle Details section */}
         <section>
           <div className="mb-5 flex items-center gap-3">
-            <h2 className="text-sm font-semibold tracking-wider text-slate-800 dark:text-slate-200">
+            <h2 className="text-base font-semibold tracking-wider text-foreground">
               Vehicle Details
             </h2>
             <div className="h-px flex-1 bg-border/50" />

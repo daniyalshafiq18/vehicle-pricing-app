@@ -20,8 +20,8 @@ export function VehicleIntelligenceModal() {
 
   if (!selectedVehicleId) return null;
 
-  const trendColor = pricing?.marketTrend.direction === 'up' ? 'text-emerald-500'
-    : pricing?.marketTrend.direction === 'down' ? 'text-rose-500' : 'text-muted-foreground';
+  const trendColor = pricing?.marketTrend.direction === 'up' ? 'text-success'
+    : pricing?.marketTrend.direction === 'down' ? 'text-destructive' : 'text-muted-foreground';
 
   const TrendIcon = pricing?.marketTrend.direction === 'up' ? TrendingUp
     : pricing?.marketTrend.direction === 'down' ? TrendingDown : Minus;
@@ -60,7 +60,7 @@ export function VehicleIntelligenceModal() {
                   { label: 'Spec', value: vehicle.spec || '—' },
                 ].map((s) => (
                   <div key={s.label} className="rounded-xl border bg-card p-3">
-                    <p className="text-xs text-muted-foreground">{s.label}</p>
+                    <p className="text-sm text-muted-foreground">{s.label}</p>
                     <p className="mt-0.5 font-medium text-foreground">{s.value}</p>
                   </div>
                 ))}
@@ -82,7 +82,7 @@ export function VehicleIntelligenceModal() {
                     { label: 'Median', value: formatCurrency(pricing.medianPrice || 0) },
                   ].map((p) => (
                     <div key={p.label} className="rounded-xl border bg-card p-3">
-                      <p className="text-xs text-muted-foreground">{p.label}</p>
+                      <p className="text-sm text-muted-foreground">{p.label}</p>
                       <p className="mt-0.5 font-semibold text-foreground">{p.value}</p>
                     </div>
                   ))}
@@ -90,7 +90,7 @@ export function VehicleIntelligenceModal() {
 
                 {/* Range */}
                 <div className="mt-3 rounded-xl border bg-card p-3">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>{formatCurrency(pricing.priceRange.min)}</span>
                     <span className="text-foreground/60">Price Range</span>
                     <span>{formatCurrency(pricing.priceRange.max)}</span>
@@ -115,11 +115,11 @@ export function VehicleIntelligenceModal() {
                 {/* Trend */}
                 <div className="mt-3 flex items-center gap-2 rounded-xl border bg-card px-4 py-2.5">
                   <TrendIcon className={`h-4 w-4 ${trendColor}`} />
-                  <span className="text-xs text-muted-foreground">Market Trend:</span>
+                  <span className="text-sm text-muted-foreground">Market Trend:</span>
                   <span className={`flex items-center gap-1 text-sm font-medium ${trendColor}`}>
                     {pricing.marketTrend.direction === 'up' ? 'Appreciating'
                       : pricing.marketTrend.direction === 'down' ? 'Depreciating' : 'Stable'}
-                    <span className="text-xs opacity-70">
+                    <span className="text-sm opacity-70">
                       ({pricing.marketTrend.percentage > 0 ? '+' : ''}{pricing.marketTrend.percentage}%)
                     </span>
                   </span>
@@ -149,7 +149,7 @@ export function VehicleIntelligenceModal() {
                     <div className="flex items-center gap-3">
                       <t.icon className="h-5 w-5 shrink-0 text-muted-foreground" />
                       <div className="min-w-0">
-                        <p className="text-xs text-muted-foreground">{t.label}</p>
+                        <p className="text-sm text-muted-foreground">{t.label}</p>
                         <p className="truncate font-medium text-foreground">{t.value}</p>
                       </div>
                     </div>
@@ -173,7 +173,7 @@ export function VehicleIntelligenceModal() {
                   { label: 'Seats', value: vehicle.seats },
                 ].map((d) => (
                   <div key={d.label} className="rounded-xl border bg-card p-3">
-                    <p className="text-xs text-muted-foreground">{d.label}</p>
+                    <p className="text-sm text-muted-foreground">{d.label}</p>
                     <p className="mt-0.5 font-medium text-foreground">{d.value}</p>
                   </div>
                 ))}

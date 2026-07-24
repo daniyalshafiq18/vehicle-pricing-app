@@ -5,14 +5,11 @@ import {
   ScatterChart, Scatter, ZAxis,
 } from 'recharts';
 import { formatCurrency, formatNumber } from '@utils';
+import { CHART_COLORS_HSL, PT_COLORS } from '@utils/colors';
 import type { VehicleCountByMake, PriceDistribution, PriceByYear } from '@types';
 import type { ScatterDataPoint, AgeDistribution } from '@types';
 
-// ─── Color Palette ─────────────────────────────────────
-const COLORS = [
-  'hsl(var(--primary))', '#F59E0B', '#10B981', '#8B5CF6', '#EC4899',
-  '#06B6D4', '#F97316', '#14B8A6', '#A855F7', '#E11D48',
-];
+// ─── Brand-aligned Color Palette ──────────────────────
 const CHART_HEIGHT = 280;
 
 const tooltipStyle = {
@@ -171,6 +168,12 @@ export const PowertrainDonutChart = memo(function PowertrainDonutChart({
   if (!data || data.length === 0) {
     return <EmptyState />;
   }
+
+  // Brand-aligned powertrain colors
+  const getColor = (powertrain: string) => {
+    return PT_COLORS[powertrain] ?? CHART_COLORS_HSL.primary;
+  };
+
   return (
     <ResponsiveContainer width="100%" height={height}>
       <PieChart>
@@ -184,8 +187,8 @@ export const PowertrainDonutChart = memo(function PowertrainDonutChart({
           innerRadius={60}
           paddingAngle={2}
         >
-          {data.map((_, i) => (
-            <Cell key={i} fill={COLORS[i % COLORS.length]} />
+          {data.map((entry) => (
+            <Cell key={entry.powertrain} fill={getColor(entry.powertrain)} />
           ))}
         </Pie>
         <Tooltip
@@ -291,7 +294,7 @@ export const BodyTypeBarChart = memo(function BodyTypeBarChart({
           contentStyle={tooltipStyle}
           formatter={(value: number, name: string) => [name === 'count' ? formatNumber(value) : `${value}%`, name === 'count' ? 'Count' : name]}
         />
-        <Bar dataKey="count" fill="#10B981" radius={[0, 4, 4, 0]} barSize={16} />
+        <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={16} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -315,8 +318,8 @@ export const AgeDistributionChart = memo(function AgeDistributionChart({ data, o
       <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="ageDistGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#06B6D4" stopOpacity={0.25} />
-            <stop offset="95%" stopColor="#06B6D4" stopOpacity={0} />
+            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
+            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -329,7 +332,7 @@ export const AgeDistributionChart = memo(function AgeDistributionChart({ data, o
         <Area
           type="monotone"
           dataKey="count"
-          stroke="#06B6D4"
+          stroke="hsl(var(--primary))"
           strokeWidth={2}
           fill="url(#ageDistGrad)"
           activeDot={{ r: 5, cursor: 'pointer', onClick: (_: any, payload: any) => onDotClick?.(payload.payload.year) }}
@@ -374,9 +377,9 @@ export const VolatilityBoxChart = memo(function VolatilityBoxChart({
           labelFormatter={(label: string) => `Category: ${label}`}
         />
         {/* Grouped bars showing min, avg, max */}
-        <Bar dataKey="min" fill="#8B5CF6" opacity={0.7} radius={[0, 4, 4, 0]} barSize={8} name="Min Price" />
-        <Bar dataKey="median" fill="#F59E0B" radius={[0, 4, 4, 0]} barSize={8} name="Median Price" />
-        <Bar dataKey="max" fill="#EC4899" opacity={0.7} radius={[0, 4, 4, 0]} barSize={8} name="Max Price" />
+        <Bar dataKey="min" fill="hsl(var(--primary))" fillOpacity={0.5} radius={[0, 4, 4, 0]} barSize={8} name="Min Price" />
+        <Bar dataKey="median" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={8} name="Median Price" />
+        <Bar dataKey="max" fill={CHART_COLORS_HSL.primary300} fillOpacity={0.7} radius={[0, 4, 4, 0]} barSize={8} name="Max Price" />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -408,7 +411,7 @@ export const TopModelsChart = memo(function TopModelsChart({ data, onBarClick, h
         />
         <Bar
           dataKey="count"
-          fill="#F59E0B"
+          fill="hsl(var(--primary))"
           radius={[0, 4, 4, 0]}
           barSize={16}
           cursor="pointer"

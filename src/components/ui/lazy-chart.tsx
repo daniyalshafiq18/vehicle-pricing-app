@@ -53,7 +53,7 @@ export function LazyChart({
         children
       ) : (
         placeholder ?? (
-          <div className="flex h-full items-center justify-center text-xs text-muted-foreground/40">
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground/40">
             <div className="animate-pulse space-y-3 w-full px-4">
               <div className="h-3 w-1/3 rounded bg-muted" />
               <div className="h-[200px] rounded-lg bg-muted/50" />
