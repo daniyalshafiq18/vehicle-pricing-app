@@ -67,7 +67,7 @@ export function Dialog({ isOpen, onClose, title, description, children, classNam
             {(title || description || !hideCloseButton) && (
               <div className="mb-4 flex items-start justify-between">
                 <div>
-                  {title && <h2 className="text-xl font-semibold">{title}</h2>}
+                  {title && <h2 className="text-lg font-semibold">{title}</h2>}
                   {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
                 </div>
                 {!hideCloseButton && (

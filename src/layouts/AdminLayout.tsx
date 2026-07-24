@@ -41,9 +41,12 @@ const pageTitles: Record<string, string> = {
  */
 
 /** Shared notification badge style. */
-const badgeClass = (collapsed: boolean) => cn(
-  'ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-white',
+const badgeClass = (collapsed: boolean, isActive: boolean = false) => cn(
+  'ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold',
   collapsed && 'hidden',
+  isActive
+    ? 'bg-white text-accent-foreground'
+    : 'bg-accent text-accent-foreground',
 );
 
 function AdminLayoutContent() {
@@ -76,26 +79,27 @@ function AdminLayoutContent() {
   );
 
   return (
-    <div className="flex h-screen overflow-hidden bg-muted/30">
+    <div className="brand-canvas flex h-screen overflow-hidden">
       {/* Sidebar */}
       <aside
         className={cn(
-          'relative flex flex-col border-r bg-card transition-all duration-300 shrink-0',
+          'relative flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl shadow-primary/10 transition-all duration-300',
           actualWidth,
         )}
         onMouseEnter={() => isSidebarCollapsed && setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
         {/* Logo */}
-        <div className="flex h-16 items-center gap-3 border-b px-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-            <Car className="h-5 w-5 text-primary" />
+        <div className="flex h-16 items-center gap-3 px-4">
+          <div className="brand-icon h-9 w-9 rounded-lg">
+            <Car className="relative z-10 h-5 w-5" />
           </div>
           <div className={cn(
             'min-w-0 transition-opacity duration-200',
             collapsed && 'hidden',
           )}>
-            <p className="truncate text-sm font-bold text-foreground">Admin Center</p>
+            <p className="truncate text-sm font-bold text-sidebar-foreground">Admin Center</p>
+            <p className="truncate text-[10px] uppercase tracking-widest text-sidebar-muted">Intelligence</p>
           </div>
         </div>
 
@@ -113,15 +117,11 @@ function AdminLayoutContent() {
                 className={cn(
                   'group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
                   isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                    ? 'brand-gradient text-white shadow-md shadow-primary/20'
+                    : 'text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground',
                 )}
                 title={isSidebarCollapsed ? item.label : undefined}
               >
-                {/* Active indicator bar */}
-                {isActive && (
-                  <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
-                )}
                 <item.icon
                   className={cn(
                     'h-5 w-5 shrink-0 transition-transform duration-200',
@@ -129,21 +129,22 @@ function AdminLayoutContent() {
                   )}
                 />
                 <span className={cn(
-                  'text-foreground transition-opacity duration-200',
+                  'transition-opacity duration-200',
                   collapsed && 'hidden',
+                  isActive && 'text-white',
                 )}>{item.label}</span>
                 {(item.label === 'Queries' && pendingCount > 0) && (
-                  <span className={badgeClass(collapsed)}>
+                  <span className={badgeClass(collapsed, isActive)}>
                     {pendingCount > 99 ? '99+' : pendingCount}
                   </span>
                 )}
                 {(item.label === 'Missing Vehicles' && pendingMissingCount > 0) && (
-                  <span className={badgeClass(collapsed)}>
+                  <span className={badgeClass(collapsed, isActive)}>
                     {pendingMissingCount > 99 ? '99+' : pendingMissingCount}
                   </span>
                 )}
                 {(item.label === 'Price Suggestions' && pendingPriceSuggestionsCount > 0) && (
-                  <span className={badgeClass(collapsed)}>
+                  <span className={badgeClass(collapsed, isActive)}>
                     {pendingPriceSuggestionsCount > 99 ? '99+' : pendingPriceSuggestionsCount}
                   </span>
                 )}
@@ -153,10 +154,10 @@ function AdminLayoutContent() {
         </nav>
 
         {/* Bottom */}
-        <div className="border-t p-3">
+        <div className="border-t px-3 pt-3 pb-10">
           <button
             onClick={() => navigate('/')}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent/50 hover:text-foreground"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-muted transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-foreground"
             title={isSidebarCollapsed ? 'Back to site' : undefined}
           >
             <LogOut className="h-5 w-5 shrink-0" />
@@ -170,7 +171,7 @@ function AdminLayoutContent() {
         {/* Collapse toggle */}
         <button
           onClick={toggleSidebar}
-          className="absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-colors hover:text-foreground"
+          className="absolute -right-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-primary/30 bg-background text-primary shadow-sm transition-colors hover:border-accent hover:text-accent"
         >
           {isSidebarCollapsed ? (
             <ChevronRight className="h-3 w-3" />
@@ -183,14 +184,14 @@ function AdminLayoutContent() {
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-6">
+        <header className="relative flex h-16 shrink-0 items-center justify-between border-b bg-card/85 px-6 backdrop-blur-xl after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-gradient-to-r after:from-primary/50 after:via-accent/60 after:to-transparent">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-              <Car className="h-4 w-4 text-primary" />
+            <div className="brand-icon h-8 w-8 rounded-lg">
+              <Car className="relative z-10 h-4 w-4" />
             </div>
             <div>
               <h1 className="text-base font-semibold text-foreground">{currentPageTitle}</h1>
-              <p className="text-xs text-muted-foreground/60">
+              <p className="text-sm text-muted-foreground/60">
                 Vehicle Pricing Intelligence Platform
               </p>
             </div>

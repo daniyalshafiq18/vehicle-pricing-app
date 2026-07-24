@@ -38,20 +38,20 @@ const STATUS_CONFIG: Record<InquiryStatus, { label: string; icon: React.ReactNod
   pending: {
     label: 'Pending',
     icon: <Clock className="h-3 w-3" />,
-    className: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
-    dot: 'bg-amber-500',
+    className: 'border-primary/20 bg-primary/10 text-primary',
+    dot: 'bg-primary',
   },
   reviewed: {
     label: 'Reviewed',
     icon: <Eye className="h-3 w-3" />,
-    className: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20',
-    dot: 'bg-blue-500',
+    className: 'border-primary/20 bg-primary/10 text-primary',
+    dot: 'bg-primary',
   },
   contacted: {
     label: 'Contacted',
     icon: <MessageSquare className="h-3 w-3" />,
-    className: 'text-violet-600 dark:text-violet-400 bg-violet-500/10 border-violet-500/20',
-    dot: 'bg-violet-500',
+    className: 'border-accent/20 bg-accent/10 text-accent-800 dark:text-accent-600',
+    dot: 'bg-accent',
   },
   closed: {
     label: 'Closed',
@@ -156,8 +156,8 @@ function StatusSelect({ inquiry }: { inquiry: Inquiry }) {
                   className={cn(
                     'flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors',
                     isActive
-                      ? 'bg-accent text-foreground'
-                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-primary/10 hover:text-primary',
                   )}
                 >
                   <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
@@ -208,7 +208,7 @@ function InquiryDetailModal({
                 <h2 className="text-lg font-bold text-foreground">
                   {inquiry.firstName} {inquiry.lastName}
                 </h2>
-                <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Calendar className="h-3 w-3" />
                   Submitted {formatDate(inquiry.createdAt)}
                 </p>
@@ -231,14 +231,14 @@ function InquiryDetailModal({
           {/* Contact Info */}
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="flex items-center gap-1.5 text-[10px] text-slate-800 dark:text-slate-200">
+              <p className="flex items-center gap-1.5 text-[10px] text-foreground">
                 <Mail className="h-3 w-3" />
                 Email
               </p>
               <p className="mt-1 text-sm font-medium text-foreground truncate">{inquiry.email}</p>
             </div>
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="flex items-center gap-1.5 text-[10px] text-slate-800 dark:text-slate-200">
+              <p className="flex items-center gap-1.5 text-[10px] text-foreground">
                 <Phone className="h-3 w-3" />
                 Phone
               </p>
@@ -248,7 +248,7 @@ function InquiryDetailModal({
 
           {/* Location */}
           <div className="mb-4 rounded-xl border bg-card p-3.5">
-            <p className="flex items-center gap-1.5 text-[10px] text-slate-800 dark:text-slate-200">
+            <p className="flex items-center gap-1.5 text-[10px] text-foreground">
               <MapPin className="h-3 w-3" />
               Location
             </p>
@@ -261,7 +261,7 @@ function InquiryDetailModal({
           <div className="mb-4 overflow-hidden rounded-xl border">
             <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2.5">
               <Car className="h-4 w-4 text-primary" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Selected Vehicle</span>
+              <span className="text-sm font-semibold uppercase tracking-wider text-foreground">Selected Vehicle</span>
             </div>
             <div className="grid grid-cols-2 divide-x divide-y divide-border sm:grid-cols-3">
               {[
@@ -273,8 +273,8 @@ function InquiryDetailModal({
                 { label: 'Trim', value: vehicleDisplay },
               ].map((item) => (
                 <div key={item.label} className="px-4 py-2.5">
-                  <p className="text-[10px] text-slate-800 dark:text-slate-200">{item.label}</p>
-                  <p className="mt-0.5 text-xs font-medium text-foreground truncate" title={String(item.value)}>{item.value}</p>
+                  <p className="text-[10px] text-foreground">{item.label}</p>
+                  <p className="mt-0.5 text-sm font-medium text-foreground truncate" title={String(item.value)}>{item.value}</p>
                 </div>
               ))}
             </div>
@@ -284,24 +284,24 @@ function InquiryDetailModal({
           {inquiry.valuationResult ? (
             <div className="overflow-hidden rounded-xl border">
               <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2.5">
-                <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Valuation Result</span>
+                <TrendingUp className="h-4 w-4 text-success" />
+                <span className="text-sm font-semibold uppercase tracking-wider text-foreground">Valuation Result</span>
               </div>
               <div className="grid grid-cols-3 divide-x divide-border">
                 <div className="bg-gradient-to-br from-primary/5 to-transparent p-4">
-                  <p className="text-[10px] text-slate-800 dark:text-slate-200">Min Price</p>
+                  <p className="text-[10px] text-foreground">Min Price</p>
                   <p className="mt-0.5 text-lg font-bold text-primary">
                     {formatCurrency(inquiry.valuationResult.pricing.minimumPrice)}
                   </p>
                 </div>
                 <div className="p-4">
-                  <p className="text-[10px] text-slate-800 dark:text-slate-200">Median Price</p>
+                  <p className="text-[10px] text-foreground">Median Price</p>
                   <p className="mt-0.5 text-lg font-bold text-foreground">
                     {formatCurrency(inquiry.valuationResult.pricing.medianPrice)}
                   </p>
                 </div>
                 <div className="p-4">
-                  <p className="text-[10px] text-slate-800 dark:text-slate-200">Max Price</p>
+                  <p className="text-[10px] text-foreground">Max Price</p>
                   <p className="mt-0.5 text-lg font-bold text-foreground">
                     {formatCurrency(inquiry.valuationResult.pricing.maximumPrice)}
                   </p>
@@ -402,13 +402,13 @@ export function AdminQueriesPage() {
       <motion.div variants={itemVariants}>
         <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Queries</h1>
+            <h1 className="text-lg font-bold tracking-tight text-foreground">Queries</h1>
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{inquiries?.length ?? 0}</span> total inquiries
               {statusCounts.pending > 0 && (
                 <>
                   <span className="mx-1.5 text-muted-foreground/30">·</span>
-                  <span className="font-medium text-amber-600 dark:text-amber-400">
+                  <span className="font-medium text-primary">
                     {statusCounts.pending} pending
                   </span>
                 </>
@@ -454,19 +454,19 @@ export function AdminQueriesPage() {
         <div className="flex items-center gap-1.5 rounded-xl border bg-card p-1.5 overflow-x-auto">
           {[
             { key: 'all' as const, label: 'All', count: statusCounts.all, color: '' },
-            { key: 'pending' as const, label: 'Pending', count: statusCounts.pending, color: 'bg-amber-500' },
-            { key: 'reviewed' as const, label: 'Reviewed', count: statusCounts.reviewed, color: 'bg-blue-500' },
-            { key: 'contacted' as const, label: 'Contacted', count: statusCounts.contacted, color: 'bg-violet-500' },
+            { key: 'pending' as const, label: 'Pending', count: statusCounts.pending, color: 'bg-primary' },
+            { key: 'reviewed' as const, label: 'Reviewed', count: statusCounts.reviewed, color: 'bg-primary' },
+            { key: 'contacted' as const, label: 'Contacted', count: statusCounts.contacted, color: 'bg-accent' },
             { key: 'closed' as const, label: 'Closed', count: statusCounts.closed, color: 'bg-muted-foreground' },
           ].map((tab) => (
             <button
               key={tab.key}
               onClick={() => { setStatusFilter(tab.key); setPage(1); }}
               className={cn(
-                'flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-medium transition-all whitespace-nowrap',
+                'flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all whitespace-nowrap',
                 statusFilter === tab.key
                   ? 'bg-primary/10 text-primary shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
+                  : 'text-muted-foreground hover:bg-primary/10 hover:text-primary',
               )}
             >
               {tab.color && <span className={cn('h-1.5 w-1.5 rounded-full', tab.color)} />}
@@ -487,9 +487,6 @@ export function AdminQueriesPage() {
       {/* Table card */}
       <motion.div variants={itemVariants}>
         <div className="rounded-2xl border bg-card overflow-hidden">
-          {/* Gradient top bar */}
-          <div className="h-1 bg-gradient-to-r from-primary/60 via-accent/60 to-primary/30" />
-
           {isLoading ? (
             <div className="p-6">
               <SkeletonTable rows={8} cols={8} />
@@ -499,14 +496,14 @@ export function AdminQueriesPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/20">
-                    <th className="w-10 px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">#</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Customer</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Contact</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Vehicle</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Body Type</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Status</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Date</th>
-                    <th className="px-4 py-3.5 text-right text-sm font-semibold text-slate-800 dark:text-slate-200">Actions</th>
+                    <th className="w-10 px-4 py-3.5 text-left text-sm font-semibold text-foreground">#</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Customer</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Contact</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Vehicle</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Body Type</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Status</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Date</th>
+                    <th className="px-4 py-3.5 text-right text-sm font-semibold text-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -518,7 +515,7 @@ export function AdminQueriesPage() {
                         className="group/row transition-colors hover:bg-muted/30 cursor-pointer"
                         onClick={() => setSelectedInquiry(inquiry)}
                       >
-                        <td className="px-4 py-3 text-xs text-muted-foreground">
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
                           {(page - 1) * pageSize + i + 1}
                         </td>
                         <td className="px-4 py-3">
@@ -533,7 +530,7 @@ export function AdminQueriesPage() {
                               <p className="font-medium text-foreground whitespace-nowrap">
                                 {inquiry.firstName} {inquiry.lastName}
                               </p>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="text-sm text-muted-foreground">
                                 {inquiry.city}
                               </p>
                             </div>
@@ -541,11 +538,11 @@ export function AdminQueriesPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="space-y-0.5">
-                            <p className="text-xs text-foreground/80 whitespace-nowrap flex items-center gap-1.5">
+                            <p className="text-sm text-foreground/80 whitespace-nowrap flex items-center gap-1.5">
                               <Mail className="h-3 w-3 text-muted-foreground/50" />
                               {inquiry.email}
                             </p>
-                            <p className="text-xs text-foreground/80 whitespace-nowrap flex items-center gap-1.5">
+                            <p className="text-sm text-foreground/80 whitespace-nowrap flex items-center gap-1.5">
                               <Phone className="h-3 w-3 text-muted-foreground/50" />
                               {inquiry.phone}
                             </p>
@@ -555,17 +552,17 @@ export function AdminQueriesPage() {
                           <p className="text-sm font-medium text-foreground truncate" title={vehicleDisplay}>
                             {vehicleDisplay}
                           </p>
-                          <p className="text-xs text-muted-foreground truncate">{inquiry.selectedVehicle.spec}</p>
+                          <p className="text-sm text-muted-foreground truncate">{inquiry.selectedVehicle.spec}</p>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="text-xs text-foreground/80">{inquiry.selectedVehicle.bodyType}</span>
+                          <span className="text-sm text-foreground/80">{inquiry.selectedVehicle.bodyType}</span>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <StatusBadge status={inquiry.status} />
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex flex-col">
-                            <span className="text-xs text-foreground">{formatShortDate(inquiry.createdAt)}</span>
+                            <span className="text-sm text-foreground">{formatShortDate(inquiry.createdAt)}</span>
                             <span className="text-[10px] text-muted-foreground">
                               {new Date(inquiry.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </span>

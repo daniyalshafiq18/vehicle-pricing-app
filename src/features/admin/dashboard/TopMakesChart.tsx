@@ -1,26 +1,12 @@
-import { useId } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell,
 } from 'recharts';
 import { ChartCard, ChartTooltip } from './ChartCard';
 import { formatCurrency, compactNumber } from '@utils';
+import { CHART_COLORS, CHART_COLORS_HSL, getBarOpacity } from '@utils/colors';
 import type { VehicleCountByMake } from '@types';
 import { BarChart3 } from 'lucide-react';
-
-// ─── Unified brand-aligned palette ───────────────────────
-const COLORS = [
-  '#6366f1', // indigo-500 (brand primary)
-  '#14b8a6', // teal-500
-  '#f59e0b', // amber-500 (brand accent)
-  '#8b5cf6', // violet-500
-  '#06b6d4', // cyan-500
-  '#f97316', // orange-500
-  '#a855f7', // purple-500
-  '#10b981', // emerald-500
-  '#0ea5e9', // sky-500
-  '#ec4899', // pink-500
-];
 
 interface TopMakesChartProps {
   data: VehicleCountByMake[];
@@ -28,7 +14,6 @@ interface TopMakesChartProps {
 }
 
 export function TopMakesChart({ data, className }: TopMakesChartProps) {
-  const uid = useId();
   const sorted = [...data]
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
@@ -39,7 +24,6 @@ export function TopMakesChart({ data, className }: TopMakesChartProps) {
         title="Top Makes"
         subtitle="Manufacturers by vehicle count"
         icon={<BarChart3 className="h-4 w-4" />}
-        accent="from-indigo-500/60 to-violet-500/60"
         isEmpty
         emptyTitle="No make data available"
         className={className}
@@ -54,7 +38,6 @@ export function TopMakesChart({ data, className }: TopMakesChartProps) {
       title="Top Makes"
       subtitle={`${sorted.length} manufacturers · ${compactNumber(totalVehicles)} vehicles`}
       icon={<BarChart3 className="h-4 w-4" />}
-      accent="from-blue-500/60 to-violet-500/60"
       className={className}
     >
       <div className="h-[320px]">
@@ -66,14 +49,6 @@ export function TopMakesChart({ data, className }: TopMakesChartProps) {
             barCategoryGap="25%"
             barGap={0}
           >
-            <defs>
-              {sorted.map((_, i) => (
-                <linearGradient key={i} id={`${uid}-${i}`} x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor={COLORS[i % COLORS.length]} stopOpacity={0.9} />
-                  <stop offset="100%" stopColor={COLORS[i % COLORS.length]} stopOpacity={0.5} />
-                </linearGradient>
-              ))}
-            </defs>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke="hsl(var(--border))"
@@ -100,13 +75,12 @@ export function TopMakesChart({ data, className }: TopMakesChartProps) {
                 if (!active || !payload?.length) return null;
                 const d = payload[0]?.payload as VehicleCountByMake | undefined;
                 if (!d) return null;
-                const idx = sorted.indexOf(d);
                 return (
                   <ChartTooltip
                     active
                     label={d.make}
                     rows={[
-                      { label: 'Vehicles', value: compactNumber(d.count), color: COLORS[idx % COLORS.length] },
+                      { label: 'Vehicles', value: compactNumber(d.count), color: CHART_COLORS[0] },
                       { label: 'Avg Price', value: formatCurrency(d.averagePrice) },
                       { label: 'Market Share', value: `${d.percentage}%` },
                     ]}
@@ -122,8 +96,9 @@ export function TopMakesChart({ data, className }: TopMakesChartProps) {
               {sorted.map((entry, i) => (
                 <Cell
                   key={entry.make}
-                  fill={`url(#${uid}-${i})`}
-                  className="transition-opacity duration-200 hover:opacity-80"
+                  fill={CHART_COLORS_HSL.primary}
+                  fillOpacity={getBarOpacity(i)}
+                  className="transition-opacity duration-200 hover:fill-opacity-90"
                 />
               ))}
             </Bar>

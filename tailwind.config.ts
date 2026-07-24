@@ -11,6 +11,22 @@ const config: Config = {
         '2xl': '1400px',
       },
     },
+    fontSize: {
+      capsule: ['10px', '14px'],
+      xs: ['10px', '14px'],
+      sm: ['12px', '18px'],
+      base: ['14px', '20px'],
+      lg: ['16px', '22px'],
+      xl: ['18px', '24px'],
+      '2xl': ['20px', '28px'],
+      '3xl': ['24px', '32px'],
+      '4xl': ['30px', '36px'],
+      '5xl': ['36px', '44px'],
+      '6xl': ['48px', '52px'],
+      '7xl': ['60px', '64px'],
+      '8xl': ['72px', '76px'],
+      '9xl': ['96px', '100px'],
+    },
     extend: {
       colors: {
         border: 'hsl(var(--border))',
@@ -94,7 +110,8 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Montserrat', 'system-ui', 'sans-serif'],
+        display: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       keyframes: {

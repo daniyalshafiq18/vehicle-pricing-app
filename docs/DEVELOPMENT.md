@@ -20,6 +20,13 @@ Component → React Query Hook → Repository → IDataSource → DataverseDataS
 - Feature components in `src/features/` implement specific business logic
 - Pages compose features with layouts
 
+### Brand Styling
+- The brand palette is midnight teal (`#092327`), deep teal (`#0B5351`), and electric teal (`#00A9A5`), with complete shade scales defined in `src/styles/globals.css`
+- Use `.brand-gradient`, `.brand-gradient-soft`, `.brand-canvas`, `.brand-icon`, and `.brand-rule` instead of creating one-off gradients
+- Primary CTAs should use `Button variant="gradient"`; shared progress bars already use the canonical brand fusion
+- Keep semantic state colors intact: success, destructive, warning, and info communicate meaning and are not decorative brand replacements
+- Check both light and dark mode when adding a branded surface
+
 ### Startup Loading
 - `DataverseDataSource.initialize()` loads paginated vehicle records from `/_api/vpi_vehicledatas` and builds in-memory pricing indexes
 - The splash screen shows progress (0–100%) as each page of vehicles is fetched, with a brief hold at 100% before the app renders

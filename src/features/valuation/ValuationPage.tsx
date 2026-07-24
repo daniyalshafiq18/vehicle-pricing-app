@@ -30,7 +30,7 @@ export function ValuationPage() {
   ];
 
   return (
-    <section className="bg-slate-50/50 dark:bg-slate-950">
+    <section className="brand-canvas">
       <AnimatePresence mode="wait">
         <motion.div
           key="content"
@@ -41,14 +41,14 @@ export function ValuationPage() {
           <div className="mx-auto max-w-5xl">
             {/* Page header */}
             <div className="mb-8 text-center">
-              <h1 className="mb-2 text-3xl font-bold md:text-4xl">Vehicle Valuation</h1>
+              <h1 className="mb-2 text-lg font-bold md:text-xl">Vehicle Valuation</h1>
               <p className="text-muted-foreground">
                 Get an accurate market valuation for any vehicle in the UAE
               </p>
             </div>
 
             {/* Card container — lifts the form off the page background */}
-            <div className="rounded-2xl border border-slate-100 bg-white p-8 shadow-xl shadow-slate-100/50 dark:border-slate-800 dark:bg-slate-900 dark:shadow-none md:p-10">
+            <div className="rounded-2xl border border-border/80 bg-card/95 p-8 shadow-xl shadow-primary/10 backdrop-blur-sm md:p-10">
               {/* Step indicator */}
               <WizardStepIndicator steps={steps} currentStep={currentStep} />
 
