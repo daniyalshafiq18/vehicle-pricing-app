@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-07-24
+
+### Flow 3 — End-to-End Verified, Documentation Cleanup
+- **Headers confirmed complete** — User verified Step 3 HTTP headers include full `Sec-Fetch-*`, `Pragma`, `Upgrade-Insecure-Requests` set; Cloudflare 403 issue resolved
+- **Dataverse write issue retracted** — Incorrect data was caused by Flow 2 (Dataverse-triggered scraper) overwriting Flow 3's correct output. End-to-end test with Mercedes C 300 confirmed: Scraped Min Price `127,000.00`, Max Price `275,000.00`, well-formed JSON in scraped listings, correct hyphenated URL
+- **`docs/power-automate-cloud-only-design.md`** — Updated date to 2026-07-24; changed header warning to ✅ confirmation; fixed "4 OR Conditions" → "3 OR Conditions"; added "Flow 2 Interference Note" section; updated Flow 3 status to "End-to-End Verified"
+- **`memory/flow3-cloudflare-headers.md`** — Marked as resolved (headers confirmed complete)
+- **`memory/flow3-dataverse-write-issue.md`** — Marked as superseded (was Flow 2 interference); documented corrected test data
+- **`memory/recent-work-summary.md`** — Added Flow 3 verification entry; moved Phase 3 to 🟢 Complete
+
+### Memory — Session Start Summary & Greeting
+- **memory/recent-work-summary.md** — Created auto-loaded memory file that captures the latest changes (last ~week), current known issues, and design language status. Loaded into every session via MEMORY.md.
+- **CLAUDE.md** — Added "Session Start — Always Do This" instruction: greet with Assalamualaikum, present recent work summary from the memory file, ask what to work on next.
+- **memory/MEMORY.md** — Added `recent-work-summary` pointer.
+
 ## 2026-07-23
 
 ### Power Pages — Fixed deploy failure: missing index-* webfiles in manifest.yml

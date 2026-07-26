@@ -107,6 +107,15 @@ src/
 └── testing/        # Vitest setup
 ```
 
+## 🎯 Session Start — Always Do This
+
+When a new conversation begins, open with a brief **Assalamualaikum** greeting, then present the recent work summary from `memory/recent-work-summary.md` (it's loaded in context as a system reminder). Highlight:
+- What was done in the latest session(s)
+- Any known issues that need attention
+- Ask what they'd like to work on next
+
+Keep it concise — bullet points, not paragraphs.
+
 ## Coding Standards
 - **TypeScript:** Strict mode enabled (`noUnusedLocals`, `noUnusedParameters`, `noUncheckedIndexedAccess`)
 - **Imports:** Use `@` path aliases, never relative imports beyond parent

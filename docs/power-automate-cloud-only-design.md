@@ -1,7 +1,7 @@
 # Power Automate Cloud Flow — Step-by-Step Build Guide
 
-> **Date:** 2026-07-20 (Updated — Flow 3 count fix: double `replace()` + `@{...}` template syntax, documented actual flow structure with Cloudflare Check, nested Is Heading Available condition, Try-scope Response, and hardcoded Catch Response)
-> **Status:** Flow 1 ✅ Built, Modified & Re-Tested | Flow 2 ✅ Built & Tested | Flow 3 ✅ Built & Tested (SAS token, Try/Catch Scope)
+> **Date:** 2026-07-24 (Updated — Flow 3 headers confirmed complete, Cloudflare 403 issue resolved, Dataverse write issue retracted — was Flow 2 interference)
+> **Status:** Flow 1 ✅ Built, Modified & Re-Tested | Flow 2 ✅ Built & Tested | Flow 3 ✅ Built, Tested & End-to-End Verified (correct data in Dataverse)
 > **Platform:** https://make.powerautomate.com
 > **Connectors needed:** HTTP (premium), Microsoft Dataverse, Office 365 Outlook (optional)
 
@@ -13,7 +13,7 @@
 |---|---|---|
 | **Flow 1: YallaMotor Accessibility Test** | ✅ **Built, Modified & Re-Tested** | Confirmed full listing record extraction (price, specs, dealer). Heading extraction confirmed for aggregate pricing. |
 | **Flow 2: MVR Automated Scraper** | ✅ **Built & Tested** | See full design below. YallaMotor backend was down during initial tests — not a Cloudflare issue. |
-| **Flow 3: Real-Time HTTP Scraper** | ✅ **Built & Fully Working** | SAS token auth, Try/Catch Scope, double `replace()` for clean count, `@{...}` template syntax in Response, nested "Is Heading Available" condition, 3-value response, `_unavailable` graceful degradation. **Tested: 6 listings · AED 127,000 – 275,000 · 2024 Mercedes-Benz C-Class** |
+| **Flow 3: Real-Time HTTP Scraper** | ✅ **Built, Tested & End-to-End Verified** | Headers confirmed complete (Cloudflare 403 resolved). End-to-end test with Mercedes Benz C-Class C 300 verified correct data in Dataverse: scraped min/max prices, well-formed JSON in scraped listings, correct hyphenated URL. **Tested: 6 listings · AED 127,000 – 275,000 · 2024 Mercedes-Benz C 300** |
 
 ### Key Findings from Flow 1 Test (Original + Modified)
 
@@ -973,7 +973,7 @@ Where slugs are:
     - Method: **GET**
     - URI: click → **Expression**: `outputs('Build_Search_URL')`
     - Headers:
-      > ⚠️ **Important:** These headers MUST match the complete Chrome browser set. Your Flow 3 may have truncated headers (missing `Sec-Fetch-*`, `Pragma`, `Upgrade-Insecure-Requests`, full Chrome UA) which cause Cloudflare to return HTTP 403. Compare against the headers below and update if any are missing.
+      > ✅ **Confirmed:** These headers are complete and working. All `Sec-Fetch-*`, `Pragma`, `Upgrade-Insecure-Requests`, and full Chrome UA are present — Cloudflare does not block the request with this set.
       ```json
       {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
@@ -989,7 +989,7 @@ Where slugs are:
         "Referer": "https://www.google.com/"
       }
       ```
-      These are the same headers that Flow 1 uses successfully. The key additions are `Pragma`, `Sec-Fetch-Dest`, `Sec-Fetch-Mode`, `Sec-Fetch-Site`, `Upgrade-Insecure-Requests`, and the full Chrome UA string (with `(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36`).
+      These match the same headers that Flow 1 uses successfully.
 
 ### Step 5 (inside Try): Store Response Body
 
@@ -1012,7 +1012,7 @@ Where slugs are:
 24. Name: `HTTP Status Code`
 25. Input: click → **Expression**: `outputs('HTTP')['statusCode']`
 
-### Step 8 (inside Try): Cloudflare Check — 4 OR Conditions
+### Step 8 (inside Try): Cloudflare Check — 3 OR Conditions
 
 26. Click **Add an action** (inside Try) → **Condition**
 27. Name: `Cloudflare Check`
@@ -1295,6 +1295,15 @@ The count issue is now **resolved** with two Power Automate fixes:
 | **`@{outputs('...')}` template syntax** in Response body | Ensures values are interpolated correctly as JSON strings instead of raw expressions |
 
 > ⚠️ **Do NOT wrap `Extract_Listing_Count` with `int()`** — it fails silently inside a Scope and returns 0. The frontend's `.replace(/[^0-9-]/g, '')` handles the numeric conversion.
+
+### ⚠️ Flow 2 Interference Note
+
+> Flow 3 itself does **not** write to Dataverse — the MVR record is created by the frontend (`upsertMissingVehicleRequest`) after the user confirms. If you also have **Flow 2** (Dataverse-triggered scraper) running, it will fire on the new MVR record and **overwrite** `vpi_scraped_minprice`, `vpi_scraped_maxprice`, `vpi_scraped_listings`, and `vpi_scraped_sources` with its own scraped values (which may be incomplete or use an older URL format).
+>
+> **Before testing Flow 3, turn Flow 2 OFF** to prevent it from stomping on the data. If you need Flow 2 for batch processing, either:
+> - Disable it while testing Flow 3, or
+> - Make Flow 2 check `vpi_scrapestatus` — skip the MVR if it's already set to `Scraped` (4), or
+> - Give Flow 3 its own dedicated status value that Flow 2 leaves alone.
 
 ## MVR Schema Reference (Scrape Columns Only)
 
