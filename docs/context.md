@@ -119,6 +119,8 @@ Mutations use `react-hot-toast` for success/error feedback (configured globally 
 - Tailwind CSS `class` strategy — dark mode toggled by adding `dark` class to `<html>`
 - State persisted to `localStorage` via `useThemeStore`
 - Colour variables in `src/styles/globals.css` — no hardcoded colours in components
+- Midnight teal (`#092327`), deep teal (`#0B5351`), and electric teal (`#00A9A5`) are the brand identity. Shared spectrum primitives (`brand-gradient`, `brand-gradient-soft`, `brand-canvas`, `brand-icon`, and `brand-rule`) carry it through public and admin layouts.
+- Shared buttons and progress indicators own the broad palette application, while semantic success/error/warning colors remain independent.
 - `ThemeSwitcher` component in admin top bar
 
 ### Performance
@@ -198,7 +200,7 @@ src/
 - **5 charts**: Top Makes (horizontal bar, top 10), Top Models (horizontal bar, top 10), Body Type (horizontal bar), Powertrain Donut, Value Trend (area chart)
 - **Premium Vehicle Leaderboard**: Top 100 vehicles by market value
 - **Price by Model Year chart**: Searchable Make and dependent Model dropdowns run a dedicated cached analytics query for the selected vehicle group
-- All charts use a unified brand-coordinated palette (indigo/teal/amber/violet/cyan/orange) via shared colour rotation
+- All charts use a unified teal palette based on the three brand colors and their derived shades via shared colour rotation
 - All data from `useDashboardAnalytics` hook with `DashboardFilters`
 
 ### Admin Queries (`/admin/queries`)

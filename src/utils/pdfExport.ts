@@ -29,7 +29,7 @@ export function downloadValuationPdf(data: PdfExportData): void {
   const pageW = doc.internal.pageSize.getWidth();
 
   // ── Brand header ──────────────────────────────────────────
-  doc.setFillColor(139, 92, 246); // violet-600
+  doc.setFillColor(11, 83, 81); // deep brand teal (#0B5351)
   doc.rect(0, 0, pageW, 18, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(10);
@@ -38,7 +38,7 @@ export function downloadValuationPdf(data: PdfExportData): void {
 
   // ── Vehicle identity ──────────────────────────────────────
   let y = 30;
-  doc.setTextColor(30, 41, 59); // slate-800
+  doc.setTextColor(9, 35, 39); // midnight brand teal
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
   const title = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
@@ -46,12 +46,12 @@ export function downloadValuationPdf(data: PdfExportData): void {
   y += 8;
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 116, 139); // slate-500
+  doc.setTextColor(70, 105, 104); // muted teal
   doc.text(vehicle.spec, 14, y);
   y += 14;
 
   // ── Price summary ──────────────────────────────────────────
-  doc.setFillColor(249, 250, 251); // slate-50
+  doc.setFillColor(246, 251, 250); // teal-tinted surface
   doc.roundedRect(14, y, pageW - 28, 28, 3, 3, 'F');
 
   // Colour each price box

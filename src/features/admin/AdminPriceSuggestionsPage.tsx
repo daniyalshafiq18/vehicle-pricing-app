@@ -35,23 +35,23 @@ import { cn, formatCurrency } from '@utils';
 const STATUS_VISUALS: Record<number, { icon: React.ReactNode; className: string; dot: string }> = {
   4: {
     icon: <Clock className="h-3 w-3" />,
-    className: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
-    dot: 'bg-amber-500',
+    className: 'border-primary/20 bg-primary/10 text-primary',
+    dot: 'bg-primary',
   },
   1: {
     icon: <CheckCircle2 className="h-3 w-3" />,
-    className: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    dot: 'bg-emerald-500',
+    className: 'border-success/20 bg-success/10 text-success',
+    dot: 'bg-success',
   },
   2: {
     icon: <XCircle className="h-3 w-3" />,
-    className: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/20',
-    dot: 'bg-red-500',
+    className: 'border-destructive/20 bg-destructive/10 text-destructive',
+    dot: 'bg-destructive',
   },
   3: {
     icon: <Edit className="h-3 w-3" />,
-    className: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20',
-    dot: 'bg-blue-500',
+    className: 'border-primary/20 bg-primary/10 text-primary',
+    dot: 'bg-primary',
   },
 };
 
@@ -120,8 +120,8 @@ function StatusSelect({ suggestion, options }: { suggestion: PriceSuggestion; op
                   className={cn(
                     'flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors',
                     isActive
-                      ? 'bg-accent text-foreground'
-                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-primary/10 hover:text-primary',
                   )}
                 >
                   <span className={cn('h-1.5 w-1.5 rounded-full', visual?.dot ?? 'bg-muted-foreground/40')} />
@@ -226,14 +226,14 @@ function PriceSuggestionDetailModal({
         <div className="shrink-0 -mx-6 -mt-6 rounded-t-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 pb-4 pt-5">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3.5">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 shadow-sm">
-                <DollarSign className="h-6 w-6 text-amber-500" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 shadow-sm">
+                <DollarSign className="h-6 w-6 text-primary" />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-foreground">
                   Price Suggestion
                 </h2>
-                <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Calendar className="h-3 w-3" />
                   Submitted {suggestion.createdOn ? formatDate(suggestion.createdOn) : 'Unknown date'}
                 </p>
@@ -255,10 +255,10 @@ function PriceSuggestionDetailModal({
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {/* Vehicle info */}
           {suggestion.vehicleName && (
-            <div className="mb-4 rounded-xl border bg-gradient-to-r from-blue-500/5 to-transparent p-3.5">
-              <p className="text-[10px] text-slate-800 dark:text-slate-200">Vehicle</p>
+            <div className="mb-4 rounded-xl border bg-gradient-to-r from-primary/10 to-transparent p-3.5">
+              <p className="text-[10px] text-foreground">Vehicle</p>
               <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-foreground">
-                <DollarSign className="h-4 w-4 text-blue-500" />
+                <DollarSign className="h-4 w-4 text-primary" />
                 {suggestion.vehicleName}
               </p>
             </div>
@@ -267,19 +267,19 @@ function PriceSuggestionDetailModal({
           <div className="grid grid-cols-2 gap-3">
             {/* Submitted By (read-only) */}
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="text-[10px] text-slate-800 dark:text-slate-200">Submitted By</p>
+              <p className="text-[10px] text-foreground">Submitted By</p>
               <p className="mt-1 text-sm font-medium text-foreground break-words">{suggestion.submittedBy || '—'}</p>
             </div>
 
             {/* Status (read-only) */}
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="text-[10px] text-slate-800 dark:text-slate-200">Status</p>
+              <p className="text-[10px] text-foreground">Status</p>
               <p className="mt-1 text-sm font-medium text-foreground">{suggestion.status || 'Pending'}</p>
             </div>
 
             {/* Min Price (editable) */}
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="text-[10px] text-slate-800 dark:text-slate-200">Min Price</p>
+              <p className="text-[10px] text-foreground">Min Price</p>
               <div className="relative mt-1">
                 <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground/50">AED</span>
                 <input
@@ -298,7 +298,7 @@ function PriceSuggestionDetailModal({
 
             {/* Max Price (editable) */}
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="text-[10px] text-slate-800 dark:text-slate-200">Max Price</p>
+              <p className="text-[10px] text-foreground">Max Price</p>
               <div className="relative mt-1">
                 <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground/50">AED</span>
                 <input
@@ -317,7 +317,7 @@ function PriceSuggestionDetailModal({
 
             {/* Source URL (read-only) */}
             <div className="rounded-xl border bg-card p-3.5 col-span-2">
-              <p className="text-[10px] text-slate-800 dark:text-slate-200">Source URL</p>
+              <p className="text-[10px] text-foreground">Source URL</p>
               {suggestion.sourceUrl ? (
                 <a
                   href={suggestion.sourceUrl}
@@ -337,7 +337,7 @@ function PriceSuggestionDetailModal({
           {/* Comment (read-only) */}
           {suggestion.comment && (
             <div className="mt-3 rounded-xl border bg-card p-3.5">
-              <p className="text-[10px] text-slate-800 dark:text-slate-200">Comment</p>
+              <p className="text-[10px] text-foreground">Comment</p>
               <p className="mt-1 text-sm font-medium text-foreground">{suggestion.comment}</p>
             </div>
           )}
@@ -395,7 +395,7 @@ function PriceSuggestionCard({
       className="group h-full"
     >
       <UICard className="overflow-hidden border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 h-full">
-        <div className="h-1 bg-gradient-to-r from-emerald-500/60 via-emerald-400/60 to-emerald-500/30" />
+        <div className="brand-gradient h-1" />
         <CardContent className="p-5 flex flex-col h-full">
           {/* Header: vehicle name + status */}
           <div className="flex items-start justify-between mb-4 shrink-0 gap-3">
@@ -404,7 +404,7 @@ function PriceSuggestionCard({
                 {suggestion.vehicleName || suggestion.vehicleId || 'Unknown Vehicle'}
               </h3>
               {suggestion.submittedBy && (
-                <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
                   <User className="h-3 w-3 shrink-0" />
                   <span className="truncate">{suggestion.submittedBy}</span>
                 </p>
@@ -418,15 +418,15 @@ function PriceSuggestionCard({
 
           {/* Price details */}
           <div className="flex items-stretch gap-3">
-            <div className="flex-1 rounded-xl border bg-gradient-to-br from-emerald-500/10 to-transparent p-3.5">
-              <p className="text-[10px] text-slate-800 dark:text-slate-200">Min Price</p>
-              <p className="mt-1 text-lg font-bold text-emerald-600 dark:text-emerald-400">
+            <div className="flex-1 rounded-xl border bg-gradient-to-br from-success/10 to-transparent p-3.5">
+              <p className="text-[10px] text-foreground">Min Price</p>
+              <p className="mt-1 text-lg font-bold text-success">
                 {suggestion.minPrice ? formatCurrency(suggestion.minPrice) : '—'}
               </p>
             </div>
-            <div className="flex-1 rounded-xl border bg-gradient-to-br from-blue-500/10 to-transparent p-3.5">
-              <p className="text-[10px] text-slate-800 dark:text-slate-200">Max Price</p>
-              <p className="mt-1 text-lg font-bold text-blue-600 dark:text-blue-400">
+            <div className="flex-1 rounded-xl border bg-gradient-to-br from-primary/10 to-transparent p-3.5">
+              <p className="text-[10px] text-foreground">Max Price</p>
+              <p className="mt-1 text-lg font-bold text-primary">
                 {suggestion.maxPrice ? formatCurrency(suggestion.maxPrice) : '—'}
               </p>
             </div>
@@ -435,15 +435,15 @@ function PriceSuggestionCard({
           {/* Source URL */}
           {suggestion.sourceUrl && (
             <div className="mt-3 rounded-xl bg-muted/40 p-3 shrink-0">
-              <p className="text-[10px] text-slate-800 dark:text-slate-200">Source</p>
-              <p className="mt-0.5 truncate text-xs text-primary">{suggestion.sourceUrl}</p>
+              <p className="text-[10px] text-foreground">Source</p>
+              <p className="mt-0.5 truncate text-sm text-primary">{suggestion.sourceUrl}</p>
             </div>
           )}
 
           {/* Comment preview */}
           {suggestion.comment && (
             <div className="mt-2 shrink-0">
-              <p className="text-xs text-muted-foreground line-clamp-2 italic">
+              <p className="text-sm text-muted-foreground line-clamp-2 italic">
                 &ldquo;{suggestion.comment}&rdquo;
               </p>
             </div>
@@ -455,8 +455,8 @@ function PriceSuggestionCard({
           {/* Footer: date + action */}
           <div className="mt-3 flex items-center justify-between border-t pt-3 shrink-0">
             <div>
-              <p className="text-[10px] font-medium text-slate-800 dark:text-slate-200">Submitted</p>
-              <p className="text-xs text-foreground">
+              <p className="text-[10px] font-medium text-foreground">Submitted</p>
+              <p className="text-sm text-foreground">
                 {suggestion.createdOn
                   ? new Date(suggestion.createdOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                   : '—'}
@@ -592,7 +592,7 @@ export function AdminPriceSuggestionsPage() {
       <motion.div variants={itemVariants}>
         <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Price Suggestions</h1>
+            <h1 className="text-lg font-bold tracking-tight text-foreground">Price Suggestions</h1>
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{suggestions?.length ?? 0}</span> total suggestions
               {(() => {
@@ -601,7 +601,7 @@ export function AdminPriceSuggestionsPage() {
                   return (
                     <>
                       <span className="mx-1.5 text-muted-foreground/30">·</span>
-                      <span className="font-medium text-amber-600 dark:text-amber-400">
+                      <span className="font-medium text-primary">
                         {pendingTab.count} pending
                       </span>
                     </>
@@ -617,7 +617,7 @@ export function AdminPriceSuggestionsPage() {
               <button
                 onClick={() => setViewMode('table')}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
+                  'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-all',
                   viewMode === 'table'
                     ? 'bg-primary/10 text-primary shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
@@ -630,7 +630,7 @@ export function AdminPriceSuggestionsPage() {
               <button
                 onClick={() => setViewMode('card')}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
+                  'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-all',
                   viewMode === 'card'
                     ? 'bg-primary/10 text-primary shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
@@ -672,10 +672,10 @@ export function AdminPriceSuggestionsPage() {
               key={String(tab.value)}
               onClick={() => { setStatusFilterValue(tab.value); setPage(1); }}
               className={cn(
-                'flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-medium transition-all whitespace-nowrap',
+                'flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all whitespace-nowrap',
                 statusFilterValue === tab.value
                   ? 'bg-primary/10 text-primary shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
+                  : 'text-muted-foreground hover:bg-primary/10 hover:text-primary',
               )}
             >
               {tab.color && <span className={cn('h-1.5 w-1.5 rounded-full', tab.color)} />}
@@ -702,16 +702,14 @@ export function AdminPriceSuggestionsPage() {
           animate="visible"
         >
           <div className="rounded-2xl border bg-card overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-primary/60 via-accent/60 to-primary/30" />
-
             {isLoading ? (
               <div className="p-6">
                 <SkeletonTable rows={8} cols={5} />
               </div>
             ) : fetchError ? (
               <div className="flex flex-col items-center justify-center py-20">
-                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-red-500/10">
-                  <XCircle className="h-10 w-10 text-red-500" />
+                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-destructive/10">
+                  <XCircle className="h-10 w-10 text-destructive" />
                 </div>
                 <p className="text-lg font-medium text-foreground">Failed to load suggestions</p>
                 <p className="mt-1 text-sm text-muted-foreground text-center max-w-sm">
@@ -732,14 +730,14 @@ export function AdminPriceSuggestionsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/20">
-                      <th className="w-10 px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">#</th>
-                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Vehicle</th>
-                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Submitted By</th>
-                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Min Price</th>
-                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Max Price</th>
-                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Status</th>
-                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Submitted</th>
-                      <th className="px-4 py-3.5 text-right text-sm font-semibold text-slate-800 dark:text-slate-200">Actions</th>
+                      <th className="w-10 px-4 py-3.5 text-left text-sm font-semibold text-foreground">#</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Vehicle</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Submitted By</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Min Price</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Max Price</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Status</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Submitted</th>
+                      <th className="px-4 py-3.5 text-right text-sm font-semibold text-foreground">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -749,13 +747,13 @@ export function AdminPriceSuggestionsPage() {
                         className="group/row transition-colors hover:bg-muted/30 cursor-pointer"
                         onClick={() => setSelectedSuggestion(s)}
                       >
-                        <td className="px-4 py-3 text-xs text-muted-foreground">
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
                           {(page - 1) * pageSize + i + 1}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap max-w-[200px]">
                           <div className="flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
-                              <DollarSign className="h-4 w-4 text-blue-500" />
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                              <DollarSign className="h-4 w-4 text-primary" />
                             </div>
                             <span className="truncate text-sm font-medium text-foreground" title={s.vehicleName || s.vehicleId}>
                               {s.vehicleName || s.vehicleId || '—'}
@@ -780,7 +778,7 @@ export function AdminPriceSuggestionsPage() {
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex flex-col">
-                            <span className="text-xs text-foreground">
+                            <span className="text-sm text-foreground">
                               {s.createdOn ? formatShortDate(s.createdOn) : '—'}
                             </span>
                             {s.createdOn && (
@@ -858,8 +856,8 @@ export function AdminPriceSuggestionsPage() {
           ) : fetchError ? (
             <div className="rounded-2xl border bg-card">
               <div className="flex flex-col items-center justify-center py-20">
-                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-red-500/10">
-                  <XCircle className="h-10 w-10 text-red-500" />
+                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-destructive/10">
+                  <XCircle className="h-10 w-10 text-destructive" />
                 </div>
                 <p className="text-lg font-medium text-foreground">Failed to load suggestions</p>
                 <p className="mt-1 text-sm text-muted-foreground text-center max-w-sm">

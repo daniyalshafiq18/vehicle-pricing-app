@@ -60,7 +60,7 @@ export function ValuationResultPage() {
         {/* Header */}
         <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h1 className="text-3xl font-bold">
+            <h1 className="text-lg font-bold">
               {vehicle.year} {vehicle.make} {vehicle.model}
             </h1>
             <p className="text-muted-foreground">{vehicle.spec}</p>
@@ -117,7 +117,7 @@ export function ValuationResultPage() {
                 { label: 'Seats', value: `${vehicle.seats}` },
               ].map((spec) => (
                 <div key={spec.label} className="rounded-lg bg-muted/50 p-3">
-                  <p className="text-xs text-muted-foreground">{spec.label}</p>
+                  <p className="text-sm text-muted-foreground">{spec.label}</p>
                   <p className="font-semibold">{spec.value}</p>
                 </div>
               ))}
