@@ -363,6 +363,41 @@ export async function updateMissingVehicleRequest(
 }
 
 /**
+ * Update the scrape results on an existing missing vehicle request (PATCH).
+ * Called by admin after triggering a Flow 3 scrape.
+ */
+export async function updateMissingVehicleScrapeResult(
+  id: string,
+  fields: {
+    scrapedMinPrice: number;
+    scrapedMaxPrice: number;
+    scrapedListings: string;
+    scrapedSources: string;
+    scrapeStatusValue: number;
+  },
+): Promise<void> {
+  const baseUrl = `${API_BASE}/${ENTITIES.MISSING_VEHICLE_REQUEST}`;
+
+  const body: Record<string, unknown> = {
+    [MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MIN_PRICE]: fields.scrapedMinPrice,
+    [MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MAX_PRICE]: fields.scrapedMaxPrice,
+    [MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_LISTINGS]: fields.scrapedListings,
+    [MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_SOURCES]: fields.scrapedSources,
+    [MISSING_VEHICLE_REQUEST_FIELDS.SCRAPE_STATUS]: fields.scrapeStatusValue,
+  };
+
+  await safeFetch<void>({
+    url: `${baseUrl}(${id})`,
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'If-Match': '*',
+    },
+    body: JSON.stringify(body),
+  });
+}
+
+/**
  * Approve a missing vehicle request: create a Vehicle Data record and update status to Approved.
  *
  * Field mapping (MVR → Vehicle Data):

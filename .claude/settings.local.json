@@ -30,7 +30,9 @@
       "Bash(npx playwright *)",
       "Bash(curl -s https://vehicle-pricing-app-production.up.railway.app/health)",
       "Bash(curl *)",
-      "PowerShell(npm run *)"
+      "PowerShell(npm run *)",
+      "PowerShell(npx tsc --noEmit --pretty src/features/valuation/Step3Result.tsx 2>&1 | Select-Object -First 30)",
+      "Bash(git add *)"
     ]
   }
 }

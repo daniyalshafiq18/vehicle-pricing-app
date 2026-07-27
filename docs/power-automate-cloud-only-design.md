@@ -1,7 +1,7 @@
 # Power Automate Cloud Flow — Step-by-Step Build Guide
 
-> **Date:** 2026-07-24 (Updated — Flow 3 headers confirmed complete, Cloudflare 403 issue resolved, Dataverse write issue retracted — was Flow 2 interference)
-> **Status:** Flow 1 ✅ Built, Modified & Re-Tested | Flow 2 ✅ Built & Tested | Flow 3 ✅ Built, Tested & End-to-End Verified (correct data in Dataverse)
+> **Date:** 2026-07-27 (Updated — All flows renamed; Flow 4 added: customer email notification on scrape completion)
+> **Status:** Flow 1 ✅ Built, Modified & Re-Tested | Flow 2 ✅ Built & Tested | Flow 3 ✅ Built, Tested & End-to-End Verified | Flow 4 ✅ Not Yet Built
 > **Platform:** https://make.powerautomate.com
 > **Connectors needed:** HTTP (premium), Microsoft Dataverse, Office 365 Outlook (optional)
 
@@ -9,11 +9,12 @@
 
 ## Status Summary
 
-| Flow | Status | Notes |
-|---|---|---|
-| **Flow 1: YallaMotor Accessibility Test** | ✅ **Built, Modified & Re-Tested** | Confirmed full listing record extraction (price, specs, dealer). Heading extraction confirmed for aggregate pricing. |
-| **Flow 2: MVR Automated Scraper** | ✅ **Built & Tested** | See full design below. YallaMotor backend was down during initial tests — not a Cloudflare issue. |
-| **Flow 3: Real-Time HTTP Scraper** | ✅ **Built, Tested & End-to-End Verified** | Headers confirmed complete (Cloudflare 403 resolved). End-to-end test with Mercedes Benz C-Class C 300 verified correct data in Dataverse: scraped min/max prices, well-formed JSON in scraped listings, correct hyphenated URL. **Tested: 6 listings · AED 127,000 – 275,000 · 2024 Mercedes-Benz C 300** |
+| Flow | Name | Status | Notes |
+|---|---|---|---|
+| **Flow 1** | `MVR - Connectivity Test` | ✅ **Built, Modified & Re-Tested** | Confirmed full listing record extraction (price, specs, dealer). Heading extraction confirmed for aggregate pricing. |
+| **Flow 2** | `MVR - Automated Scraper` | ✅ **Built & Tested** | See full design below. YallaMotor backend was down during initial tests — not a Cloudflare issue. |
+| **Flow 3** | `MVR - On-Demand Scraper` | ✅ **Built, Tested & End-to-End Verified** | Headers confirmed complete (Cloudflare 403 resolved). End-to-end test with Mercedes Benz C-Class C 300 verified correct data in Dataverse: scraped min/max prices, well-formed JSON in scraped listings, correct hyphenated URL. **Tested: 6 listings · AED 127,000 – 275,000 · 2024 Mercedes-Benz C 300** |
+| **Flow 4** | `MVR - Customer Email Notification` | ❌ **Not Yet Built** | See design below. Sends email to the requesting user when scrape completes successfully. |
 
 ### Key Findings from Flow 1 Test (Original + Modified)
 
@@ -41,7 +42,7 @@
 
 ---
 
-## FLOW 1: YallaMotor Accessibility Test (Instant / Manual Trigger)
+## FLOW 1: MVR - Connectivity Test (Instant / Manual Trigger)
 
 **Purpose:** Test if YallaMotor responds to HTTP requests from the Microsoft cloud.
 
@@ -342,7 +343,7 @@ Used Toyota Camry 2.5 S 2019
 
 ---
 
-## FLOW 2: Production Scraper — Auto-Trigger on New MVR (Automated)
+## FLOW 2: MVR - Automated Scraper (Dataverse Trigger)
 
 **Purpose:** When a user submits a Missing Vehicle Request, automatically scrape YallaMotor and save aggregate price results (min, max, listing count) back to the MVR record.
 
@@ -827,7 +828,7 @@ Where slugs are:
 
 ---
 
-## FLOW 3: Real-Time Scrape from Frontend (HTTP Trigger + SAS Token)
+## FLOW 3: MVR - On-Demand Scraper (HTTP Trigger + SAS Token)
 
 **Purpose:** When a user submits a missing vehicle request from the app, scrape YallaMotor **synchronously** and return results immediately so the user can see them and optionally suggest a price before the MVR record is created.
 
@@ -1316,3 +1317,120 @@ For full schema, see `docs/dataverse-schema.md`.
 | `vpi_scraped_minprice` | Currency | Flow 2 | Minimum price from scraped listings |
 | `vpi_scraped_maxprice` | Currency | Flow 2 | Maximum price from scraped listings |
 | `vpi_scraped_sources` | Multiple Lines of Text | Flow 1, Flow 2 | Source URLs where scraped listings were found |
+
+---
+
+## FLOW 4: MVR - Customer Email Notification (Dataverse Trigger)
+
+**Purpose:** When an MVR's scrape status changes to `Scraped (4)`, send an email to the requesting user notifying them that their vehicle data is available.
+
+**Why Power Automate (not frontend):**
+- Server-side execution — guaranteed to fire regardless of who has the admin page open
+- Built-in email connector (Office 365 Outlook) — no external email service needed
+- Automatic retry if sending fails
+
+### Data Flow
+
+```
+[Flow 3 completes / Admin triggers scrape → vpi_scrapestatus = 4 (Scraped)]
+    │
+    ▼
+[Dataverse Trigger: MVR row modified with filter vpi_scrapestatus eq 4]
+    │
+    ▼
+[Get Contact: Resolve _vpi_contact_value lookup → contact email + name]
+    │
+    ▼
+[Send Email: Office 365 Outlook]
+    → To: Contact's email address
+    → Subject: "Requested Vehicle and its data now available"
+    → Body: HTML template
+```
+
+> **Recommended approach:** Use the **Filter rows** setting on the trigger instead of a separate Condition step. This keeps the flow clean at just 3 steps (Trigger → Get Contact → Send Email) and the trigger only fires when the status is exactly 4 (Scraped).
+
+### Create the Flow
+
+1. Go to https://make.powerautomate.com
+2. Click **Create** → **Automated cloud flow**
+3. Flow name: `MVR - Customer Email Notification`
+4. Search and select trigger: **When a row is added, modified or deleted** (Dataverse)
+5. Click **Create**
+
+### Step 1: Configure Trigger — When a Row is Modified (with Filter)
+
+6. Click the trigger step → configure:
+   - Change type: **Modified**
+   - Table name: search → **Missing Vehicle Requests**
+   - Scope: **Organization**
+   - **Filter rows:** paste the following OData filter:
+     ```
+     vpi_scrapestatus eq 4
+     ```
+   - **Select columns:** click → add these columns:
+     - `vpi_missingvehiclerequestsid`
+     - `vpi_make`
+     - `vpi_model`
+     - `vpi_modelyear`
+     - `vpi_trim`
+     - `_vpi_contact_value`
+
+> **Why Filter rows instead of a Condition step?** The filter runs at the Dataverse level — the flow only triggers when `vpi_scrapestatus` is `4 (Scraped)`. No wasted runs, no extra step. The "Select columns" ensures we only fetch the fields we need, making the trigger lightweight.
+
+### Step 2: Get the Linked Contact Record
+
+7. Click **+ New step** → search **Get a row by ID** (Dataverse)
+8. Configure:
+   - Table name: **Contacts**
+   - Row ID: click → **Expression**:
+     ```
+     triggerOutputs()?['body/_vpi_contact_value']
+     ```
+
+> ⚠️ The `_vpi_contact_value` field contains the GUID of the linked contact record. This step resolves it to get the user's email address and first name for the email.
+
+### Step 3: Send Email Notification
+
+9. Click **+ New step** → search **Send an email (V2)** (Office 365 Outlook)
+10. Configure:
+
+   - **To:** click inside → Dynamic content → select **Email** from the Get a row by ID step
+
+   - **Subject:**
+     ```
+     Requested Vehicle and its data now available
+     ```
+
+   - **Body:** Switch to **HTML** mode → paste:
+     ```html
+     <p>Hi {First Name from step 2},</p>
+     <p>Thank you for reaching out to us regarding the vehicle you were looking for.</p>
+     <p>We've reviewed your request and the data for the following vehicle is now available on our platform:</p>
+     <p><b>{triggerOutputs()?['body/vpi_make']} {triggerOutputs()?['body/vpi_model']} {triggerOutputs()?['body/vpi_modelyear']} {triggerOutputs()?['body/vpi_trim']}</b></p>
+     <p>Head over to the platform to explore the complete details, including pricing insights, specifications, and more.</p>
+     <p><a href="[YOUR-POWER-PAGES-URL]">View on Vehicle Pricing Intelligence Platform</a></p>
+     <p>If you ever need help with another vehicle, feel free to submit a new request.</p>
+     <p>Best regards,<br/><b>Vehicle Pricing Intelligence Platform</b></p>
+     ```
+
+     > Replace `[YOUR-POWER-PAGES-URL]` with the actual Power Pages site URL before saving.
+
+### Save and Test
+
+11. Click **Save** (top-left)
+12. To test:
+    - Trigger a scrape on any MVR via the admin panel
+    - Or manually update an MVR's `vpi_scrapestatus` to `4` in Dataverse
+    - The flow should fire and send the email to the linked contact
+
+### Initial Setup Checklist
+
+- [ ] Flow created with name `MVR - Customer Email Notification`
+- [ ] Trigger configured: Modified, Missing Vehicle Requests, Organization
+- [ ] **Filter rows:** `vpi_scrapestatus eq 4`
+- [ ] **Select columns:** Added `vpi_missingvehiclerequestsid`, `vpi_make`, `vpi_model`, `vpi_modelyear`, `vpi_trim`, `_vpi_contact_value`
+- [ ] Get Contact step: uses `_vpi_contact_value` from trigger
+- [ ] Email step: To = Contact's Email, Subject = "Requested Vehicle and its data now available"
+- [ ] Email body: Uses approved template with vehicle details + platform link
+- [ ] `[YOUR-POWER-PAGES-URL]` replaced with actual site URL
+- [ ] Flow saved and tested

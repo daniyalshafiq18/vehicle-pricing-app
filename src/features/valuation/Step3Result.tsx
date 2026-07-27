@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useInquiryStore } from '@stores';
-import { useValuation, useSaveInquiry, useUpsertMissingVehicleRequest, useUpsertPriceSuggestion } from '@hooks';
+import { useValuation, useSaveInquiry, useUpsertMissingVehicleRequest } from '@hooks';
 import { useVehicleStore } from '@stores';
 import type { Inquiry } from '@types';
-import { Button, Card, CardContent, Badge, Skeleton, Dialog } from '@components/ui';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Button, Card, CardContent, Badge, Skeleton } from '@components/ui';
+import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   Download,
@@ -25,24 +25,9 @@ import {
   Tag,
   SearchX,
   Send,
-  DollarSign,
-  ExternalLink,
-  Sparkles,
-  MessageSquare,
   Heart,
-  Loader2,
-  Globe,
 } from 'lucide-react';
-import { cn, formatCurrency, downloadValuationPdf } from '@utils';
-import { scrapeViaFlow3, type Flow3ScrapeResult } from '@lib/yallaMotorHttpScraper';
-
-function sanitizePriceInput(value: string): string {
-  return value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
-}
-
-function formatPriceInput(value: string): string {
-  return value.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
+import { formatCurrency, downloadValuationPdf } from '@utils';
 
 export function Step3Result() {
   const [searchParams] = useSearchParams();
@@ -52,30 +37,9 @@ export function Step3Result() {
   const { valuationResult, setValuationResult } = useVehicleStore();
   const saveInquiry = useSaveInquiry();
   const upsertRequest = useUpsertMissingVehicleRequest();
-  const upsertSuggestion = useUpsertPriceSuggestion();
   const inquirySaved = useRef(false);
 
-  const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [requestSubmitted, setRequestSubmitted] = useState(false);
-
-  /** Dialog phase: 'form' → 'scraping' → 'results' */
-  const [dialogPhase, setDialogPhase] = useState<'form' | 'scraping' | 'results'>('form');
-  const [flow3Result, setFlow3Result] = useState<Flow3ScrapeResult | null>(null);
-  const [scrapeError, setScrapeError] = useState<string | null>(null);
-  /** ID of the final MVR created after user confirms. */
-  const [, setMvrCreatedId] = useState<string | null>(null);
-  /** True when user clicked Skip (no price suggestion) — show "Thank You" instead of "Request Submitted" */
-  const [thankYouMode, setThankYouMode] = useState(false);
-
-  /** User's price suggestion (optional — shown after scraped results). */
-  const [suggestedMinPrice, setSuggestedMinPrice] = useState('');
-  const [suggestedMaxPrice, setSuggestedMaxPrice] = useState('');
-
-  const [showSuggestDialog, setShowSuggestDialog] = useState(false);
-  const [suggestMinPrice, setSuggestMinPrice] = useState('');
-  const [suggestMaxPrice, setSuggestMaxPrice] = useState('');
-  const [suggestSourceUrl, setSuggestSourceUrl] = useState('');
-  const [suggestComment, setSuggestComment] = useState('');
 
   const { data: valuation, isLoading, error, isFetched } = useValuation(
     vehicleSelection.year,
@@ -122,38 +86,10 @@ export function Step3Result() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [valuation, isFetched]);
 
+  /** Submit a missing vehicle request (no scraping — that's handled by admin). */
   const handleSubmitRequest = useCallback(async () => {
-    setDialogPhase('scraping');
-    setScrapeError(null);
-
     try {
-      // Call Flow 3 to scrape YallaMotor in real-time
-      const result = await scrapeViaFlow3({
-        make: vehicleSelection.make,
-        model: vehicleSelection.model,
-        trim: vehicleSelection.spec,
-        year: vehicleSelection.year ?? new Date().getFullYear(),
-      });
-
-      if (!result.success) {
-        throw new Error(result.error || 'Scrape failed');
-      }
-
-      setFlow3Result(result);
-      setDialogPhase('results');
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to scrape YallaMotor';
-      setScrapeError(message);
-      setDialogPhase('results');
-    }
-  }, [vehicleSelection]);
-
-  /** User confirmed — create the MVR with scraped + suggested prices. */
-  const handleConfirmAndCreate = useCallback(async (thankYou = false) => {
-    if (!flow3Result) return;
-
-    try {
-      const mvrId = await upsertRequest.mutateAsync({
+      await upsertRequest.mutateAsync({
         make: vehicleSelection.make,
         model: vehicleSelection.model,
         trim: vehicleSelection.spec,
@@ -162,57 +98,12 @@ export function Step3Result() {
         contactName: personalInfo.firstName && personalInfo.lastName
           ? `${personalInfo.firstName} ${personalInfo.lastName}`
           : personalInfo.firstName || undefined,
-        minPrice: suggestedMinPrice ? Number(suggestedMinPrice) : undefined,
-        maxPrice: suggestedMaxPrice ? Number(suggestedMaxPrice) : undefined,
-        // Scrape results from Flow 3
-        scrapedMinPrice: flow3Result.minPrice,
-        scrapedMaxPrice: flow3Result.maxPrice,
-        scrapedListings: JSON.stringify({
-          count: flow3Result.count,
-          minPrice: flow3Result.minPrice,
-          maxPrice: flow3Result.maxPrice,
-          source: 'YallaMotor',
-          url: flow3Result.sourceUrl,
-          heading: flow3Result.heading,
-        }),
-        scrapedSources: flow3Result.sourceUrl,
-        scrapeStatusValue: 4, // Scraped
       });
-      setMvrCreatedId(mvrId);
+      setRequestSubmitted(true);
     } catch {
       // MVR creation failed — toast will show from the hook
     }
-
-    setShowRequestDialog(false);
-    setThankYouMode(thankYou);
-    setRequestSubmitted(true);
-  }, [flow3Result, vehicleSelection, personalInfo, upsertRequest,
-    suggestedMinPrice, suggestedMaxPrice]);
-
-  const handleSubmitSuggestion = () => {
-    const vehicleId = valuationResult?.vehicle.id;
-    if (!vehicleId) return;
-
-    upsertSuggestion.mutate(
-      {
-        vehicleId,
-        minPrice: suggestMinPrice ? Number(suggestMinPrice) : undefined,
-        maxPrice: suggestMaxPrice ? Number(suggestMaxPrice) : undefined,
-        sourceUrl: suggestSourceUrl || undefined,
-        comment: suggestComment || undefined,
-        submittedBy: personalInfo.email || personalInfo.firstName || undefined,
-      },
-      {
-        onSuccess: () => {
-          setShowSuggestDialog(false);
-          setSuggestMinPrice('');
-          setSuggestMaxPrice('');
-          setSuggestSourceUrl('');
-          setSuggestComment('');
-        },
-      },
-    );
-  };
+  }, [vehicleSelection, personalInfo, upsertRequest]);
 
   // ── Loading ──────────────────────────────────────────────────
   // (skip loading in debug mode so we see the not-found UI immediately)
@@ -230,454 +121,114 @@ export function Step3Result() {
     );
   }
 
-  // ── Vehicle Not Found ────────────────────────────────────────
+  // ── Vehicle Not Found or Submitted ───────────────────────────
   if (isNotFound || requestSubmitted) {
     return (
       <div className="mx-auto max-w-lg">
-        <AnimatePresence mode="wait">
-          {requestSubmitted ? (
-            /* ── Success State ── */
-            <motion.div
-              key="success"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center"
-            >
-              {thankYouMode ? (
-                <>
-                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10">
-                    <Heart className="h-10 w-10 text-emerald-500" />
-                  </div>
-                  <h2 className="mb-2 text-2xl font-bold tracking-tight">Thank You!</h2>
-                  <p className="mb-6 text-muted-foreground">
-                    We appreciate your interest. We'll continue expanding our catalogue and may
-                    reach out if this vehicle becomes available.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10">
-                    <MessageSquare className="h-10 w-10 text-emerald-500" />
-                  </div>
-                  <h2 className="mb-2 text-2xl font-bold tracking-tight">Request Submitted!</h2>
-                  <p className="mb-2 text-muted-foreground">
-                    We'll send you a message on{' '}
-                    <span className="font-semibold text-foreground">
-                      {personalInfo.email || 'your email'}
-                    </span>{' '}
-                    once this vehicle is available.
-                  </p>
-                </>
-              )}
-              {/* Show scraped data from Flow 3 if available */}
-              {flow3Result && (
-                <div className="mx-auto mt-4 mb-6 max-w-xs rounded-xl border bg-card p-4">
-                  <div className="mb-1 flex items-center justify-center gap-1.5">
-                    <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-500">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      Live Market Data
-                    </span>
-                  </div>
-                  <p className="text-lg font-bold text-primary">
-                    {formatCurrency(flow3Result.minPrice)} — {formatCurrency(flow3Result.maxPrice)}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {flow3Result.count} listings · YallaMotor
-                  </p>
-                </div>
-              )}
-              <div className="mt-6 flex justify-center gap-3">
-                <Button variant="outline" size="lg" onClick={prevStep}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
-                </Button>
-                <Button variant="gradient" size="lg" onClick={reset}>
-                  New Valuation
-                </Button>
-              </div>
-            </motion.div>
-          ) : (
-            /* ── Vehicle Not Found ── */
-            <motion.div
-              key="not-found"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center"
-            >
-              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-amber-500/10">
-                <SearchX className="h-10 w-10 text-amber-500" />
-              </div>
-              <h2 className="mb-2 text-2xl font-bold tracking-tight">Vehicle Not Found</h2>
-              <p className="mb-1 text-muted-foreground">
-                We couldn't find this vehicle in our valuation database yet.
-              </p>
-              <p className="mb-8 text-sm text-muted-foreground/70">
-                We're continuously expanding our UAE vehicle catalogue.
-              </p>
-
-              {/* Summary card */}
-              <Card className="mb-8 border-amber-500/20 bg-amber-500/5">
-                <CardContent className="p-5">
-                  <div className="grid grid-cols-2 gap-3 text-left">
-                    {[
-                      { label: 'Make', value: vehicleSelection.make },
-                      { label: 'Model', value: vehicleSelection.model },
-                      { label: 'Year', value: vehicleSelection.year },
-                      { label: 'Spec', value: vehicleSelection.spec },
-                    ].filter((item) => item.value).map((item) => (
-                      <div key={item.label} className="rounded-lg bg-background/60 px-3 py-2">
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                          {item.label}
-                        </p>
-                        <p className="text-sm font-semibold text-foreground">{String(item.value)}</p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Button
-                variant="gradient"
-                size="lg"
-                onClick={() => setShowRequestDialog(true)}
-                className="mb-3 w-full"
-              >
-                <Send className="mr-2 h-4 w-4" />
-                Request This Vehicle
+        {requestSubmitted ? (
+          /* ── Success State ── */
+          <motion.div
+            key="success"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center"
+          >
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-success/10">
+              <Heart className="h-10 w-10 text-success" />
+            </div>
+            <h2 className="mb-2 text-lg font-bold tracking-tight">Request Submitted!</h2>
+            <p className="mb-6 text-muted-foreground">
+              We've received your request for the{' '}
+              <span className="font-semibold text-foreground">
+                {vehicleSelection.year} {vehicleSelection.make} {vehicleSelection.model}
+              </span>
+              . Our team will review it and get back to you at{' '}
+              <span className="font-semibold text-foreground">
+                {personalInfo.email || 'your email'}
+              </span>
+              .
+            </p>
+            <div className="mt-6 flex justify-center gap-3">
+              <Button variant="outline" size="lg" onClick={prevStep}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
               </Button>
-              <p className="text-xs text-muted-foreground/60">
-                Most requested vehicles are added first.
-              </p>
+              <Button variant="gradient" size="lg" onClick={reset}>
+                New Valuation
+              </Button>
+            </div>
+          </motion.div>
+        ) : (
+          /* ── Vehicle Not Found ── */
+          <motion.div
+            key="not-found"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center"
+          >
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-accent/10">
+              <SearchX className="h-10 w-10 text-accent-700 dark:text-accent-600" />
+            </div>
+            <h2 className="mb-2 text-lg font-bold tracking-tight">Vehicle Not Found</h2>
+            <p className="mb-1 text-muted-foreground">
+              We couldn't find this vehicle in our valuation database yet.
+            </p>
+            <p className="mb-8 text-sm text-muted-foreground/70">
+              We're continuously expanding our UAE vehicle catalogue.
+            </p>
 
-              <div className="mt-6">
-                <Button variant="outline" size="lg" onClick={prevStep}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Try Another Vehicle
-                </Button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* ── Multi-Step Request Dialog ── */}
-        <Dialog
-          isOpen={showRequestDialog}
-          onClose={() => {
-            if (dialogPhase === 'scraping') return; // block close while scraping
-            setShowRequestDialog(false);
-            setDialogPhase('form');
-          }}
-          title=""
-          description=""
-          size="lg"
-          hideCloseButton
-        >
-          {/* Step indicator */}
-          <div className="flex items-center gap-2 px-6 pt-5 pb-3">
-            {[
-              { phase: 'form', label: 'Details', icon: Car },
-              { phase: 'scraping', label: 'Estimate', icon: Globe },
-              { phase: 'results', label: 'Results', icon: Sparkles },
-            ].map((step, i) => {
-              const Icon = step.icon;
-              const isActive = dialogPhase === step.phase || (dialogPhase === 'results' && step.phase === 'results') || (dialogPhase === 'scraping' && step.phase === 'scraping') || (dialogPhase === 'results' && (step.phase === 'form' || step.phase === 'scraping'));
-              const isPast = (dialogPhase === 'scraping' && step.phase === 'form') ||
-                (dialogPhase === 'results' && step.phase !== 'results');
-              return (
-                <div key={step.phase} className="flex items-center gap-2">
-                  {i > 0 && <div className={cn('h-px w-6', isPast ? 'bg-primary/40' : 'bg-border')} />}
-                  <div className={cn(
-                    'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors',
-                    isPast ? 'bg-primary/10 text-primary' :
-                    isActive ? 'bg-primary/10 text-primary' :
-                    'text-muted-foreground bg-muted/30',
-                  )}>
-                    <Icon className="h-3 w-3" />
-                    {step.label}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* ── Phase 1: Form ── */}
-          {dialogPhase === 'form' && (
-            <div className="space-y-5 px-6 pb-6">
-              {/* Prefilled summary */}
-              <div className="rounded-xl border bg-muted/30 p-4">
-                <div className="grid grid-cols-2 gap-3">
+            {/* Summary card */}
+            <Card className="mb-8 border-accent/20 bg-accent/5">
+              <CardContent className="p-5">
+                <div className="grid grid-cols-2 gap-3 text-left">
                   {[
                     { label: 'Make', value: vehicleSelection.make },
                     { label: 'Model', value: vehicleSelection.model },
                     { label: 'Year', value: vehicleSelection.year },
                     { label: 'Spec', value: vehicleSelection.spec },
-                  ]
-                    .filter((item) => item.value)
-                    .map((item) => (
-                      <div key={item.label}>
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                          {item.label}
-                        </p>
-                        <p className="text-sm font-semibold text-foreground">{String(item.value)}</p>
-                      </div>
-                    ))}
+                  ].filter((item) => item.value).map((item) => (
+                    <div key={item.label} className="rounded-lg bg-background/60 px-3 py-2">
+                      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                        {item.label}
+                      </p>
+                      <p className="text-sm font-semibold text-foreground">{String(item.value)}</p>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              </CardContent>
+            </Card>
 
-              <div className="flex gap-3 pt-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowRequestDialog(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="gradient"
-                  onClick={handleSubmitRequest}
-                  disabled={upsertRequest.isPending}
-                  className="flex-1"
-                >
-                  {upsertRequest.isPending ? (
-                    <>
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      <Globe className="mr-2 h-4 w-4" />
-                      Search YallaMotor
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* ── Phase 2: Scraping ── */}
-          {dialogPhase === 'scraping' && (
-            <div className="flex flex-col items-center justify-center px-6 pb-8 pt-4">
-              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-              <p className="text-lg font-semibold text-foreground">Searching YallaMotor</p>
-              <p className="mt-1.5 text-center text-sm text-muted-foreground max-w-xs">
-                Looking up live listings for{' '}
-                {vehicleSelection.year} {vehicleSelection.make} {vehicleSelection.model}...
-              </p>
-            </div>
-          )}
-
-          {/* ── Phase 3: Results ── */}
-          {dialogPhase === 'results' && (
-            <div className="space-y-5 px-6 pb-6">
-              {flow3Result?._unavailable ? (
-                /* YallaMotor unavailable — friendly message + allow manual submission */
+            <Button
+              variant="gradient"
+              size="lg"
+              onClick={handleSubmitRequest}
+              disabled={upsertRequest.isPending}
+              className="mb-3 w-full"
+            >
+              {upsertRequest.isPending ? (
                 <>
-                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 text-center">
-                    <div className="mb-2 flex items-center justify-center gap-2">
-                      <Globe className="h-4 w-4 text-amber-500" />
-                      <p className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                        Live Data Unavailable
-                      </p>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      We couldn't fetch live market prices right now. You can still submit your
-                      request and we'll look into it.
-                    </p>
-                  </div>
-
-                  {/* Price Suggestion */}
-                  <div className="rounded-xl border bg-muted/20 p-4">
-                    <div className="mb-3 flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-amber-500" />
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Your Price Estimate (Optional)
-                      </p>
-                    </div>
-                    <p className="mb-3 text-xs text-muted-foreground">
-                      Know the market? Enter your own price range.
-                    </p>
-                    <div className="flex items-center gap-3 mb-3">
-                      <input
-                        type="number"
-                        placeholder="Min Price"
-                        value={suggestedMinPrice}
-                        onChange={(e) => setSuggestedMinPrice(e.target.value)}
-                        className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
-                      />
-                      <span className="text-muted-foreground/40">—</span>
-                      <input
-                        type="number"
-                        placeholder="Max Price"
-                        value={suggestedMaxPrice}
-                        onChange={(e) => setSuggestedMaxPrice(e.target.value)}
-                        className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 pt-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setShowRequestDialog(false);
-                        setDialogPhase('form');
-                      }}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="gradient"
-                      onClick={() => handleConfirmAndCreate()}
-                      disabled={upsertRequest.isPending}
-                      className="flex-1"
-                    >
-                      {upsertRequest.isPending ? (
-                        <>
-                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                          Submitting...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="mr-2 h-4 w-4" />
-                          Submit Request
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                  <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Submitting...
                 </>
-              ) : scrapeError && !flow3Result ? (
-                /* Error state */
-                <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5 text-center">
-                  <p className="text-sm font-medium text-red-600 dark:text-red-400">
-                    {scrapeError}
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setDialogPhase('form');
-                      setScrapeError(null);
-                    }}
-                    className="mt-3"
-                  >
-                    Try Again
-                  </Button>
-                </div>
-              ) : flow3Result ? (
+              ) : (
                 <>
-                  {/* Price Estimate — Real YallaMotor Data */}
-                  <div className="rounded-xl border bg-gradient-to-br from-emerald-500/5 to-transparent p-5 text-center">
-                    <div className="mb-2 flex items-center justify-center gap-2">
-                      <Globe className="h-4 w-4 text-emerald-500" />
-                      <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                        Live Market Data — YallaMotor
-                      </p>
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">
-                      {formatCurrency(flow3Result.minPrice)} — {formatCurrency(flow3Result.maxPrice)}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {flow3Result.count} listings found · {flow3Result.year} {flow3Result.make} {flow3Result.model}
-                    </p>
-                    {flow3Result.heading && (
-                      <p className="mt-2 text-[11px] text-muted-foreground/70 italic">
-                        {flow3Result.heading}
-                      </p>
-                    )}
-                    {/* Source link */}
-                    <a
-                      href={flow3Result.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      View on YallaMotor
-                    </a>
-                  </div>
-
-                  {/* Price Suggestion */}
-                  <div className="rounded-xl border bg-muted/20 p-4">
-                    <div className="mb-3 flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-amber-500" />
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Suggest Your Own Price (Optional)
-                      </p>
-                    </div>
-                    <p className="mb-3 text-xs text-muted-foreground">
-                      Know the market better? Enter your own price range for this vehicle.
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <div className="relative min-w-0 flex-1">
-                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
-                          AED
-                        </span>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="Min Price"
-                          value={formatPriceInput(suggestedMinPrice)}
-                          onChange={(e) => setSuggestedMinPrice(sanitizePriceInput(e.target.value))}
-                          className="h-9 w-full rounded-lg border bg-background pl-14 pr-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
-                        />
-                      </div>
-                      <span className="text-muted-foreground/40">—</span>
-                      <div className="relative min-w-0 flex-1">
-                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
-                          AED
-                        </span>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="Max Price"
-                          value={formatPriceInput(suggestedMaxPrice)}
-                          onChange={(e) => setSuggestedMaxPrice(sanitizePriceInput(e.target.value))}
-                          className="h-9 w-full rounded-lg border bg-background pl-14 pr-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-3 pt-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        // Skip: Create MVR with scraped prices only (no user suggestion)
-                        handleConfirmAndCreate(true);
-                      }}
-                      className="flex-1"
-                      disabled={upsertRequest.isPending}
-                    >
-                      Skip
-                    </Button>
-                    <Button
-                      variant="gradient"
-                      onClick={() => handleConfirmAndCreate()}
-                      disabled={upsertRequest.isPending}
-                      className="flex-1"
-                    >
-                      {upsertRequest.isPending ? (
-                        <>
-                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                          Submitting...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="mr-2 h-4 w-4" />
-                          Confirm &amp; Submit
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                  <Send className="mr-2 h-4 w-4" />
+                  Request This Vehicle
                 </>
-              ) : null}
+              )}
+            </Button>
+            <p className="text-sm text-muted-foreground/60">
+              We'll review your request and follow up with market data.
+            </p>
+
+            <div className="mt-6">
+              <Button variant="outline" size="lg" onClick={prevStep}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Try Another Vehicle
+              </Button>
             </div>
-          )}
-        </Dialog>
+          </motion.div>
+        )}
       </div>
     );
   }
@@ -689,7 +240,7 @@ export function Step3Result() {
         <div className="mb-4 rounded-full bg-destructive/10 p-4">
           <BarChart3 className="mx-auto h-8 w-8 text-destructive" />
         </div>
-        <h2 className="mb-2 text-2xl font-semibold">Valuation Unavailable</h2>
+        <h2 className="mb-2 text-lg font-semibold">Valuation Unavailable</h2>
         <p className="mb-6 text-muted-foreground">
           We couldn't generate a valuation for the selected vehicle. Please try a different
           selection.
@@ -715,7 +266,7 @@ export function Step3Result() {
       {/* Header */}
       <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-lg font-bold">
             {vehicle.year} {vehicle.make} {vehicle.model}
           </h2>
           <p className="text-muted-foreground">{vehicle.spec}</p>
@@ -760,7 +311,7 @@ export function Step3Result() {
                 >
                   <div className="mb-2 flex items-center gap-2 text-muted-foreground">
                     <Icon className="h-4 w-4" />
-                    <p className="text-xs">{spec.label}</p>
+                    <p className="text-sm">{spec.label}</p>
                   </div>
                   <p className="text-sm font-semibold">{spec.value}</p>
                 </div>
@@ -787,10 +338,10 @@ export function Step3Result() {
                   <div
                     className={`mt-0.5 rounded-full p-1 ${
                       insight.severity === 'positive'
-                        ? 'bg-green-500/10 text-green-500'
+                        ? 'bg-success/10 text-success'
                         : insight.severity === 'negative'
-                          ? 'bg-red-500/10 text-red-500'
-                          : 'bg-blue-500/10 text-blue-500'
+                          ? 'bg-destructive/10 text-destructive'
+                          : 'bg-primary/10 text-primary'
                     }`}
                   >
                     {insight.severity === 'positive' ? (
@@ -828,13 +379,6 @@ export function Step3Result() {
         <div className="flex gap-3">
           <Button
             variant="outline"
-            onClick={() => setShowSuggestDialog(true)}
-          >
-            <DollarSign className="mr-2 h-4 w-4" />
-            Suggest Price
-          </Button>
-          <Button
-            variant="outline"
             onClick={() => {
               downloadValuationPdf({ vehicle, pricing });
             }}
@@ -847,122 +391,6 @@ export function Step3Result() {
           </Button>
         </div>
       </div>
-
-      {/* ── Suggest Price Dialog ── */}
-      <Dialog
-        isOpen={showSuggestDialog}
-        onClose={() => setShowSuggestDialog(false)}
-        title="Suggest Market Price"
-        description="Share your knowledge about this vehicle's market value."
-        size="md"
-      >
-        <div className="space-y-5">
-          {/* Reference vehicle */}
-          <div className="rounded-xl border bg-muted/30 p-4">
-            <p className="text-[10px] font-semibold tracking-wider text-muted-foreground">
-              Vehicle
-            </p>
-            <p className="mt-1 text-sm font-semibold text-foreground">
-              {vehicle.year} {vehicle.make} {vehicle.model} — {vehicle.spec}
-            </p>
-          </div>
-
-          {/* Price inputs */}
-          <div>
-            <p className="mb-2 text-xs font-semibold tracking-wider text-muted-foreground">
-              Suggested Price Range
-            </p>
-            <div className="flex items-center gap-3">
-              <div className="relative min-w-0 flex-1">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
-                  AED
-                </span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="Min Price"
-                  value={formatPriceInput(suggestMinPrice)}
-                  onChange={(e) => setSuggestMinPrice(sanitizePriceInput(e.target.value))}
-                  className="h-9 w-full rounded-lg border bg-background pl-14 pr-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
-                />
-              </div>
-              <span className="text-muted-foreground/40">—</span>
-              <div className="relative min-w-0 flex-1">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
-                  AED
-                </span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="Max Price"
-                  value={formatPriceInput(suggestMaxPrice)}
-                  onChange={(e) => setSuggestMaxPrice(sanitizePriceInput(e.target.value))}
-                  className="h-9 w-full rounded-lg border bg-background pl-14 pr-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Source URL */}
-          <div>
-            <p className="mb-2 text-xs font-semibold tracking-wider text-muted-foreground">
-              Source URL <span className="text-muted-foreground/50">(optional)</span>
-            </p>
-            <div className="relative">
-              <ExternalLink className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
-              <input
-                type="url"
-                placeholder="https://example.com/listing"
-                value={suggestSourceUrl}
-                onChange={(e) => setSuggestSourceUrl(e.target.value)}
-                className="h-9 w-full rounded-lg border bg-background pl-9 pr-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
-              />
-            </div>
-          </div>
-
-          {/* Comment */}
-          <div>
-            <p className="mb-2 text-xs font-semibold tracking-wider text-muted-foreground">
-              Comment <span className="text-muted-foreground/50">(optional)</span>
-            </p>
-            <textarea
-              placeholder="Why do you think this price range is accurate?"
-              value={suggestComment}
-              onChange={(e) => setSuggestComment(e.target.value)}
-              rows={3}
-              className="w-full rounded-lg border bg-background px-3 py-2 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50 resize-none"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowSuggestDialog(false)}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="gradient"
-              onClick={handleSubmitSuggestion}
-              disabled={upsertSuggestion.isPending || (!suggestMinPrice && !suggestMaxPrice)}
-              className="flex-1"
-            >
-              {upsertSuggestion.isPending ? (
-                <>
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <DollarSign className="mr-2 h-4 w-4" />
-                  Submit Suggestion
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </Dialog>
     </motion.div>
   );
 }

@@ -14,7 +14,7 @@ import { fetchAllVehicles } from '@lib/vehicleApi';
 import { createContact } from '@lib/contactApi';
 import { createInquiry } from '@lib/inquiryApi';
 import type { CreateInquiryPayload } from '@lib/inquiryApi';
-import { upsertMissingVehicleRequest, fetchMissingVehicleRequests, fetchMissingVehicleRequestById, updateMissingVehicleRequest, updateMissingVehicleRequestStatus, approveAndCreateVehicle } from '@lib/missingVehicleApi';
+import { upsertMissingVehicleRequest, fetchMissingVehicleRequests, fetchMissingVehicleRequestById, updateMissingVehicleRequest, updateMissingVehicleRequestStatus, updateMissingVehicleScrapeResult, approveAndCreateVehicle } from '@lib/missingVehicleApi';
 import { upsertPriceSuggestion, fetchPriceSuggestions, updatePriceSuggestion, updatePriceSuggestionStatus } from '@lib/priceSuggestionApi';
 import { memoize } from '@utils';
 import type {
@@ -895,6 +895,19 @@ export class DataverseDataSource implements IDataSource {
 
   async updateMissingVehicleRequest(id: string, fields: { minPrice?: number; maxPrice?: number }): Promise<void> {
     return updateMissingVehicleRequest(id, fields);
+  }
+
+  async updateMissingVehicleScrapeResult(
+    id: string,
+    fields: {
+      scrapedMinPrice: number;
+      scrapedMaxPrice: number;
+      scrapedListings: string;
+      scrapedSources: string;
+      scrapeStatusValue: number;
+    },
+  ): Promise<void> {
+    return updateMissingVehicleScrapeResult(id, fields);
   }
 
   async approveAndCreateVehicle(mvr: MissingVehicleRequest): Promise<void> {

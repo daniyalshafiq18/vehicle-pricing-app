@@ -1,0 +1,97 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { missingVehicleRepository } from '@repositories';
+import { scrapeViaFlow3 } from '@lib/yallaMotorHttpScraper';
+import { missingVehicleScrapeStatusValue } from '@data/dataverseOptionSets';
+import toast from 'react-hot-toast';
+
+const MISSING_VEHICLE_REQUESTS_KEY = 'missing-vehicle-requests';
+
+interface ScrapeMissingVehicleParams {
+  id: string;
+  make: string;
+  model: string;
+  trim: string;
+  year: number;
+}
+
+/**
+ * Trigger a Power Automate Flow 3 scrape for a missing vehicle request.
+ *
+ * 1. Calls Flow 3 via HTTP with the vehicle make/model/trim/year
+ * 2. On success, PATCHes the MVR record with scraped prices + status
+ * 3. On failure/blocked, updates the MVR with the appropriate status
+ * 4. Invalidates the MVR query cache so the admin list refreshes
+ */
+export function useTriggerScrape() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: ScrapeMissingVehicleParams) => {
+      const result = await scrapeViaFlow3({
+        make: params.make,
+        model: params.model,
+        trim: params.trim,
+        year: params.year,
+      });
+
+      if (!result.success) {
+        // Mark as Failed in Dataverse
+        const failedValue = missingVehicleScrapeStatusValue('Failed') ?? 5;
+        await missingVehicleRepository.updateScrapeResult(params.id, {
+          scrapedMinPrice: 0,
+          scrapedMaxPrice: 0,
+          scrapedListings: JSON.stringify({ error: result.error }),
+          scrapedSources: '',
+          scrapeStatusValue: failedValue,
+        });
+        throw new Error(result.error || 'Scrape failed');
+      }
+
+      if (result._unavailable) {
+        // YallaMotor was unreachable — mark as Unreachable
+        const unreachableValue = missingVehicleScrapeStatusValue('Unreachable') ?? 6;
+        await missingVehicleRepository.updateScrapeResult(params.id, {
+          scrapedMinPrice: 0,
+          scrapedMaxPrice: 0,
+          scrapedListings: JSON.stringify({
+            count: 0,
+            _unavailable: true,
+            source: 'YallaMotor',
+          }),
+          scrapedSources: '',
+          scrapeStatusValue: unreachableValue,
+        });
+        throw new Error('YallaMotor is currently unreachable (Cloudflare / network issue)');
+      }
+
+      // Success — save scraped results
+      const scrapedValue = missingVehicleScrapeStatusValue('Scraped') ?? 4;
+      await missingVehicleRepository.updateScrapeResult(params.id, {
+        scrapedMinPrice: result.minPrice,
+        scrapedMaxPrice: result.maxPrice,
+        scrapedListings: JSON.stringify({
+          count: result.count,
+          minPrice: result.minPrice,
+          maxPrice: result.maxPrice,
+          source: 'YallaMotor',
+          url: result.sourceUrl,
+          heading: result.heading,
+        }),
+        scrapedSources: result.sourceUrl,
+        scrapeStatusValue: scrapedValue,
+      });
+
+      return result;
+    },
+    onSuccess: (result) => {
+      toast.success(
+        `Scraped ${result.count} listings · AED ${result.minPrice.toLocaleString()} – ${result.maxPrice.toLocaleString()}`,
+      );
+      queryClient.invalidateQueries({ queryKey: [MISSING_VEHICLE_REQUESTS_KEY] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Scrape failed');
+      queryClient.invalidateQueries({ queryKey: [MISSING_VEHICLE_REQUESTS_KEY] });
+    },
+  });
+}

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useMissingVehicleRequests, useUpdateMissingVehicleRequestStatus, useApproveMissingVehicleRequest } from '@hooks';
+import { useMissingVehicleRequests, useUpdateMissingVehicleRequestStatus, useApproveMissingVehicleRequest, useTriggerScrape } from '@hooks';
 import { Button, Dialog, SkeletonTable, Card as UICard, CardContent } from '@components/ui';
 import { motion } from 'framer-motion';
 import {
@@ -35,26 +35,26 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; clas
   Pending: {
     label: 'Pending',
     icon: <Clock className="h-3 w-3" />,
-    className: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
-    dot: 'bg-amber-500',
+    className: 'border-primary/20 bg-primary/10 text-primary',
+    dot: 'bg-primary',
   },
   Approved: {
     label: 'Approved',
     icon: <CheckCircle2 className="h-3 w-3" />,
-    className: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    dot: 'bg-emerald-500',
+    className: 'border-success/20 bg-success/10 text-success',
+    dot: 'bg-success',
   },
   'In Progress': {
     label: 'In Progress',
     icon: <AlertCircle className="h-3 w-3" />,
-    className: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20',
-    dot: 'bg-blue-500',
+    className: 'border-primary/20 bg-primary/10 text-primary',
+    dot: 'bg-primary',
   },
   Reject: {
     label: 'Reject',
     icon: <XCircle className="h-3 w-3" />,
-    className: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/20',
-    dot: 'bg-red-500',
+    className: 'border-destructive/20 bg-destructive/10 text-destructive',
+    dot: 'bg-destructive',
   },
 };
 
@@ -63,33 +63,33 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; clas
 const SCRAPE_STATUS_CONFIG: Record<string, { label: string; className: string; dot: string }> = {
   Pending: {
     label: 'Pending',
-    className: 'text-slate-600 dark:text-slate-400 bg-slate-500/10 border-slate-500/20',
-    dot: 'bg-slate-500',
+    className: 'border-muted-foreground/20 bg-muted text-muted-foreground',
+    dot: 'bg-muted-foreground',
   },
   Testing: {
     label: 'Testing',
-    className: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20',
-    dot: 'bg-blue-500',
+    className: 'border-primary/20 bg-primary/10 text-primary',
+    dot: 'bg-primary',
   },
   'In Progress': {
     label: 'In Progress',
-    className: 'text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/20',
-    dot: 'bg-purple-500',
+    className: 'border-accent/20 bg-accent/10 text-accent-800 dark:text-accent-600',
+    dot: 'bg-accent',
   },
   Scraped: {
     label: 'Scraped',
-    className: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    dot: 'bg-emerald-500',
+    className: 'border-success/20 bg-success/10 text-success',
+    dot: 'bg-success',
   },
   Failed: {
     label: 'Failed',
-    className: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/20',
-    dot: 'bg-red-500',
+    className: 'border-destructive/20 bg-destructive/10 text-destructive',
+    dot: 'bg-destructive',
   },
   Unreachable: {
     label: 'Unreachable',
-    className: 'text-orange-600 dark:text-orange-400 bg-orange-500/10 border-orange-500/20',
-    dot: 'bg-orange-500',
+    className: 'border-accent/20 bg-accent/10 text-accent-800 dark:text-accent-600',
+    dot: 'bg-accent',
   },
 };
 
@@ -191,8 +191,8 @@ function StatusSelect({ request }: { request: MissingVehicleRequest }) {
                   className={cn(
                     'flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors',
                     isActive
-                      ? 'bg-accent text-foreground'
-                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-muted-foreground hover:bg-primary/10 hover:text-primary',
                   )}
                 >
                   <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
@@ -272,7 +272,7 @@ function MissingVehicleDetailModal({
                 <h2 className="text-lg font-bold text-foreground">
                   {request.make} {request.model}
                 </h2>
-                <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Calendar className="h-3 w-3" />
                   Requested {request.createdOn ? formatDate(request.createdOn) : 'Unknown date'}
                 </p>
@@ -311,7 +311,7 @@ function MissingVehicleDetailModal({
               { label: 'Contact Email', value: request.contactEmail },
             ].map((item) => (
               <div key={item.label} className="rounded-xl border bg-card p-3.5">
-                <p className="text-[10px] text-slate-800 dark:text-slate-200">
+                <p className="text-[10px] text-foreground">
                   {item.label}
                 </p>
                 <p className="mt-1 text-sm font-medium text-foreground break-words">
@@ -324,8 +324,8 @@ function MissingVehicleDetailModal({
           {/* ── Scrape Results Section ── */}
           <div className="mt-5">
             <div className="flex items-center gap-2 mb-3">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-500/10">
-                <Loader className="h-3.5 w-3.5 text-purple-500" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/10">
+                <Loader className="h-3.5 w-3.5 text-accent-700 dark:text-accent-600" />
               </div>
               <h3 className="text-sm font-semibold text-foreground">Scrape Results</h3>
               <ScrapeStatusBadge status={request.scrapeStatus} />
@@ -339,11 +339,11 @@ function MissingVehicleDetailModal({
                     return (
                       <>
                         <div className="rounded-xl border bg-card p-3.5">
-                          <p className="text-[10px] text-slate-800 dark:text-slate-200">Listings Found</p>
+                          <p className="text-[10px] text-foreground">Listings Found</p>
                           <p className="mt-1 text-sm font-bold text-foreground">{String(parsed.count ?? '—')}</p>
                         </div>
                         <div className="rounded-xl border bg-card p-3.5">
-                          <p className="text-[10px] text-slate-800 dark:text-slate-200">Source</p>
+                          <p className="text-[10px] text-foreground">Source</p>
                           <p className="mt-1 text-sm font-medium text-foreground">{String(parsed.source ?? '—')}</p>
                         </div>
                       </>
@@ -353,23 +353,23 @@ function MissingVehicleDetailModal({
                 })()}
                 {request.scrapedMinPrice != null && (
                   <div className="rounded-xl border bg-card p-3.5">
-                    <p className="text-[10px] text-slate-800 dark:text-slate-200">Scraped Min Price</p>
-                    <p className="mt-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                    <p className="text-[10px] text-foreground">Scraped Min Price</p>
+                    <p className="mt-1 text-sm font-bold text-success">
                       {formatCurrency(request.scrapedMinPrice)}
                     </p>
                   </div>
                 )}
                 {request.scrapedMaxPrice != null && (
                   <div className="rounded-xl border bg-card p-3.5">
-                    <p className="text-[10px] text-slate-800 dark:text-slate-200">Scraped Max Price</p>
-                    <p className="mt-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                    <p className="text-[10px] text-foreground">Scraped Max Price</p>
+                    <p className="mt-1 text-sm font-bold text-success">
                       {formatCurrency(request.scrapedMaxPrice)}
                     </p>
                   </div>
                 )}
                 {request.scrapedSources && (
                   <div className="col-span-2 rounded-xl border bg-card p-3.5">
-                    <p className="text-[10px] text-slate-800 dark:text-slate-200">Source URL</p>
+                    <p className="text-[10px] text-foreground">Source URL</p>
                     <a
                       href={request.scrapedSources}
                       target="_blank"
@@ -384,7 +384,7 @@ function MissingVehicleDetailModal({
                 )}
                 {request.scrapedListings && !parseScrapedListings(request.scrapedListings) && (
                   <div className="col-span-2 rounded-xl border bg-card p-3.5">
-                    <p className="text-[10px] text-slate-800 dark:text-slate-200">Raw Scraped Data</p>
+                    <p className="text-[10px] text-foreground">Raw Scraped Data</p>
                     <pre className="mt-1 max-h-32 overflow-auto rounded-lg bg-muted/50 p-2 text-[11px] text-foreground break-all whitespace-pre-wrap">
                       {request.scrapedListings}
                     </pre>
@@ -393,21 +393,29 @@ function MissingVehicleDetailModal({
               </div>
             ) : request.scrapeStatus && request.scrapeStatus !== 'Pending' ? (
               <div className="rounded-xl border bg-muted/30 p-4 text-center">
-                <p className="text-xs text-muted-foreground">
+                <p className="mb-3 text-sm text-muted-foreground">
                   {request.scrapeStatus === 'In Progress'
                     ? 'Scraping is currently in progress...'
                     : request.scrapeStatus === 'Failed'
-                      ? 'Scraping failed. Check the flow run history for details.'
+                      ? 'Scraping failed. Try again or check the flow run history.'
                       : request.scrapeStatus === 'Unreachable'
-                        ? 'The source website was unreachable during scraping.'
+                        ? 'The source website was unreachable during scraping. You can retry.'
                         : `Scrape status: ${request.scrapeStatus}`}
                 </p>
+                {(request.scrapeStatus === 'Failed' || request.scrapeStatus === 'Unreachable') && (
+                  <div className="flex justify-center">
+                    <ScrapeNowButton request={request} />
+                  </div>
+                )}
               </div>
             ) : (
               <div className="rounded-xl border bg-muted/30 p-4 text-center">
-                <p className="text-xs text-muted-foreground">
-                  No scrape results available yet. Scraping is triggered automatically when the request is created.
+                <p className="mb-3 text-sm text-muted-foreground">
+                  No scrape results yet. Scraping is done manually from the admin panel.
                 </p>
+                <div className="flex justify-center">
+                  <ScrapeNowButton request={request} />
+                </div>
               </div>
             )}
           </div>
@@ -422,10 +430,131 @@ function ScrapedListingCount({ listings }: { listings: string | undefined }) {
   const parsed = parseScrapedListings(listings);
   if (!parsed || parsed.count == null) return null;
   return (
-    <span className="inline-flex items-center gap-1 rounded-md bg-purple-500/10 px-2 py-0.5 text-[10px] font-medium text-purple-600 dark:text-purple-400">
+    <span className="inline-flex items-center gap-1 rounded-md bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent-800 dark:text-accent-600">
       <SearchX className="h-3 w-3" />
       {String(parsed.count)} listings
     </span>
+  );
+}
+
+// ─── Scrape Now Button ────────────────────────────────────────────
+
+function ScrapeNowButton({
+  request,
+  size = 'sm',
+  onComplete,
+}: {
+  request: MissingVehicleRequest;
+  size?: 'sm' | 'icon-sm';
+  onComplete?: (id: string) => void;
+}) {
+  const triggerScrape = useTriggerScrape();
+
+  const handleScrape = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    triggerScrape.mutate(
+      {
+        id: request.id,
+        make: request.make,
+        model: request.model,
+        trim: request.trim,
+        year: request.modelYear,
+      },
+      { onSuccess: () => onComplete?.(request.id) },
+    );
+  };
+
+  const isPending = triggerScrape.isPending;
+
+  if (size === 'icon-sm') {
+    return (
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        title={`Scrape ${request.make} ${request.model} from YallaMotor`}
+        onClick={handleScrape}
+        disabled={isPending}
+      >
+        <RotateCcw className={cn('h-4 w-4', isPending && 'animate-spin')} />
+      </Button>
+    );
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleScrape}
+      disabled={isPending}
+    >
+      {isPending ? (
+        <>
+          <span className="mr-1.5 h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          Scraping...
+        </>
+      ) : (
+        <>
+          <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+          Scrape Now
+        </>
+      )}
+    </Button>
+  );
+}
+
+// ─── Scrape All Pending Button ─────────────────────────────────────
+
+function ScrapeAllPendingButton({ requests }: { requests: MissingVehicleRequest[] }) {
+  const triggerScrape = useTriggerScrape();
+  const [isScrapingAll, setIsScrapingAll] = useState(false);
+
+  const pendingRequests = requests.filter(
+    (r) => !r.scrapeStatus || r.scrapeStatus === 'Pending' || r.scrapeStatus === 'Failed' || r.scrapeStatus === 'Unreachable',
+  );
+
+  const handleScrapeAll = async () => {
+    if (pendingRequests.length === 0) return;
+    setIsScrapingAll(true);
+
+    for (const req of pendingRequests) {
+      try {
+        await triggerScrape.mutateAsync({
+          id: req.id,
+          make: req.make,
+          model: req.model,
+          trim: req.trim,
+          year: req.modelYear,
+        });
+      } catch {
+        // Individual failures are handled by the hook's onError
+      }
+    }
+
+    setIsScrapingAll(false);
+  };
+
+  if (pendingRequests.length === 0) return null;
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleScrapeAll}
+      disabled={isScrapingAll}
+      title={`Scrape all ${pendingRequests.length} pending items`}
+    >
+      {isScrapingAll ? (
+        <>
+          <span className="mr-1.5 h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          Scraping...
+        </>
+      ) : (
+        <>
+          <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+          Scrape {pendingRequests.length} Pending
+        </>
+      )}
+    </Button>
   );
 }
 
@@ -446,7 +575,7 @@ function MissingVehicleCard({
       className="group h-full"
     >
       <UICard className="overflow-hidden border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 h-full">
-        <div className="h-1 bg-gradient-to-r from-amber-500/60 via-amber-400/60 to-amber-500/30" />
+        <div className="brand-gradient h-1" />
         <CardContent className="p-5 flex flex-col h-full">
           {/* Header: make model year + status */}
           <div className="flex items-start justify-between mb-4 shrink-0 gap-3">
@@ -477,7 +606,7 @@ function MissingVehicleCard({
               { label: 'Drive Type', value: request.driveType },
             ].map((spec) => (
               <div key={spec.label} className="rounded-xl bg-muted/40 p-3 transition-colors hover:bg-muted/60">
-                <p className="text-[10px] font-medium text-slate-800 dark:text-slate-200">{spec.label}</p>
+                <p className="text-[10px] font-medium text-foreground">{spec.label}</p>
                 <p className="mt-0.5 text-sm font-semibold text-foreground truncate">
                   {spec.value || '—'}
                 </p>
@@ -489,14 +618,14 @@ function MissingVehicleCard({
           {(request.minPrice != null || request.maxPrice != null) && (
             <div className="mt-3 flex items-center gap-3 rounded-xl border bg-card p-3 shrink-0">
               <div className="flex-1">
-                <p className="text-[10px] text-slate-800 dark:text-slate-200">Min Price</p>
+                <p className="text-[10px] text-foreground">Min Price</p>
                 <p className="text-sm font-bold text-foreground">
                   {request.minPrice != null ? formatCurrency(request.minPrice) : '—'}
                 </p>
               </div>
               <div className="h-8 w-px bg-border" />
               <div className="flex-1">
-                <p className="text-[10px] text-slate-800 dark:text-slate-200">Max Price</p>
+                <p className="text-[10px] text-foreground">Max Price</p>
                 <p className="text-sm font-bold text-foreground">
                   {request.maxPrice != null ? formatCurrency(request.maxPrice) : '—'}
                 </p>
@@ -515,8 +644,8 @@ function MissingVehicleCard({
                 <div className="flex items-center gap-3 rounded-xl border bg-card p-3">
                   {request.scrapedMinPrice != null && (
                     <div className="flex-1">
-                      <p className="text-[10px] text-slate-800 dark:text-slate-200">Scraped Min</p>
-                      <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                      <p className="text-[10px] text-foreground">Scraped Min</p>
+                      <p className="text-sm font-bold text-success">
                         {formatCurrency(request.scrapedMinPrice)}
                       </p>
                     </div>
@@ -526,14 +655,27 @@ function MissingVehicleCard({
                   )}
                   {request.scrapedMaxPrice != null && (
                     <div className="flex-1">
-                      <p className="text-[10px] text-slate-800 dark:text-slate-200">Scraped Max</p>
-                      <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                      <p className="text-[10px] text-foreground">Scraped Max</p>
+                      <p className="text-sm font-bold text-success">
                         {formatCurrency(request.scrapedMaxPrice)}
                       </p>
                     </div>
                   )}
                 </div>
               )}
+              {(request.scrapeStatus === 'Failed' || request.scrapeStatus === 'Unreachable') && (
+                <div className="flex justify-end">
+                  <ScrapeNowButton request={request} />
+                </div>
+              )}
+            </div>
+          )}
+          {(!request.scrapeStatus || request.scrapeStatus === 'Pending') && (
+            <div className="mt-3 shrink-0">
+              <div className="flex items-center gap-2">
+                <ScrapeStatusBadge status={request.scrapeStatus} />
+                <ScrapeNowButton request={request} />
+              </div>
             </div>
           )}
 
@@ -543,8 +685,8 @@ function MissingVehicleCard({
           {/* Footer: requested by + action */}
           <div className="mt-3 flex items-center justify-between border-t pt-3 shrink-0">
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-medium text-slate-800 dark:text-slate-200">Requested by</p>
-              <p className="text-xs font-medium text-foreground truncate" title={request.contactName || request.contactEmail || ''}>
+              <p className="text-[10px] font-medium text-foreground">Requested by</p>
+              <p className="text-sm font-medium text-foreground truncate" title={request.contactName || request.contactEmail || ''}>
                 <User className="mr-1 inline h-3 w-3 text-muted-foreground/60" />
                 {request.contactName || request.contactEmail || '—'}
               </p>
@@ -676,13 +818,13 @@ export function AdminMissingVehiclesPage() {
       <motion.div variants={itemVariants}>
         <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Missing Vehicles</h1>
+            <h1 className="text-lg font-bold tracking-tight text-foreground">Missing Vehicles</h1>
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{requests?.length ?? 0}</span> total requests
               {statusCounts.pending > 0 && (
                 <>
                   <span className="mx-1.5 text-muted-foreground/30">·</span>
-                  <span className="font-medium text-amber-600 dark:text-amber-400">
+                  <span className="font-medium text-primary">
                     {statusCounts.pending} pending
                   </span>
                 </>
@@ -690,12 +832,16 @@ export function AdminMissingVehiclesPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {/* Scrape All Pending */}
+            {statusFilter === 'all' || statusFilter === 'Pending' ? (
+              <ScrapeAllPendingButton requests={requests ?? []} />
+            ) : null}
             {/* View toggle */}
             <div className="flex items-center rounded-lg border bg-card p-0.5">
               <button
                 onClick={() => setViewMode('table')}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
+                  'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-all',
                   viewMode === 'table'
                     ? 'bg-primary/10 text-primary shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
@@ -708,7 +854,7 @@ export function AdminMissingVehiclesPage() {
               <button
                 onClick={() => setViewMode('card')}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
+                  'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-all',
                   viewMode === 'card'
                     ? 'bg-primary/10 text-primary shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
@@ -747,19 +893,19 @@ export function AdminMissingVehiclesPage() {
         <div className="flex items-center gap-1.5 rounded-xl border bg-card p-1.5 overflow-x-auto">
           {[
             { key: 'all' as const, label: 'All', count: statusCounts.all, color: '' },
-            { key: 'Pending' as const, label: 'Pending', count: statusCounts.pending, color: 'bg-amber-500' },
-            { key: 'Approved' as const, label: 'Approved', count: statusCounts.approved, color: 'bg-emerald-500' },
-            { key: 'In Progress' as const, label: 'In Progress', count: statusCounts.inProgress, color: 'bg-blue-500' },
-            { key: 'Reject' as const, label: 'Reject', count: statusCounts.reject, color: 'bg-red-500' },
+            { key: 'Pending' as const, label: 'Pending', count: statusCounts.pending, color: 'bg-primary' },
+            { key: 'Approved' as const, label: 'Approved', count: statusCounts.approved, color: 'bg-success' },
+            { key: 'In Progress' as const, label: 'In Progress', count: statusCounts.inProgress, color: 'bg-primary' },
+            { key: 'Reject' as const, label: 'Reject', count: statusCounts.reject, color: 'bg-destructive' },
           ].map((tab) => (
             <button
               key={tab.key}
               onClick={() => { setStatusFilter(tab.key); setPage(1); }}
               className={cn(
-                'flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-medium transition-all whitespace-nowrap',
+                'flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all whitespace-nowrap',
                 statusFilter === tab.key
                   ? 'bg-primary/10 text-primary shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
+                  : 'text-muted-foreground hover:bg-primary/10 hover:text-primary',
               )}
             >
               {tab.color && <span className={cn('h-1.5 w-1.5 rounded-full', tab.color)} />}
@@ -786,8 +932,6 @@ export function AdminMissingVehiclesPage() {
           animate="visible"
         >
           <div className="rounded-2xl border bg-card overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-primary/60 via-accent/60 to-primary/30" />
-
             {isLoading ? (
               <div className="p-6">
                 <SkeletonTable rows={8} cols={13} />
@@ -797,18 +941,18 @@ export function AdminMissingVehiclesPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b bg-muted/20">
-                      <th className="w-10 px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">#</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">Make</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">Model</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">Year</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">Trim</th>
-                      <th className="px-3 py-3 text-right text-xs font-semibold text-slate-800 dark:text-slate-200">Min Price</th>
-                      <th className="px-3 py-3 text-right text-xs font-semibold text-slate-800 dark:text-slate-200">Max Price</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">Status</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">Scraped</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">Requester</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-slate-800 dark:text-slate-200">Date</th>
-                      <th className="px-3 py-3 text-right text-xs font-semibold text-slate-800 dark:text-slate-200">Actions</th>
+                      <th className="w-10 px-3 py-3 text-left text-sm font-semibold text-foreground">#</th>
+                      <th className="px-3 py-3 text-left text-sm font-semibold text-foreground">Make</th>
+                      <th className="px-3 py-3 text-left text-sm font-semibold text-foreground">Model</th>
+                      <th className="px-3 py-3 text-left text-sm font-semibold text-foreground">Year</th>
+                      <th className="px-3 py-3 text-left text-sm font-semibold text-foreground">Trim</th>
+                      <th className="px-3 py-3 text-right text-sm font-semibold text-foreground">Min Price</th>
+                      <th className="px-3 py-3 text-right text-sm font-semibold text-foreground">Max Price</th>
+                      <th className="px-3 py-3 text-left text-sm font-semibold text-foreground">Status</th>
+                      <th className="px-3 py-3 text-left text-sm font-semibold text-foreground">Scraped</th>
+                      <th className="px-3 py-3 text-left text-sm font-semibold text-foreground">Requester</th>
+                      <th className="px-3 py-3 text-left text-sm font-semibold text-foreground">Date</th>
+                      <th className="px-3 py-3 text-right text-sm font-semibold text-foreground">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -818,7 +962,7 @@ export function AdminMissingVehiclesPage() {
                         className="group/row transition-colors hover:bg-muted/30 cursor-pointer"
                         onClick={() => setSelectedRequest(req)}
                       >
-                        <td className="px-3 py-3 text-xs text-muted-foreground">
+                        <td className="px-3 py-3 text-sm text-muted-foreground">
                           {(page - 1) * pageSize + i + 1}
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap">
@@ -838,17 +982,17 @@ export function AdminMissingVehiclesPage() {
                           </span>
                         </td>
                         <td className="px-3 py-3 max-w-[140px]">
-                          <p className="text-xs text-foreground truncate" title={req.trim}>
+                          <p className="text-sm text-foreground truncate" title={req.trim}>
                             {req.trim || '—'}
                           </p>
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-right">
-                          <span className="text-xs font-medium text-foreground">
+                          <span className="text-sm font-medium text-foreground">
                             {req.minPrice != null ? formatCurrency(req.minPrice) : '—'}
                           </span>
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap text-right">
-                          <span className="text-xs font-medium text-foreground">
+                          <span className="text-sm font-medium text-foreground">
                             {req.maxPrice != null ? formatCurrency(req.maxPrice) : '—'}
                           </span>
                         </td>
@@ -862,7 +1006,7 @@ export function AdminMissingVehiclesPage() {
                           </div>
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap">
-                          <p className="text-xs text-foreground truncate max-w-[130px]" title={req.contactName || req.contactEmail || ''}>
+                          <p className="text-sm text-foreground truncate max-w-[130px]" title={req.contactName || req.contactEmail || ''}>
                             {req.contactName || req.contactEmail || '—'}
                           </p>
                           {req.contactName && req.contactEmail && req.contactEmail !== req.contactName && (
@@ -871,7 +1015,7 @@ export function AdminMissingVehiclesPage() {
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap">
                           <div className="flex flex-col">
-                            <span className="text-xs text-foreground">
+                            <span className="text-sm text-foreground">
                               {req.createdOn ? formatShortDate(req.createdOn) : '—'}
                             </span>
                             {req.createdOn && (
@@ -883,6 +1027,16 @@ export function AdminMissingVehiclesPage() {
                         </td>
                         <td className="px-3 py-3 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                            {(req.scrapeStatus === 'Pending' || req.scrapeStatus === 'Failed' || req.scrapeStatus === 'Unreachable' || !req.scrapeStatus) && (
+                              <ScrapeNowButton
+                                request={req}
+                                size="icon-sm"
+                                onComplete={(id) => {
+                                  const updated = requests?.find((r) => r.id === id);
+                                  if (updated) setSelectedRequest(updated);
+                                }}
+                              />
+                            )}
                             <Button
                               variant="ghost"
                               size="icon-sm"

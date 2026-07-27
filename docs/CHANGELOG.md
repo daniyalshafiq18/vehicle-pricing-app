@@ -1,8 +1,32 @@
+
 # Changelog
 
-## 2026-07-24
+## 2026-07-27
 
-### Flow 3 — End-to-End Verified, Documentation Cleanup
+### Power Automate — Flow 4 Design: Customer Email Notification
+- **New flow designed** — `MVR - Customer Email Notification` sends an email to the requesting user when their MVR's scrape status changes to `Scraped (4)`
+- **Trigger:** Dataverse "When a row is modified" on Missing Vehicle Requests, filtered by `vpi_scrapestatus = 4`
+- **Actions:** Get Contact row (resolves `_vpi_contact_value` lookup) → Send Email (Office 365 Outlook)
+- **Email template:** Professional notification with vehicle details, platform link, and CTA — no pricing/listings in email body
+- **All flows renamed** with consistent `MVR -` prefixing:
+  - Flow 1: `MVR - Connectivity Test` (was `MVR - Test YallaMotor Accessibility`)
+  - Flow 2: `MVR - Automated Scraper` (was `MVR - Scrape YallaMotor (Automated)`)
+  - Flow 3: `MVR - On-Demand Scraper` (was `MVR - Scrape YallaMotor (HTTP)`)
+  - Flow 4: `MVR - Customer Email Notification` (new)
+- **`docs/power-automate-cloud-only-design.md`** — Updated status summary, renamed all flow headings, added complete Flow 4 design section with data flow diagram, step-by-step instructions, Filter rows approach (instead of separate Condition step), and setup checklist
+
+## 2026-07-26
+
+### Scraper Migration — Moved from User Valuation to Admin
+- **Removed live scraping from user-facing flow** — `Step3Result.tsx` no longer calls Flow 3 (`scrapeViaFlow3`) when a vehicle is not found. Users simply submit a "Request This Vehicle" with their contact info, no multi-step dialog, no price suggestion form.
+- **Added admin-controlled scraping** — `AdminMissingVehiclesPage.tsx` now has "Scrape Now" buttons in table rows, card view, and the detail modal. Admins can trigger Flow 3 manually for any Pending/Failed/Unreachable MVR.
+- **Added "Scrape All Pending" bulk action** — A button in the admin header scrapes all pending/failed/unreachable requests in sequence.
+- **New hook `useTriggerScrape`** — `src/hooks/useTriggerScrape.ts` orchestrates the Flow 3 HTTP call, saves results to Dataverse via PATCH, shows toasts, and refreshes the MVR list.
+- **New API function `updateMissingVehicleScrapeResult`** — `src/lib/missingVehicleApi.ts` now has a dedicated PATCH function for scrape result fields (scrapedMinPrice, scrapedMaxPrice, scrapedListings, scrapedSources, scrapeStatusValue).
+- **Repository + DataSource wired** — Method added to `MissingVehicleRepository`, `IDataSource` interface, and `DataverseDataSource` implementation.
+- **Removed `Suggest Price` from valuation** — The `Suggest Price` dialog and all related state/handlers removed from `Step3Result.tsx`.
+
+## 2026-07-24
 - **Headers confirmed complete** — User verified Step 3 HTTP headers include full `Sec-Fetch-*`, `Pragma`, `Upgrade-Insecure-Requests` set; Cloudflare 403 issue resolved
 - **Dataverse write issue retracted** — Incorrect data was caused by Flow 2 (Dataverse-triggered scraper) overwriting Flow 3's correct output. End-to-end test with Mercedes C 300 confirmed: Scraped Min Price `127,000.00`, Max Price `275,000.00`, well-formed JSON in scraped listings, correct hyphenated URL
 - **`docs/power-automate-cloud-only-design.md`** — Updated date to 2026-07-24; changed header warning to ✅ confirmation; fixed "4 OR Conditions" → "3 OR Conditions"; added "Flow 2 Interference Note" section; updated Flow 3 status to "End-to-End Verified"
@@ -15,7 +39,48 @@
 - **CLAUDE.md** — Added "Session Start — Always Do This" instruction: greet with Assalamualaikum, present recent work summary from the memory file, ask what to work on next.
 - **memory/MEMORY.md** — Added `recent-work-summary` pointer.
 
+### Complete UI Color Revamp — Three-Tone Teal
+- Replaced the indigo/amber identity with the selected palette: midnight teal `#092327`, deep teal `#0B5351`, and electric teal `#00A9A5`.
+- Rebuilt light and dark theme surfaces, typography, cards, borders, form inputs, focus rings, sidebar colors, shadows, ambient glows, and gradient utilities from teal-derived tokens.
+- Recolored the splash screen, public shell, valuation wizard, admin navigation, notifications, filters, badges, dialogs, progress treatments, interactive states, and decorative surfaces through shared semantic tokens.
+- Replaced remaining blue, violet, amber, and orange component accents with primary/accent teal treatments while preserving red and green where destructive/success meaning is essential.
+- Rebuilt the chart palette entirely from the three brand colors and their shades; aligned PDF headers and report surfaces to the same identity.
+- Rewrote `docs/color-scheme.md` and updated design/development guidance with contrast rules for electric teal.
+
+### Brand Identity — Indigo + Amber Fusion
+- Promoted the splash-screen palette into a reusable app-wide brand system with canonical fusion, soft-surface, page-canvas, icon-mark, divider, and section-title primitives in `globals.css`.
+- Upgraded the splash screen with a fused indigo/amber brand mark, dual ambient glows, branded title treatment, and fused progress indicator.
+- Applied the identity to shared primary CTAs and progress components so valuation, landing, and admin workflows inherit the palette consistently.
+- Restyled the public header/footer and admin shell with fused brand marks, gradient navigation accents, a deep-indigo sidebar, amber highlights, and subtle dual-color page atmosphere.
+- Replaced remaining hardcoded admin/select indigo values with theme tokens, aligned chart fills with the shared palette, and updated PDF report headers to the canonical brand indigo.
+- Preserved semantic success, warning, destructive, and informational colors so brand styling does not reduce UI clarity.
+
+### Color Audit — Full app color consistency pass
+- **Created `src/utils/colors.ts`** — single source of truth for chart colors (`CHART_COLORS`, `CHART_COLORS_HSL`, `PT_COLORS`, `getBarOpacity`)
+- **Charts now reference shared palette** — TopMakesChart, BodyTypeChart, TopModelsChart, ValueTrendChart, PowertrainChart all import from `@utils/colors` instead of hardcoding `#6366f1`
+- **Replaced all `violet-*` → `primary-*`** — WizardStepIndicator (step circles, labels, connector gradients), LandingPage badge, MainLayout footer links
+- **Replaced `slate-*` with semantic tokens in LandingPage** — `text-slate-900` → `text-foreground`, `border-slate-100` → `border-border`, `bg-white/90` → `bg-card/90`, `bg-[#FCF8F7]` → `bg-muted/40`, and removed redundant `dark:` overrides
+- **Sidebar dark mode → brand indigo** — `--sidebar-background` in `.dark` changed from `240 10% 1.5%` (near-black) to `252 60% 4%` (deep indigo)
+- **Notification badge** → `bg-accent` instead of hardcoded `bg-amber-500`
+- **Split `--warning` from `--accent`** — warning shifted to hue 32 (warm amber-orange) so it can be used independently of the brand accent (hue 38)
+
+- Set body base font to `text-sm` (12px) in `globals.css`
+- **Main headings** updated to `text-lg` (18px) — Dashboard, Queries, Vehicles, Missing Vehicles, Price Suggestions, Valuation pages
+- **Sub-headings** updated to `text-base` (16px) — section titles in admin + valuation pages
+- **Buttons** default size → `text-sm` (12px); sm/lg/xl sizes also standardized to `text-sm`
+- **Badges** → `text-capsule` (10px)
+- **Base components** updated: CardTitle, Dialog title/description, Input/Select labels & errors, Tabs, NotificationDropdown, EmptyState, ErrorBoundary, LoadingScreen, CustomSelect, Progress, LazyChart
+- **Valuation wizard** headings, section titles, form inputs, and spec labels resized
+- **Layouts** (AdminLayout, MainLayout) — footer and subtitle text resized
+- Landing page hero headings left unchanged (marketing scale)
+- Build: ✅ zero errors, 3281 modules transformed
+
 ## 2026-07-23
+
+### Admin — Updated `text-xs` to `text-sm` across admin pages
+- Changed all `text-xs` class usages to `text-sm` in 12 admin files for table cell data, descriptions, labels, and body-level text to match the new Tailwind font-size scale (`text-xs`=10px, `text-sm`=12px).
+- Excluded: badge/capsule elements (`rounded-full`/`rounded-md` status tags), `text-[10px]` equivalents, and `STATUS_CONFIG` capsuled status selectors, which correctly remain at `text-xs`.
+- Files: AdminQueriesPage, AdminMissingVehiclesPage, AdminPriceSuggestionsPage, AdminVehiclesPage, AdminSettingsPage, PremiumLeaderboard, ValueTrendChart, VehicleIntelligenceModal.
 
 ### Power Pages — Fixed deploy failure: missing index-* webfiles in manifest.yml
 - **manifest.yml** — Added 4 missing `adx_webfile` entries (`index-5938Yz8n.js`, `index-TQaPp-Bq.js`, `index-C-KHSPpP.js`, `index-CCnQ0nQq.js`) that existed on disk but were absent from the deployment manifest, causing `PortalFileContentUploadFailed` on upload. Each entry is sorted by RecordId with `IsDeleted: false`.
