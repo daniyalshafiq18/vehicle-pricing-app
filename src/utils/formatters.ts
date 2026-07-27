@@ -59,11 +59,11 @@ export function formatDate(date: Date | string, options?: Intl.DateTimeFormatOpt
  */
 export function getConfidenceColor(level: string): string {
   const colors: Record<string, string> = {
-    'very-high': 'text-success',
-    high: 'text-success',
-    moderate: 'text-accent-700 dark:text-accent-600',
-    low: 'text-accent-700 dark:text-accent-600',
-    'very-low': 'text-destructive',
+    'very-high': 'text-green-500',
+    high: 'text-emerald-400',
+    moderate: 'text-yellow-500',
+    low: 'text-orange-500',
+    'very-low': 'text-red-500',
   };
   return colors[level] ?? 'text-muted-foreground';
 }
@@ -73,9 +73,9 @@ export function getConfidenceColor(level: string): string {
  */
 export function getTrendColor(direction: string): string {
   const colors: Record<string, string> = {
-    up: 'text-success',
-    down: 'text-destructive',
-    stable: 'text-primary',
+    up: 'text-green-500',
+    down: 'text-red-500',
+    stable: 'text-blue-400',
   };
   return colors[direction] ?? 'text-muted-foreground';
 }

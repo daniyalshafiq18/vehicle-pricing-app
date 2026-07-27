@@ -28,14 +28,12 @@ export function MainLayout() {
   }, [location.pathname]);
 
   return (
-    <div className="brand-canvas relative flex min-h-screen flex-col">
+    <div className="relative flex min-h-screen flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-xl before:absolute before:inset-x-0 before:bottom-0 before:h-[2px] before:bg-gradient-to-r before:from-primary/60 before:via-accent/70 before:to-primary/60">
+      <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/70 backdrop-blur-md dark:border-slate-900 dark:bg-slate-950/70 before:absolute before:inset-x-0 before:bottom-0 before:h-[1px] before:bg-gradient-to-r before:from-transparent before:via-primary/50 before:to-transparent before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
         <div className="w-full max-w-[1536px] min-[2560px]:max-w-[90%] mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="group flex items-center gap-2 text-xl font-bold">
-            <span className="brand-icon h-9 w-9 rounded-xl transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3">
-              <Car className="relative z-10 h-5 w-5" />
-            </span>
+            <Car className="h-6 w-6 text-primary transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6" />
             <span className="gradient-text text-sm sm:text-base">Vehicle Pricing Intelligence Platform</span>
           </Link>
 
@@ -47,7 +45,7 @@ export function MainLayout() {
                 to={link.path}
                 className={cn(
                   'relative px-4 py-2 text-sm font-medium transition-colors duration-200',
-                  'after:absolute after:-bottom-[9px] after:left-1/2 after:h-[2px] after:w-0 after:-translate-x-1/2 after:rounded-full after:bg-gradient-to-r after:from-primary after:to-accent after:transition-all after:duration-300',
+                  'after:absolute after:-bottom-[9px] after:left-1/2 after:h-[2px] after:w-0 after:-translate-x-1/2 after:rounded-full after:bg-primary after:transition-all after:duration-300',
                   'hover:after:w-4/5',
                   location.pathname === link.path
                     ? 'text-primary after:w-4/5'
@@ -110,27 +108,25 @@ export function MainLayout() {
       </main>
 
       {/* Footer */}
-      <footer className="relative border-t border-border/70 bg-card/70 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-accent/50 before:to-transparent">
+      <footer className="border-t border-slate-100 bg-slate-50 dark:border-slate-900 dark:bg-slate-900/50">
         <div className="w-full max-w-[1536px] min-[2560px]:max-w-[90%] mx-auto px-4 py-10">
           <div className="grid gap-8 md:grid-cols-3">
             {/* Brand column */}
             <div className="space-y-3">
               <div className="group flex items-center gap-2">
-                <span className="brand-icon h-8 w-8 rounded-lg transition-transform duration-300 group-hover:scale-105">
-                  <Car className="relative z-10 h-4 w-4" />
-                </span>
+                <Car className="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
                 <span className="text-sm font-semibold text-foreground">
                   Vehicle Pricing Intelligence
                 </span>
               </div>
-              <p className="text-sm leading-relaxed text-muted-foreground">
+              <p className="text-xs leading-relaxed text-muted-foreground">
                 Data-driven vehicle valuations powered by comprehensive UAE market analysis.
               </p>
             </div>
 
             {/* Quick Links */}
             <div className="space-y-3">
-              <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Quick Links
               </p>
               <div className="flex flex-col gap-2">
@@ -138,7 +134,7 @@ export function MainLayout() {
                   <Link
                     key={link.path}
                     to={link.path}
-                    className="text-sm text-muted-foreground transition-colors hover:text-primary"
+                    className="text-sm text-muted-foreground transition-colors hover:text-violet-600 dark:hover:text-violet-400"
                   >
                     {link.label}
                   </Link>
@@ -148,10 +144,10 @@ export function MainLayout() {
 
             {/* Legal column */}
             <div className="space-y-3">
-              <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Legal
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 &copy; {new Date().getFullYear()} Datanox. All rights reserved.
               </p>
             </div>

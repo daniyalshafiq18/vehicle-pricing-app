@@ -3,9 +3,17 @@ import {
 } from 'recharts';
 import { ChartCard, ChartTooltip } from './ChartCard';
 import { formatCurrency, compactNumber } from '@utils';
-import { PT_COLORS, PT_FALLBACK_COLORS } from '@utils/colors';
 import type { PowertrainAnalysis } from '@types';
 import { Zap } from 'lucide-react';
+
+// ─── Colors ──────────────────────────────────────────────
+const PT_COLORS: Record<string, string> = {
+  'Petrol/Diesel': '#6366f1', // indigo-500 (brand primary)
+  'Hybrid': '#14b8a6',       // teal-500
+  'Electric': '#8b5cf6',     // violet-500
+};
+
+const FALLBACK_COLORS = ['#6366f1', '#14b8a6', '#8b5cf6', '#f59e0b'];
 
 interface PowertrainChartProps {
   data: PowertrainAnalysis[];
@@ -21,6 +29,7 @@ export function PowertrainChart({ data, className }: PowertrainChartProps) {
         title="Powertrain"
         subtitle="Fuel / powertrain type breakdown"
         icon={<Zap className="h-4 w-4" />}
+        accent="from-indigo-500/60 to-amber-500/60"
         isEmpty
         emptyTitle="No powertrain data available"
         className={className}
@@ -35,6 +44,7 @@ export function PowertrainChart({ data, className }: PowertrainChartProps) {
       title="Powertrain"
       subtitle={`${compactNumber(total)} vehicles across ${sorted.length} types`}
       icon={<Zap className="h-4 w-4" />}
+      accent="from-blue-500/60 to-emerald-500/60"
       className={className}
     >
       {/* Flex column: donut SVG takes available space, legend sits below */}
@@ -78,7 +88,7 @@ export function PowertrainChart({ data, className }: PowertrainChartProps) {
               >
                 {sorted.map((entry) => {
                   const color = PT_COLORS[entry.powertrain]
-                    ?? PT_FALLBACK_COLORS[sorted.indexOf(entry) % PT_FALLBACK_COLORS.length];
+                    ?? FALLBACK_COLORS[sorted.indexOf(entry) % FALLBACK_COLORS.length];
                   return (
                     <Cell
                       key={entry.powertrain}
@@ -100,7 +110,7 @@ export function PowertrainChart({ data, className }: PowertrainChartProps) {
                       active
                       label={d.powertrain}
                       rows={[
-                        { label: 'Vehicles', value: compactNumber(d.count), color: PT_COLORS[d.powertrain] ?? PT_FALLBACK_COLORS[0] },
+                        { label: 'Vehicles', value: compactNumber(d.count), color: PT_COLORS[d.powertrain] ?? FALLBACK_COLORS[0] },
                         { label: 'Avg Price', value: formatCurrency(d.averagePrice) },
                         { label: 'Share', value: `${d.percentage}%` },
                       ]}
@@ -116,7 +126,7 @@ export function PowertrainChart({ data, className }: PowertrainChartProps) {
         <div className="flex-shrink-0 flex flex-wrap justify-center gap-x-5 gap-y-1 pt-1 pb-0.5">
           {sorted.map((entry) => {
             const color = PT_COLORS[entry.powertrain]
-              ?? PT_FALLBACK_COLORS[sorted.indexOf(entry) % PT_FALLBACK_COLORS.length];
+              ?? FALLBACK_COLORS[sorted.indexOf(entry) % FALLBACK_COLORS.length];
             return (
               <div key={entry.powertrain} className="flex items-center gap-1.5 text-xs">
                 <span

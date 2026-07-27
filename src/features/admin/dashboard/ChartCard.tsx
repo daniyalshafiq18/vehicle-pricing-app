@@ -7,6 +7,8 @@ interface ChartCardProps {
   title: string;
   /** Subtitle shown below the title */
   subtitle?: string;
+  /** Accent bar color gradient (Tailwind) */
+  accent?: string;
   /** Icon shown beside the title */
   icon?: ReactNode;
   /** Extra header actions (filters, toggles, etc.) */
@@ -25,11 +27,13 @@ interface ChartCardProps {
 
 /**
  * ChartCard — consistent wrapper for all dashboard chart widgets.
- * Renders a title bar and chart content with built-in empty-state handling.
+ * Renders a gradient accent bar, title bar, and chart content with
+ * built-in empty-state handling.
  */
 export function ChartCard({
   title,
   subtitle,
+  accent = 'from-primary/60 to-primary/40',
   icon,
   headerAction,
   children,
@@ -40,6 +44,7 @@ export function ChartCard({
 }: ChartCardProps) {
   return (
     <Card className={cn('overflow-hidden border', className)}>
+      <div className={cn('h-1 bg-gradient-to-r', accent)} />
       <CardContent className="p-4 sm:p-5">
         {/* ── Header ── */}
         <div className="mb-4 flex items-start justify-between gap-2">

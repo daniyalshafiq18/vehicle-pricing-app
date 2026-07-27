@@ -7,7 +7,6 @@ import { ChartCard, ChartTooltip } from './ChartCard';
 import { CustomSelect } from '@components/ui';
 import { useVehicleHierarchy, useValueTrendAnalytics } from '@hooks';
 import { formatCurrency, compactNumber } from '@utils';
-import { CHART_COLORS, CHART_COLORS_HSL } from '@utils/colors';
 import type { PriceByYear } from '@types';
 import { Activity } from 'lucide-react';
 
@@ -61,6 +60,7 @@ export function ValueTrendChart({ data, className }: ValueTrendChartProps) {
         title="Price by Model Year"
         subtitle="Average market value trend"
         icon={<Activity className="h-4 w-4" />}
+        accent="from-amber-500/60 to-orange-500/60"
         isEmpty
         emptyTitle="No value trend data available"
         className={className}
@@ -75,6 +75,7 @@ export function ValueTrendChart({ data, className }: ValueTrendChartProps) {
         ? 'Updating price trend...'
         : `${chartData.length} model years · ${selectedModel ?? selectedMake ?? 'all vehicles'}`}
       icon={<Activity className="h-4 w-4" />}
+      accent="from-amber-500/60 to-orange-500/60"
       className={className}
       headerAction={
         <div className="flex items-center gap-2">
@@ -87,8 +88,8 @@ export function ValueTrendChart({ data, className }: ValueTrendChartProps) {
             }}
             options={makeOptions}
             placement="bottom-end"
-            className="h-8 w-40 rounded-lg border-border bg-background px-2.5 text-sm font-medium hover:border-primary/40"
-            dropdownClassName="border-border"
+            className="h-8 w-40 rounded-lg border-amber-200 bg-background px-2.5 text-xs font-medium hover:border-amber-400 dark:border-amber-800"
+            dropdownClassName="border-amber-200 dark:border-amber-800"
           />
           <CustomSelect
             placeholder="All models"
@@ -97,8 +98,8 @@ export function ValueTrendChart({ data, className }: ValueTrendChartProps) {
             options={modelOptions}
             disabled={!selectedMake}
             placement="bottom-end"
-            className="h-8 w-44 rounded-lg border-border bg-background px-2.5 text-sm font-medium hover:border-primary/40"
-            dropdownClassName="border-border"
+            className="h-8 w-44 rounded-lg border-amber-200 bg-background px-2.5 text-xs font-medium hover:border-amber-400 dark:border-amber-800"
+            dropdownClassName="border-amber-200 dark:border-amber-800"
           />
         </div>
       }
@@ -111,8 +112,8 @@ export function ValueTrendChart({ data, className }: ValueTrendChartProps) {
           >
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={CHART_COLORS_HSL.primary} stopOpacity={0.3} />
-                <stop offset="100%" stopColor={CHART_COLORS_HSL.primary} stopOpacity={0.03} />
+                <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.03} />
               </linearGradient>
             </defs>
             <CartesianGrid
@@ -144,7 +145,7 @@ export function ValueTrendChart({ data, className }: ValueTrendChartProps) {
                     active
                     label={String(d.year)}
                     rows={[
-                      { label: 'Average', value: formatCurrency(d.averagePrice), color: CHART_COLORS[0] },
+                      { label: 'Average', value: formatCurrency(d.averagePrice), color: '#f59e0b' },
                       { label: 'Median', value: formatCurrency(d.medianPrice) },
                       { label: 'Min', value: formatCurrency(d.minimumPrice) },
                       { label: 'Max', value: formatCurrency(d.maximumPrice) },
@@ -157,13 +158,13 @@ export function ValueTrendChart({ data, className }: ValueTrendChartProps) {
             <Area
               type="monotone"
               dataKey="averagePrice"
-              stroke={CHART_COLORS_HSL.primary}
+              stroke="#f59e0b"
               strokeWidth={2.5}
               fill={`url(#${gradientId})`}
               dot={false}
               activeDot={{
                 r: 4,
-                fill: CHART_COLORS_HSL.primary,
+                fill: '#f59e0b',
                 stroke: 'hsl(var(--background))',
                 strokeWidth: 2,
               }}

@@ -47,25 +47,25 @@ export function LoadingScreen({ message = 'Loading...', className, progress }: L
   return (
     <div
       className={cn(
-        'brand-canvas fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden',
+        'fixed inset-0 z-50 flex flex-col items-center justify-center bg-background',
         className,
       )}
     >
       {/* Technical grid background */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.18] dark:opacity-[0.1]"
+        className="pointer-events-none absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage: `
-            linear-gradient(hsl(var(--primary) / .16) 1px, transparent 1px),
-            linear-gradient(90deg, hsl(var(--primary) / .16) 1px, transparent 1px)
+            linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)
           `,
           backgroundSize: '60px 60px',
         }}
       />
 
       {/* Ambient glow orbs */}
-      <div className="absolute left-[12%] top-[12%] h-80 w-80 rounded-full bg-primary/15 blur-3xl" />
-      <div className="absolute bottom-[14%] right-[12%] h-72 w-72 rounded-full bg-accent/12 blur-3xl" />
+      <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full bg-primary/8 blur-3xl" />
+      <div className="absolute bottom-1/3 right-1/4 h-56 w-56 rounded-full bg-accent/8 blur-3xl" />
 
       <div className="relative flex flex-col items-center gap-8">
         {/* Car icon with rotating ring */}
@@ -92,18 +92,18 @@ export function LoadingScreen({ message = 'Loading...', className, progress }: L
             }}
           />
 
-          {/* Brand mark */}
-          <div className="brand-icon h-16 w-16 animate-bounce-gentle rounded-2xl">
-            <Car className="relative z-10 h-9 w-9 drop-shadow-[0_2px_8px_hsl(var(--primary)/0.45)]" />
+          {/* Car icon */}
+          <div className="animate-bounce-gentle">
+            <Car className="h-16 w-16 text-primary drop-shadow-[0_0_15px_hsl(var(--primary)/0.35)]" />
           </div>
         </div>
 
         {/* Brand title with tagline */}
         <div className="space-y-1 text-center">
-          <p className="shimmer-text text-lg font-bold tracking-tight">
+          <p className="text-lg font-bold tracking-tight text-foreground">
             Vehicle Pricing Intelligence Platform
           </p>
-          <p className="text-sm tracking-widest text-muted-foreground/60 uppercase">
+          <p className="text-xs tracking-widest text-muted-foreground/60 uppercase">
             UAE Market Analysis
           </p>
         </div>
@@ -112,13 +112,13 @@ export function LoadingScreen({ message = 'Loading...', className, progress }: L
         <div className="w-72 space-y-3">
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="brand-gradient h-full rounded-full shadow-[0_0_12px_hsl(var(--accent)/0.25)]"
+              className="h-full rounded-full bg-gradient-to-r from-primary via-accent to-primary"
               style={{ width: `${display}%` }}
             />
           </div>
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">{message}</p>
-            <span className="text-sm font-medium text-muted-foreground tabular-nums">
+            <span className="text-xs font-medium text-muted-foreground tabular-nums">
               {Math.round(display)}%
             </span>
           </div>

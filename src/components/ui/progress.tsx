@@ -16,7 +16,7 @@ export const Progress = forwardRef<HTMLDivElement, ProgressProps>(
     return (
       <div className="space-y-1">
         {(showLabel || label) && (
-          <div className="flex justify-between text-sm text-muted-foreground">
+          <div className="flex justify-between text-xs text-muted-foreground">
             <span>{label}</span>
             <span>{Math.round(percentage)}%</span>
           </div>
@@ -26,7 +26,7 @@ export const Progress = forwardRef<HTMLDivElement, ProgressProps>(
           className={cn('relative h-2 w-full overflow-hidden rounded-full bg-secondary', className)}
         >
           <div
-            className={cn('brand-gradient h-full w-full flex-1 rounded-full transition-all duration-500 ease-out', indicatorClassName)}
+            className={cn('h-full w-full flex-1 rounded-full bg-primary transition-all duration-500 ease-out', indicatorClassName)}
             style={{ transform: `translateX(-${100 - percentage}%)` }}
           />
         </div>

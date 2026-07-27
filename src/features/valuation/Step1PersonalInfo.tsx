@@ -65,7 +65,7 @@ export function Step1PersonalInfo() {
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-10 text-center">
-        <h1 className="text-lg font-bold tracking-tight">Personal Information</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Personal Information</h1>
         <p className="mt-2 text-muted-foreground">
           Enter your details to receive the complete valuation report.
         </p>
@@ -75,7 +75,7 @@ export function Step1PersonalInfo() {
         {/* Personal Details */}
         <section>
           <div className="mb-5 flex items-center gap-3">
-            <h2 className="text-base font-semibold tracking-wider text-foreground">Personal Details</h2>
+            <h2 className="text-sm font-semibold tracking-wider text-slate-800 dark:text-slate-200">Personal Details</h2>
             <div className="h-px flex-1 bg-border/50" />
           </div>
           <div className="grid gap-6 sm:grid-cols-2">
@@ -101,7 +101,7 @@ export function Step1PersonalInfo() {
         {/* Contact Details */}
         <section>
           <div className="mb-5 flex items-center gap-3">
-            <h2 className="text-base font-semibold tracking-wider text-foreground">Contact Details</h2>
+            <h2 className="text-sm font-semibold tracking-wider text-slate-800 dark:text-slate-200">Contact Details</h2>
             <div className="h-px flex-1 bg-border/50" />
           </div>
           <div className="grid gap-6 sm:grid-cols-2">
@@ -117,14 +117,14 @@ export function Step1PersonalInfo() {
             <div className="space-y-2">
               <label className="text-sm font-medium">
                 Phone
-                <span className="ml-0.5 text-destructive">*</span>
+                <span className="ml-0.5 text-red-500">*</span>
               </label>
               <div className={cn(
                 'flex h-12 overflow-hidden rounded-xl border shadow-sm transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-ring',
                 errors.phone
                   ? 'border-destructive focus-within:ring-destructive'
                   : phoneTouched && !phoneValue
-                    ? 'border-destructive/40 focus-within:ring-destructive'
+                    ? 'border-red-300 focus-within:ring-red-500'
                     : 'border-input',
               )}>
                 <div className="flex shrink-0 items-center bg-muted/30 px-4 text-sm font-semibold text-foreground">
@@ -147,10 +147,10 @@ export function Step1PersonalInfo() {
                 />
               </div>
               {errors.phone && (
-                <p className="text-sm text-destructive">{errors.phone.message}</p>
+                <p className="text-xs text-destructive">{errors.phone.message}</p>
               )}
               {!errors.phone && phoneTouched && !phoneValue && (
-                <p className="text-sm text-destructive">Phone is required</p>
+                <p className="text-xs text-destructive">Phone is required</p>
               )}
             </div>
           </div>
@@ -159,14 +159,14 @@ export function Step1PersonalInfo() {
         {/* Location */}
         <section>
           <div className="mb-5 flex items-center gap-3">
-            <h2 className="text-base font-semibold tracking-wider text-foreground">Location</h2>
+            <h2 className="text-sm font-semibold tracking-wider text-slate-800 dark:text-slate-200">Location</h2>
             <div className="h-px flex-1 bg-border/50" />
           </div>
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">
                 Country
-                <span className="ml-0.5 text-destructive">*</span>
+                <span className="ml-0.5 text-red-500">*</span>
               </label>
               <input type="hidden" value="United Arab Emirates" {...register('country')} />
               <div className="flex h-12 items-center gap-2.5 rounded-xl border border-input bg-muted/30 px-4 text-sm text-muted-foreground">
@@ -184,7 +184,7 @@ export function Step1PersonalInfo() {
             <div className="space-y-2">
               <label className="text-sm font-medium">
                 City
-                <span className="ml-0.5 text-destructive">*</span>
+                <span className="ml-0.5 text-red-500">*</span>
               </label>
               <div className="relative" ref={cityRef}>
                 <button
@@ -196,7 +196,7 @@ export function Step1PersonalInfo() {
                     errors.city
                       ? 'border-destructive focus-visible:ring-destructive'
                       : cityTouched && !selectedCity
-                        ? 'border-destructive/40 focus-visible:ring-destructive'
+                        ? 'border-red-300 focus-visible:ring-red-500'
                         : 'border-input',
                   )}
                 >
@@ -235,7 +235,7 @@ export function Step1PersonalInfo() {
                           <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${isSelected ? 'bg-primary' : 'bg-transparent'}`} />
                           {c}
                           {isSelected && (
-                            <span className="ml-auto text-sm text-primary">Selected</span>
+                            <span className="ml-auto text-xs text-primary">Selected</span>
                           )}
                         </button>
                       );
@@ -244,10 +244,10 @@ export function Step1PersonalInfo() {
                 )}
               </div>
               {errors.city && (
-                <p className="text-sm text-destructive">{errors.city.message}</p>
+                <p className="text-xs text-destructive">{errors.city.message}</p>
               )}
               {!errors.city && cityTouched && !selectedCity && (
-                <p className="text-sm text-destructive">City is required</p>
+                <p className="text-xs text-destructive">City is required</p>
               )}
             </div>
           </div>
@@ -256,7 +256,7 @@ export function Step1PersonalInfo() {
         {/* Consent */}
         <section>
           <div className="mb-5 flex items-center gap-3">
-            <h2 className="text-base font-semibold tracking-wider text-foreground">Agreement</h2>
+            <h2 className="text-sm font-semibold tracking-wider text-slate-800 dark:text-slate-200">Agreement</h2>
             <div className="h-px flex-1 bg-border/50" />
           </div>
           <label className="flex cursor-pointer items-start gap-4 rounded-xl border border-border/40 bg-muted/10 p-5 transition-colors hover:bg-muted/20 has-[:checked]:border-primary/30 has-[:checked]:bg-primary/5">
@@ -271,7 +271,7 @@ export function Step1PersonalInfo() {
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground/30" />
           </label>
           {errors.consent && (
-            <p className="mt-2 text-sm text-destructive">{errors.consent.message}</p>
+            <p className="mt-2 text-xs text-destructive">{errors.consent.message}</p>
           )}
         </section>
 

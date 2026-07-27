@@ -46,26 +46,26 @@ import { formatCurrency, formatNumber, cn } from '@utils';
 
 const specColors: Record<string, string> = {
   'SPIDER': 'bg-primary/10 text-primary border-primary/20',
-  'COMPETIZIONE': 'border-accent/20 bg-accent/10 text-accent-800 dark:text-accent-600',
-  'MULTIAIR': 'border-primary/20 bg-primary/10 text-primary',
-  'LUXURY': 'border-accent/20 bg-accent/10 text-accent-800 dark:text-accent-600',
-  'PREMIUM': 'border-primary/20 bg-primary/10 text-primary',
-  'SPORT': 'border-accent/20 bg-accent/10 text-accent-800 dark:text-accent-600',
+  'COMPETIZIONE': 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+  'MULTIAIR': 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20',
+  'LUXURY': 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+  'PREMIUM': 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20',
+  'SPORT': 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
   'STANDARD': 'bg-primary/10 text-primary border-primary/20',
 };
 
 const trendIcons: Record<string, React.ReactNode> = {
-  up: <TrendingUp className="h-3 w-3 text-success" />,
-  down: <TrendingDown className="h-3 w-3 text-destructive" />,
+  up: <TrendingUp className="h-3 w-3 text-emerald-500" />,
+  down: <TrendingDown className="h-3 w-3 text-rose-500" />,
   stable: <Minus className="h-3 w-3 text-muted-foreground" />,
 };
 
 // ─── Confidence Badge ────────────────────────────────────────
 function ConfidenceBadge({ score }: { score: number }) {
-  const color = score >= 85 ? 'border-success/20 bg-success/10 text-success'
-    : score >= 70 ? 'border-primary/20 bg-primary/10 text-primary'
-    : score >= 50 ? 'border-accent/20 bg-accent/10 text-accent-800 dark:text-accent-600'
-    : 'border-destructive/20 bg-destructive/10 text-destructive';
+  const color = score >= 85 ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+    : score >= 70 ? 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20'
+    : score >= 50 ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20'
+    : 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/20';
 
   return (
     <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium', color)}>
@@ -93,15 +93,15 @@ function PricingDetailSection({ vehicleId }: { vehicleId: string }) {
   if (!pricing) return <p className="text-sm text-muted-foreground">No pricing data available</p>;
 
   const trend = pricing.marketTrend;
-  const trendColor = trend.direction === 'up' ? 'text-success'
-    : trend.direction === 'down' ? 'text-destructive' : 'text-muted-foreground';
+  const trendColor = trend.direction === 'up' ? 'text-emerald-600 dark:text-emerald-400'
+    : trend.direction === 'down' ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground';
 
   const range = pricing.priceRange;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
           <DollarSign className="h-4 w-4" />
           Pricing Overview
         </h4>
@@ -120,7 +120,7 @@ function PricingDetailSection({ vehicleId }: { vehicleId: string }) {
           { label: 'P90', value: formatCurrency(range.p90) },
         ].map((item) => (
           <div key={item.label} className="rounded-xl border bg-card p-3">
-            <p className="text-[10px] text-foreground">{item.label}</p>
+            <p className="text-[10px] text-slate-800 dark:text-slate-200">{item.label}</p>
             <p className="mt-0.5 text-sm font-semibold text-foreground">{item.value}</p>
           </div>
         ))}
@@ -128,7 +128,7 @@ function PricingDetailSection({ vehicleId }: { vehicleId: string }) {
 
       {/* Price range bar */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>{formatCurrency(range.min)}</span>
           <span className="text-foreground/60">Price Range</span>
           <span>{formatCurrency(range.max)}</span>
@@ -151,14 +151,14 @@ function PricingDetailSection({ vehicleId }: { vehicleId: string }) {
       {/* Market trend */}
       <div className="flex items-center gap-4 rounded-xl border bg-card p-3">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Market Trend:</span>
+          <span className="text-xs text-muted-foreground">Market Trend:</span>
           <span className={cn('flex items-center gap-1 text-sm font-medium', trendColor)}>
             {trendIcons[trend.direction]}
             {trend.direction === 'up' ? 'Appreciating' : trend.direction === 'down' ? 'Depreciating' : 'Stable'}
-            <span className="text-sm opacity-70">({trend.percentage > 0 ? '+' : ''}{trend.percentage}% / {trend.periodMonths}mo)</span>
+            <span className="text-xs opacity-70">({trend.percentage > 0 ? '+' : ''}{trend.percentage}% / {trend.periodMonths}mo)</span>
           </span>
         </div>
-        <span className="ml-auto text-sm text-muted-foreground">Sample: {formatNumber(pricing.sampleSize)} vehicles</span>
+        <span className="ml-auto text-xs text-muted-foreground">Sample: {formatNumber(pricing.sampleSize)} vehicles</span>
       </div>
     </div>
   );
@@ -208,14 +208,14 @@ function VehicleDetailDialog({
     >
       <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
         <div>
-          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
             <Info className="h-4 w-4" />
             Vehicle Identity
           </h4>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {specs.map((s) => (
               <div key={s.label} className="rounded-xl border bg-card p-3">
-                <p className="text-sm text-muted-foreground">{s.label}</p>
+                <p className="text-xs text-muted-foreground">{s.label}</p>
                 <p className="mt-0.5 font-medium text-foreground">{s.value}</p>
               </div>
             ))}
@@ -225,7 +225,7 @@ function VehicleDetailDialog({
         <PricingDetailSection vehicleId={vehicle.id} />
 
         <div>
-          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
             <Gauge className="h-4 w-4" />
             Technical Specifications
           </h4>
@@ -235,7 +235,7 @@ function VehicleDetailDialog({
                 <div className="flex items-center gap-3">
                   <t.icon className="h-5 w-5 shrink-0 text-muted-foreground" />
                   <div className="min-w-0">
-                    <p className="text-sm text-muted-foreground">{t.label}</p>
+                    <p className="text-xs text-muted-foreground">{t.label}</p>
                     <p className="truncate font-medium text-foreground">{t.value}</p>
                   </div>
                 </div>
@@ -245,14 +245,14 @@ function VehicleDetailDialog({
         </div>
 
         <div>
-          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+          <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
             <Layers className="h-4 w-4" />
             Classification
           </h4>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {dimensions.map((d) => (
               <div key={d.label} className="rounded-xl border bg-card p-3">
-                <p className="text-sm text-muted-foreground">{d.label}</p>
+                <p className="text-xs text-muted-foreground">{d.label}</p>
                 <p className="mt-0.5 font-medium text-foreground">{d.value}</p>
               </div>
             ))}
@@ -261,7 +261,7 @@ function VehicleDetailDialog({
 
         {vehicle.description && (
           <div>
-            <h4 className="mb-2 text-sm font-semibold text-foreground">Description</h4>
+            <h4 className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-200">Description</h4>
             <p className="text-sm text-muted-foreground leading-relaxed">{vehicle.description}</p>
           </div>
         )}
@@ -526,7 +526,7 @@ function FilterBar({
       <div className="p-4">
         <div className="flex flex-wrap items-end gap-3">
           <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'year' ? 'z-50' : 'z-0')}>
-            <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Year</label>
+            <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Year</label>
             <CustomSelect
               placeholder="All Years"
               options={yearOptions}
@@ -536,7 +536,7 @@ function FilterBar({
             />
           </div>
           <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'make' ? 'z-50' : 'z-0')}>
-            <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Make</label>
+            <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Make</label>
             <CustomSelect
               placeholder="All Makes"
               options={makeOptions}
@@ -546,7 +546,7 @@ function FilterBar({
             />
           </div>
           <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'model' ? 'z-50' : 'z-0')}>
-            <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Model</label>
+            <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Model</label>
             <CustomSelect
               placeholder="All Models"
               options={modelOptions}
@@ -594,47 +594,47 @@ function FilterBar({
           >
             <div className="border-t border-border" />
             <div className="p-4">
-              <span className="mb-3 block text-[11px] font-semibold text-foreground">Advanced Filters</span>
+              <span className="mb-3 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Advanced Filters</span>
               <div className="flex flex-wrap items-end gap-3">
                 <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'bodyType' ? 'z-50' : 'z-0')}>
-                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Body Type</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Body Type</label>
                   <CustomSelect placeholder="All Types" options={bodyTypeOptions} value={filters.bodyType} onChange={(v) => onFilterChange('bodyType', v)} onOpenChange={(o) => setOpenDropdown(o ? 'bodyType' : null)} />
                 </div>
                 <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'transmission' ? 'z-50' : 'z-0')}>
-                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Transmission</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Transmission</label>
                   <CustomSelect placeholder="All" options={transmissionOptions} value={filters.transmission} onChange={(v) => onFilterChange('transmission', v)} onOpenChange={(o) => setOpenDropdown(o ? 'transmission' : null)} />
                 </div>
                 <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'category' ? 'z-50' : 'z-0')}>
-                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Category</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Category</label>
                   <CustomSelect placeholder="All" options={categoryOptions} value={filters.category} onChange={(v) => onFilterChange('category', v)} onOpenChange={(o) => setOpenDropdown(o ? 'category' : null)} />
                 </div>
                 <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'driveType' ? 'z-50' : 'z-0')}>
-                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Drive Type</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Drive Type</label>
                   <CustomSelect placeholder="All" options={driveTypeOptions} value={filters.driveType} onChange={(v) => onFilterChange('driveType', v)} onOpenChange={(o) => setOpenDropdown(o ? 'driveType' : null)} />
                 </div>
                 <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'spec' ? 'z-50' : 'z-0')}>
-                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Spec</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Spec</label>
                   <CustomSelect placeholder="All" options={specOptions} value={filters.spec} onChange={(v) => onFilterChange('spec', v)} onOpenChange={(o) => setOpenDropdown(o ? 'spec' : null)} />
                 </div>
                 <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'powertrain' ? 'z-50' : 'z-0')}>
-                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Powertrain</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Powertrain</label>
                   <CustomSelect placeholder="All" options={powertrainOptions} value={filters.powertrain} onChange={(v) => onFilterChange('powertrain', v)} onOpenChange={(o) => setOpenDropdown(o ? 'powertrain' : null)} />
                 </div>
                 <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'vehicleType' ? 'z-50' : 'z-0')}>
-                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Vehicle Type</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Vehicle Type</label>
                   <CustomSelect placeholder="All" options={vehicleTypeOptions} value={filters.vehicleType} onChange={(v) => onFilterChange('vehicleType', v)} onOpenChange={(o) => setOpenDropdown(o ? 'vehicleType' : null)} />
                 </div>
                 <div className="flex-1 min-w-[140px]">
-                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Min Price</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Min Price</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">AED</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">AED</span>
                     <input type="number" placeholder="No min" value={filters.minPrice ?? ''} onChange={(e) => onFilterChange('minPrice', e.target.value || undefined)} className="flex h-10 w-full rounded-xl border border-input bg-card pl-12 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                   </div>
                 </div>
                 <div className="flex-1 min-w-[140px]">
-                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Max Price</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Max Price</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">AED</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">AED</span>
                     <input type="number" placeholder="No max" value={filters.maxPrice ?? ''} onChange={(e) => onFilterChange('maxPrice', e.target.value || undefined)} className="flex h-10 w-full rounded-xl border border-input bg-card pl-12 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                   </div>
                 </div>
@@ -705,6 +705,7 @@ function VehicleCard({ vehicle, pricing, onClick }: {
     >
       <Card className="overflow-hidden border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 h-full">
         {/* Gradient top bar */}
+        <div className="h-1 bg-gradient-to-r from-primary/60 via-accent/60 to-primary/30" />
         <CardContent className="p-5 flex flex-col h-full">
           {/* Header row: year + spec badge */}
           <div className="flex items-center justify-between mb-4 shrink-0">
@@ -761,7 +762,7 @@ function VehicleCard({ vehicle, pricing, onClick }: {
           {/* Bottom: price + actions */}
           <div className="mt-4 flex items-center justify-between border-t pt-4 shrink-0">
             <div>
-              <p className="text-[10px] font-medium text-foreground">Market Price</p>
+              <p className="text-[10px] font-medium text-slate-800 dark:text-slate-200">Market Price</p>
               <p className="text-lg font-bold text-primary">
                 {pricing?.averagePrice ? formatCurrency(pricing.averagePrice) : '—'}
               </p>
@@ -907,7 +908,7 @@ export function AdminVehiclesPage() {
       {/* Header */}
       <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-foreground">Vehicles</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Vehicles</h1>
           <p className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{formatNumber(data?.total ?? 0)}</span> vehicles in the database
           </p>
@@ -918,7 +919,7 @@ export function AdminVehiclesPage() {
             <button
               onClick={() => setViewMode('table')}
               className={cn(
-                'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-all',
+                'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
                 viewMode === 'table'
                   ? 'bg-primary/10 text-primary shadow-sm'
                   : 'text-muted-foreground hover:text-foreground',
@@ -931,7 +932,7 @@ export function AdminVehiclesPage() {
             <button
               onClick={() => setViewMode('grid')}
               className={cn(
-                'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-all',
+                'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
                 viewMode === 'grid'
                   ? 'bg-primary/10 text-primary shadow-sm'
                   : 'text-muted-foreground hover:text-foreground',
@@ -981,32 +982,32 @@ export function AdminVehiclesPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">#</th>
-                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">#</th>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">
                       <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('year')}>
                         Year <SortIcon field="year" />
                       </span>
                     </th>
-                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">
                       <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('make')}>
                         Make <SortIcon field="make" />
                       </span>
                     </th>
-                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">
                       <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('model')}>
                         Model <SortIcon field="model" />
                       </span>
                     </th>
-                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">Spec</th>
-                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">Body Type</th>
-                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">Engine</th>
-                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">Hp</th>
-                    <th className="min-w-[110px] px-4 py-3.5 text-center text-sm font-semibold text-foreground">
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">Spec</th>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">Body Type</th>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">Engine</th>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">Hp</th>
+                    <th className="min-w-[110px] px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">
                       <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('price')}>
                         Price <SortIcon field="price" />
                       </span>
                     </th>
-                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">Actions</th>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-slate-800 dark:text-slate-200">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -1015,7 +1016,7 @@ export function AdminVehiclesPage() {
                       key={vehicle.id}
                       className="group/row transition-colors hover:bg-muted/50"
                     >
-                      <td className="px-4 py-3 text-center text-sm text-muted-foreground">
+                      <td className="px-4 py-3 text-center text-xs text-muted-foreground">
                         {(page - 1) * pageSize + i + 1}
                       </td>
                       <td className="px-4 py-3 text-center font-semibold text-foreground">
@@ -1032,13 +1033,13 @@ export function AdminVehiclesPage() {
                           {vehicle.spec}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-center text-sm text-foreground">
+                      <td className="px-4 py-3 text-center text-xs text-foreground">
                         {vehicle.bodyType}
                       </td>
-                      <td className="px-4 py-3 text-center text-sm text-muted-foreground">
+                      <td className="px-4 py-3 text-center text-xs text-muted-foreground">
                         {vehicle.engineSize}L
                       </td>
-                      <td className="px-4 py-3 text-center text-sm text-muted-foreground">
+                      <td className="px-4 py-3 text-center text-xs text-muted-foreground">
                         {vehicle.horsepower}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-center font-medium tabular-nums text-foreground">
@@ -1114,7 +1115,7 @@ export function AdminVehiclesPage() {
             <select
               value={pageSize}
               onChange={(e) => setPageSize(Number(e.target.value))}
-              className="rounded-md border bg-background px-2 py-1 text-sm text-foreground outline-none focus:border-primary/50"
+              className="rounded-md border bg-background px-2 py-1 text-xs text-foreground outline-none focus:border-primary/50"
             >
               {[10, 20, 50, 100].map((size) => (
                 <option key={size} value={size}>{size}</option>

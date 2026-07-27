@@ -245,10 +245,10 @@ export function Step3Result() {
             >
               {thankYouMode ? (
                 <>
-                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-success/10">
-                    <Heart className="h-10 w-10 text-success" />
+                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10">
+                    <Heart className="h-10 w-10 text-emerald-500" />
                   </div>
-                  <h2 className="mb-2 text-lg font-bold tracking-tight">Thank You!</h2>
+                  <h2 className="mb-2 text-2xl font-bold tracking-tight">Thank You!</h2>
                   <p className="mb-6 text-muted-foreground">
                     We appreciate your interest. We'll continue expanding our catalogue and may
                     reach out if this vehicle becomes available.
@@ -256,10 +256,10 @@ export function Step3Result() {
                 </>
               ) : (
                 <>
-                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-success/10">
-                    <MessageSquare className="h-10 w-10 text-success" />
+                  <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10">
+                    <MessageSquare className="h-10 w-10 text-emerald-500" />
                   </div>
-                  <h2 className="mb-2 text-lg font-bold tracking-tight">Request Submitted!</h2>
+                  <h2 className="mb-2 text-2xl font-bold tracking-tight">Request Submitted!</h2>
                   <p className="mb-2 text-muted-foreground">
                     We'll send you a message on{' '}
                     <span className="font-semibold text-foreground">
@@ -273,15 +273,15 @@ export function Step3Result() {
               {flow3Result && (
                 <div className="mx-auto mt-4 mb-6 max-w-xs rounded-xl border bg-card p-4">
                   <div className="mb-1 flex items-center justify-center gap-1.5">
-                    <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-success">
-                      <span className="h-1.5 w-1.5 rounded-full bg-success" />
+                    <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-500">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                       Live Market Data
                     </span>
                   </div>
                   <p className="text-lg font-bold text-primary">
                     {formatCurrency(flow3Result.minPrice)} — {formatCurrency(flow3Result.maxPrice)}
                   </p>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
+                  <p className="mt-0.5 text-xs text-muted-foreground">
                     {flow3Result.count} listings · YallaMotor
                   </p>
                 </div>
@@ -304,10 +304,10 @@ export function Step3Result() {
               animate={{ opacity: 1, y: 0 }}
               className="text-center"
             >
-              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-accent/10">
-                <SearchX className="h-10 w-10 text-accent-700 dark:text-accent-600" />
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-amber-500/10">
+                <SearchX className="h-10 w-10 text-amber-500" />
               </div>
-              <h2 className="mb-2 text-lg font-bold tracking-tight">Vehicle Not Found</h2>
+              <h2 className="mb-2 text-2xl font-bold tracking-tight">Vehicle Not Found</h2>
               <p className="mb-1 text-muted-foreground">
                 We couldn't find this vehicle in our valuation database yet.
               </p>
@@ -316,7 +316,7 @@ export function Step3Result() {
               </p>
 
               {/* Summary card */}
-              <Card className="mb-8 border-accent/20 bg-accent/5">
+              <Card className="mb-8 border-amber-500/20 bg-amber-500/5">
                 <CardContent className="p-5">
                   <div className="grid grid-cols-2 gap-3 text-left">
                     {[
@@ -345,7 +345,7 @@ export function Step3Result() {
                 <Send className="mr-2 h-4 w-4" />
                 Request This Vehicle
               </Button>
-              <p className="text-sm text-muted-foreground/60">
+              <p className="text-xs text-muted-foreground/60">
                 Most requested vehicles are added first.
               </p>
 
@@ -387,7 +387,7 @@ export function Step3Result() {
                 <div key={step.phase} className="flex items-center gap-2">
                   {i > 0 && <div className={cn('h-px w-6', isPast ? 'bg-primary/40' : 'bg-border')} />}
                   <div className={cn(
-                    'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors',
+                    'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors',
                     isPast ? 'bg-primary/10 text-primary' :
                     isActive ? 'bg-primary/10 text-primary' :
                     'text-muted-foreground bg-muted/30',
@@ -474,10 +474,10 @@ export function Step3Result() {
               {flow3Result?._unavailable ? (
                 /* YallaMotor unavailable — friendly message + allow manual submission */
                 <>
-                  <div className="rounded-xl border border-accent/20 bg-accent/5 p-5 text-center">
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 text-center">
                     <div className="mb-2 flex items-center justify-center gap-2">
-                      <Globe className="h-4 w-4 text-accent-700 dark:text-accent-600" />
-                      <p className="text-sm font-semibold uppercase tracking-wider text-accent-800 dark:text-accent-600">
+                      <Globe className="h-4 w-4 text-amber-500" />
+                      <p className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
                         Live Data Unavailable
                       </p>
                     </div>
@@ -490,12 +490,12 @@ export function Step3Result() {
                   {/* Price Suggestion */}
                   <div className="rounded-xl border bg-muted/20 p-4">
                     <div className="mb-3 flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-accent-700 dark:text-accent-600" />
-                      <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                      <DollarSign className="h-4 w-4 text-amber-500" />
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Your Price Estimate (Optional)
                       </p>
                     </div>
-                    <p className="mb-3 text-sm text-muted-foreground">
+                    <p className="mb-3 text-xs text-muted-foreground">
                       Know the market? Enter your own price range.
                     </p>
                     <div className="flex items-center gap-3 mb-3">
@@ -504,7 +504,7 @@ export function Step3Result() {
                         placeholder="Min Price"
                         value={suggestedMinPrice}
                         onChange={(e) => setSuggestedMinPrice(e.target.value)}
-                        className="h-9 flex-1 rounded-lg border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                        className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
                       />
                       <span className="text-muted-foreground/40">—</span>
                       <input
@@ -512,7 +512,7 @@ export function Step3Result() {
                         placeholder="Max Price"
                         value={suggestedMaxPrice}
                         onChange={(e) => setSuggestedMaxPrice(e.target.value)}
-                        className="h-9 flex-1 rounded-lg border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                        className="h-9 flex-1 rounded-lg border bg-background px-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
                       />
                     </div>
                   </div>
@@ -550,8 +550,8 @@ export function Step3Result() {
                 </>
               ) : scrapeError && !flow3Result ? (
                 /* Error state */
-                <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-5 text-center">
-                  <p className="text-sm font-medium text-destructive">
+                <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5 text-center">
+                  <p className="text-sm font-medium text-red-600 dark:text-red-400">
                     {scrapeError}
                   </p>
                   <Button
@@ -569,17 +569,17 @@ export function Step3Result() {
               ) : flow3Result ? (
                 <>
                   {/* Price Estimate — Real YallaMotor Data */}
-                  <div className="rounded-xl border bg-gradient-to-br from-success/5 to-transparent p-5 text-center">
+                  <div className="rounded-xl border bg-gradient-to-br from-emerald-500/5 to-transparent p-5 text-center">
                     <div className="mb-2 flex items-center justify-center gap-2">
-                      <Globe className="h-4 w-4 text-success" />
-                      <p className="text-sm font-semibold uppercase tracking-wider text-success">
+                      <Globe className="h-4 w-4 text-emerald-500" />
+                      <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                         Live Market Data — YallaMotor
                       </p>
                     </div>
                     <p className="text-2xl font-bold text-foreground">
                       {formatCurrency(flow3Result.minPrice)} — {formatCurrency(flow3Result.maxPrice)}
                     </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {flow3Result.count} listings found · {flow3Result.year} {flow3Result.make} {flow3Result.model}
                     </p>
                     {flow3Result.heading && (
@@ -592,7 +592,7 @@ export function Step3Result() {
                       href={flow3Result.sourceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center gap-1 text-sm text-primary/70 hover:text-primary"
+                      className="mt-3 inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary"
                     >
                       <ExternalLink className="h-3 w-3" />
                       View on YallaMotor
@@ -602,17 +602,17 @@ export function Step3Result() {
                   {/* Price Suggestion */}
                   <div className="rounded-xl border bg-muted/20 p-4">
                     <div className="mb-3 flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-accent-700 dark:text-accent-600" />
-                      <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                      <DollarSign className="h-4 w-4 text-amber-500" />
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                         Suggest Your Own Price (Optional)
                       </p>
                     </div>
-                    <p className="mb-3 text-sm text-muted-foreground">
+                    <p className="mb-3 text-xs text-muted-foreground">
                       Know the market better? Enter your own price range for this vehicle.
                     </p>
                     <div className="flex items-center gap-3">
                       <div className="relative min-w-0 flex-1">
-                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
                           AED
                         </span>
                         <input
@@ -621,12 +621,12 @@ export function Step3Result() {
                           placeholder="Min Price"
                           value={formatPriceInput(suggestedMinPrice)}
                           onChange={(e) => setSuggestedMinPrice(sanitizePriceInput(e.target.value))}
-                          className="h-9 w-full rounded-lg border bg-background pl-14 pr-3 text-sm outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                          className="h-9 w-full rounded-lg border bg-background pl-14 pr-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
                         />
                       </div>
                       <span className="text-muted-foreground/40">—</span>
                       <div className="relative min-w-0 flex-1">
-                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+                        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
                           AED
                         </span>
                         <input
@@ -635,7 +635,7 @@ export function Step3Result() {
                           placeholder="Max Price"
                           value={formatPriceInput(suggestedMaxPrice)}
                           onChange={(e) => setSuggestedMaxPrice(sanitizePriceInput(e.target.value))}
-                          className="h-9 w-full rounded-lg border bg-background pl-14 pr-3 text-sm outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                          className="h-9 w-full rounded-lg border bg-background pl-14 pr-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
                         />
                       </div>
                     </div>
@@ -689,7 +689,7 @@ export function Step3Result() {
         <div className="mb-4 rounded-full bg-destructive/10 p-4">
           <BarChart3 className="mx-auto h-8 w-8 text-destructive" />
         </div>
-        <h2 className="mb-2 text-lg font-semibold">Valuation Unavailable</h2>
+        <h2 className="mb-2 text-2xl font-semibold">Valuation Unavailable</h2>
         <p className="mb-6 text-muted-foreground">
           We couldn't generate a valuation for the selected vehicle. Please try a different
           selection.
@@ -715,7 +715,7 @@ export function Step3Result() {
       {/* Header */}
       <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h2 className="text-lg font-bold">
+          <h2 className="text-2xl font-bold">
             {vehicle.year} {vehicle.make} {vehicle.model}
           </h2>
           <p className="text-muted-foreground">{vehicle.spec}</p>
@@ -760,7 +760,7 @@ export function Step3Result() {
                 >
                   <div className="mb-2 flex items-center gap-2 text-muted-foreground">
                     <Icon className="h-4 w-4" />
-                    <p className="text-sm">{spec.label}</p>
+                    <p className="text-xs">{spec.label}</p>
                   </div>
                   <p className="text-sm font-semibold">{spec.value}</p>
                 </div>
@@ -787,10 +787,10 @@ export function Step3Result() {
                   <div
                     className={`mt-0.5 rounded-full p-1 ${
                       insight.severity === 'positive'
-                        ? 'bg-success/10 text-success'
+                        ? 'bg-green-500/10 text-green-500'
                         : insight.severity === 'negative'
-                          ? 'bg-destructive/10 text-destructive'
-                          : 'bg-primary/10 text-primary'
+                          ? 'bg-red-500/10 text-red-500'
+                          : 'bg-blue-500/10 text-blue-500'
                     }`}
                   >
                     {insight.severity === 'positive' ? (
@@ -869,12 +869,12 @@ export function Step3Result() {
 
           {/* Price inputs */}
           <div>
-            <p className="mb-2 text-sm font-semibold tracking-wider text-muted-foreground">
+            <p className="mb-2 text-xs font-semibold tracking-wider text-muted-foreground">
               Suggested Price Range
             </p>
             <div className="flex items-center gap-3">
               <div className="relative min-w-0 flex-1">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
                   AED
                 </span>
                 <input
@@ -883,12 +883,12 @@ export function Step3Result() {
                   placeholder="Min Price"
                   value={formatPriceInput(suggestMinPrice)}
                   onChange={(e) => setSuggestMinPrice(sanitizePriceInput(e.target.value))}
-                  className="h-9 w-full rounded-lg border bg-background pl-14 pr-3 text-sm outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                  className="h-9 w-full rounded-lg border bg-background pl-14 pr-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
                 />
               </div>
               <span className="text-muted-foreground/40">—</span>
               <div className="relative min-w-0 flex-1">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
                   AED
                 </span>
                 <input
@@ -897,7 +897,7 @@ export function Step3Result() {
                   placeholder="Max Price"
                   value={formatPriceInput(suggestMaxPrice)}
                   onChange={(e) => setSuggestMaxPrice(sanitizePriceInput(e.target.value))}
-                  className="h-9 w-full rounded-lg border bg-background pl-14 pr-3 text-sm outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                  className="h-9 w-full rounded-lg border bg-background pl-14 pr-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
                 />
               </div>
             </div>
@@ -905,7 +905,7 @@ export function Step3Result() {
 
           {/* Source URL */}
           <div>
-            <p className="mb-2 text-sm font-semibold tracking-wider text-muted-foreground">
+            <p className="mb-2 text-xs font-semibold tracking-wider text-muted-foreground">
               Source URL <span className="text-muted-foreground/50">(optional)</span>
             </p>
             <div className="relative">
@@ -915,14 +915,14 @@ export function Step3Result() {
                 placeholder="https://example.com/listing"
                 value={suggestSourceUrl}
                 onChange={(e) => setSuggestSourceUrl(e.target.value)}
-                className="h-9 w-full rounded-lg border bg-background pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
+                className="h-9 w-full rounded-lg border bg-background pl-9 pr-3 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50"
               />
             </div>
           </div>
 
           {/* Comment */}
           <div>
-            <p className="mb-2 text-sm font-semibold tracking-wider text-muted-foreground">
+            <p className="mb-2 text-xs font-semibold tracking-wider text-muted-foreground">
               Comment <span className="text-muted-foreground/50">(optional)</span>
             </p>
             <textarea
@@ -930,7 +930,7 @@ export function Step3Result() {
               value={suggestComment}
               onChange={(e) => setSuggestComment(e.target.value)}
               rows={3}
-              className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/40 focus:border-primary/50 resize-none"
+              className="w-full rounded-lg border bg-background px-3 py-2 text-xs outline-none placeholder:text-muted-foreground/40 focus:border-primary/50 resize-none"
             />
           </div>
 

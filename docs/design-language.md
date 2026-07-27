@@ -1,6 +1,6 @@
 # Design Language — Vehicle Pricing Intelligence Platform
 
-> **Last updated:** 2026-07-24
+> **Last updated:** 2026-07-23
 > **See also:** [`color-scheme.md`](color-scheme.md) for the full color palette
 
 ---
@@ -110,18 +110,12 @@ font-mono: JetBrains Mono, Fira Code, monospace;
 - Numeric tabular data: `tabular-nums` for aligned digits
 - Uppercase labels: `tracking-wider` (0.05em)
 
-### Gradient and brand effects
+### Gradient text effects
 
 ```css
-.brand-gradient         /* canonical midnight -> deep -> electric teal spectrum */
-.brand-gradient-soft    /* low-contrast fusion for tinted surfaces */
-.brand-canvas           /* page canvas with restrained dual-color ambient glows */
-.brand-icon             /* fused logo/icon tile with highlight and dual-color shadow */
-.brand-rule             /* fused divider or section accent */
-.section-title          /* centered fused underline for section headings */
-.gradient-text          /* static three-tone teal spectrum text */
-.gradient-text-gold     /* legacy name: electric-teal accent gradient */
-.shimmer-text           /* animated three-tone teal sweep */
+.gradient-text          /* primary indigo gradient */
+.gradient-text-gold     /* accent amber gradient */
+.shimmer-text           /* animated indigo ↔ amber sweep */
 ```
 
 ---
@@ -130,26 +124,16 @@ font-mono: JetBrains Mono, Fira Code, monospace;
 
 > **Full reference:** [`docs/color-scheme.md`](color-scheme.md)
 
-### The three-tone teal system
+### The two-punch combo
 
-- **Midnight teal (`#092327`)** — depth, authority and premium automotive atmosphere. Used for dark canvases, navigation and the deepest gradient stop.
-- **Deep teal (`#0B5351`)** — trust, technology and readable structure. Used for primary actions, links and light-mode interaction.
-- **Electric teal (`#00A9A5`)** — energy and precision. Used for focus, progress, highlights and the bright gradient stop.
-
-### Brand fusion recipe
-
-- Midnight and deep teal are the structural anchors: navigation, links, information hierarchy, and gradient depth.
-- Electric teal is the energy accent: focus, progress, emphasis, notification counts and active moments.
-- The canonical spectrum runs from midnight teal through deep teal into electric teal. Use `.brand-gradient` rather than assembling a new gradient per component.
-- Fusion is reserved for recognizable brand moments: logo marks, primary CTAs, active admin navigation, progress indicators, title accents, and loading states.
-- Use `.brand-gradient-soft` or token opacity for large surfaces. Full-strength gradients should not sit behind long-form text.
-- Success, destructive, warning, and informational states retain their semantic colors. Brand consistency must not erase state meaning.
+- **Indigo (primary, `252°`)** — trust, technology, precision. Used for CTAs, active states, links, focus rings.
+- **Amber (accent, `38°`)** — speed, luxury, gold warmth. Used for premium badges, highlights, shimmer partners.
 
 ### Surface philosophy
 
-- **Light mode:** Teal-tinted off-white background, white cards and desaturated teal borders.
-- **Dark mode:** Midnight teal (`#092327`) canvas with elevated deep-teal cards.
-- **Sidebar:** Permanently midnight teal in both modes, with deep-teal hover states and electric-teal focus.
+- **Light mode:** Clean white backgrounds (`0 0% 100%`), subtle gray borders (`240 6% 90%`).
+- **Dark mode:** True near-black (`240 10% 2.5%`) — not dark gray. Creates a high-end dashboard feel.
+- **Sidebar:** Permanently dark in both modes (deep indigo `252 65% 14%` in light, near-black `240 10% 1.5%` in dark) — acts as a persistent visual anchor.
 
 ### Semantic colors
 
@@ -157,7 +141,7 @@ font-mono: JetBrains Mono, Fira Code, monospace;
 |---|---|
 | `green` (`142°`) | Success, completed, "Live Market Data" badges |
 | `red` (`0°`) | Destructive actions, errors, ErrorBoundary |
-| Electric teal | Warnings, "Vehicle Not Found" state, caution banners |
+| Amber (`38°`) | Warnings, "Vehicle Not Found" state, caution banners |
 | `emerald` | Price Suggestions section accent (notification dropdown) |
 
 ---
@@ -226,7 +210,7 @@ px-4 py-20 md:py-32  ← hero section
 | **Elevated** | `shadow-lg` | Gradient buttons, interactive card hover |
 | **Modal** | `shadow-2xl` | Dialog content |
 | **Tooltip** | `shadow-xl` | Chart tooltips, notification dropdown |
-| **Glow (teal)** | `0 8px 30px hsl(var(--primary) / 0.15)` | Interactive card hover |
+| **Glow (indigo)** | `0 8px 30px hsl(var(--primary) / 0.15)` | Interactive card hover |
 | **Primary glow** | `shadow-xl shadow-primary/20` | Primary CTA buttons |
 
 ### Key shadow implementations
@@ -256,7 +240,7 @@ shadow-xl
 |---|---|---|
 | `default` | `bg-primary text-primary-foreground shadow-sm` | Primary actions |
 | `gradient` | Indigo gradient, animated sweep, scale on hover | Hero CTAs, primary calls-to-action |
-| `gradient-accent` | Electric-teal tonal gradient | Highlight CTAs |
+| `gradient-accent` | Amber gradient, same animation | Premium / gold CTAs |
 | `outline` | Border + transparent bg + accent hover glow | Secondary actions |
 | `secondary` | `bg-secondary text-secondary-foreground` | Tertiary buttons |
 | `ghost` | Transparent, accent hover | Icon buttons, toolbar |
@@ -275,7 +259,7 @@ Sizes: `sm` (h-9), `default` (h-10), `lg` (h-12), `xl` (h-14), `icon` (h-10 w-10
 
 - **Composition:** `Card` → `CardHeader` / `CardContent` / `CardFooter`.
 - **Default card:** `rounded-xl border bg-card text-card-foreground shadow-sm`.
-- **Interactive card (`.interactive-card`):** Hover lifts `-translate-y-1`, gains teal-tinted shadow, border tints toward primary.
+- **Interactive card (`.interactive-card`):** Hover lifts `-translate-y-1`, gains indigo-tinted shadow, border tints toward primary.
 - **ChartCard:** Adds accent gradient bar (1px) at top, icon + subtitle header, built-in empty state.
 - **Glass card (`.glass-card`):** Light: `bg-white/80 backdrop-blur-xl border-black/5`. Dark: `bg-black/20 backdrop-blur-xl border-white/10`.
 - **Glow card (`.glow-card`):** Subtle gradient border that fades in on hover via `::before` pseudo-element.
@@ -288,7 +272,7 @@ Sizes: `sm` (h-9), `default` (h-10), `lg` (h-12), `xl` (h-14), `icon` (h-10 w-10
 | `secondary` | Muted bg | Info tags |
 | `destructive` | Red | Error/cancelled |
 | `success` | Green bg/20 + green text | "Completed", "Sold" |
-| `warning` | Electric-teal tint + deep-teal text | "Pending" |
+| `warning` | Amber bg/20 + amber text | "Pending" |
 | `outline` | Border only | Subtle tags |
 
 ### Tabs (`tabs.tsx`)
@@ -309,7 +293,7 @@ Sizes: `sm` (h-9), `default` (h-10), `lg` (h-12), `xl` (h-14), `icon` (h-10 w-10
 ### Inputs
 
 - **Standard input:** `h-10 rounded-lg border border-input bg-transparent px-3 py-2 text-sm`.
-- **Focus:** `ring-2 ring-ring` (electric teal).
+- **Focus:** `ring-2 ring-ring` (indigo).
 - **Error state:** `border-destructive focus-visible:ring-destructive`.
 - **Disabled:** `opacity-50 cursor-not-allowed`.
 - **Price inputs:** "AED" prefix inside the field with `pl-14` padding, sanitized numeric input.
@@ -396,7 +380,7 @@ transition: { duration: 0.2, ease: 'easeOut' }
 - **Button press:** `active:scale-[0.95]` — every button feels tactile.
 - **Gradient button hover:** `hover:scale-[1.02]` — gentle breath.
 - **Card hover:** `-translate-y-0.5` with `shadow-md` and `border-primary/20`.
-- **Interactive card hover:** `-translate-y-1 shadow-lg` with teal glow.
+- **Interactive card hover:** `-translate-y-1 shadow-lg` with indigo glow.
 - **Link hover underline:** `after:w-4/5` via pseudo-element (`after:transition-all after:duration-300`).
 - **Sidebar item:** `hover:scale-110` on icons.
 - **Nav link bottom bar:** `300ms` width transition from 0 → 80%.
@@ -556,8 +540,8 @@ Data     → Render
 
 ### Not found (vehicle)
 
-- Electric-teal icon (`SearchX` in `bg-accent/10`).
-- Summary card with an electric-teal tinted border.
+- Amber icon (`SearchX` in `bg-amber-500/10`).
+- Summary card with amber-tinted border.
 - "Request This Vehicle" CTA.
 - Multi-step dialog: Details → Scraping YallaMotor → Results.
 
@@ -567,16 +551,16 @@ Data     → Render
 
 ### Public (MainLayout)
 
-- **Header:** Sticky translucent surface with a persistent three-tone teal bottom border.
+- **Header:** Sticky, `bg-white/70 backdrop-blur-md`, gradient bottom border (indigo, visible on hover).
 - **Nav links:** Bottom-underline hover effect (`after:w-4/5` at 300ms). Active link has persistent underline + primary color.
 - **Mobile:** Hamburger menu with `AnimatePresence` height animation.
-- **Footer:** 3-column grid (Brand, Quick Links, Legal) on a translucent tokenized card surface.
+- **Footer:** 3-column grid (Brand, Quick Links, Legal). `bg-slate-50` / `dark:bg-slate-900/50`.
 
 ### Admin (AdminLayout)
 
 - **Sidebar:** Collapsible (`w-64` ↔ `w-16`). React state driven (not CSS group-hover). Icons always visible.
 - **Active item:** Primary-tinted background + left accent bar (`h-5 w-0.5 rounded-full bg-primary`).
-- **Notification badges:** deep/electric teal according to notification category.
+- **Notification badges:** `bg-amber-500` consistent across all three sections.
 - **Top bar:** Breadcrumb-style title + search input + NotificationDropdown + ThemeSwitcher.
 - **Page title updates** `document.title` on route change.
 

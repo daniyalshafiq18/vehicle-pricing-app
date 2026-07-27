@@ -110,13 +110,13 @@ export function AdminSettingsPage() {
                     <div className="flex items-center justify-between rounded-xl border bg-card p-3">
                       <div>
                         <p className="text-sm text-foreground">Current Source</p>
-                        <p className="text-sm text-muted-foreground">Microsoft Dataverse</p>
+                        <p className="text-xs text-muted-foreground">Microsoft Dataverse</p>
                       </div>
-                      <span className="rounded-full bg-success/10 px-2.5 py-0.5 text-[10px] font-medium text-success">
+                      <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
                         Active
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       All vehicle data is fetched from Microsoft Dataverse via the Power Pages Web API. Uses CSRF-authenticated requests via <code className="text-[10px] bg-muted px-1 rounded">safeFetch</code>.
                     </p>
                   </div>
@@ -206,7 +206,7 @@ export function AdminSettingsPage() {
                   <p className="text-sm text-muted-foreground mb-4">{s4.desc}</p>
                   <div className="space-y-3">
                     <ToggleSwitch enabled={settings.showSensitiveData} onChange={(v) => setSettings((s) => ({ ...s, showSensitiveData: v }))} label="Show sensitive pricing data in tables" />
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <EyeOff className="h-3 w-3" />
                       <span>All data is read-only · No edit permissions required</span>
                     </div>

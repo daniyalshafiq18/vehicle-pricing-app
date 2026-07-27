@@ -256,7 +256,7 @@ export function CustomSelect({
         role="listbox"
       >
         {filteredOptions.length === 0 ? (
-          <div className="flex items-center justify-center py-8 text-sm text-muted-foreground/60">
+          <div className="flex items-center justify-center py-8 text-xs text-muted-foreground/60">
             No options found
           </div>
         ) : (
@@ -273,12 +273,12 @@ export function CustomSelect({
                 onClick={() => handleSelect(opt.value)}
                 onMouseEnter={() => setFocusedIndex(i)}
                 className={cn(
-                  'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors',
+                  'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-all',
                   isSelected
                     ? 'bg-primary/10 text-primary font-medium'
                     : isFocused
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-foreground/80 hover:bg-primary/10 hover:text-primary',
+                      ? 'bg-accent/70 text-foreground'
+                      : 'text-foreground/80 hover:bg-accent/50 hover:text-foreground',
                 )}
               >
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-border transition-all">
@@ -303,7 +303,7 @@ export function CustomSelect({
           <button
             type="button"
             onClick={() => { onChange?.(undefined); setOpen(false); }}
-            className="flex w-full items-center gap-1.5 text-sm text-muted-foreground/60 hover:text-destructive transition-colors"
+            className="flex w-full items-center gap-1.5 text-xs text-muted-foreground/60 hover:text-destructive transition-colors"
           >
             <X className="h-3 w-3" />
             Clear selection
