@@ -17,6 +17,8 @@ metadata:
 - **No console.log in production code** — the only console call is in `error-boundary.tsx` for error reporting
 - **No unused dependencies** — `@types/jquery` was removed since jQuery isn't used
 - **No dead path aliases** — `@services` was removed because the directory was empty
+- **Build scripts must use JavaScript-compatible regex syntax** — Node does not support PCRE atomic groups like `(?>...)`; use standard capturing or non-capturing groups in `.mjs` scripts.
+- **Portal orphan cleanup is opt-in** — avoid deleting large batches of Power Pages web-file records during normal builds; large deletion payloads can make `pac paportal upload` time out.
 - **Strict TypeScript** — `noUnusedLocals`, `noUnusedParameters`, `noUncheckedIndexedAccess` are enabled
 - **Centralize currency display** — use `formatCurrency()` for user-facing prices and display the `AED` ISO currency code consistently; do not add a Dirham SVG or custom currency font
 - **Price entry UX** — show `AED` inside price inputs and format thousands separators while typing; keep state and submitted payloads digit-only, without a duplicate formatted preview below the fields

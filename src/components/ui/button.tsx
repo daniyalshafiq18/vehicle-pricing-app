@@ -8,14 +8,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground shadow hover:bg-primary/90 hover:shadow-md hover:shadow-primary/20',
+        default: 'bg-[#19b8a5] text-white shadow visited:text-white hover:bg-[#14a794] hover:text-white hover:shadow-md hover:shadow-[rgba(25,184,165,0.22)] focus:text-white active:text-white',
         destructive: 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
-        outline: 'border border-input bg-transparent shadow-sm hover:bg-accent/10 hover:text-accent hover:border-accent/30 hover:shadow-sm',
+        outline: 'border border-[#d9e2e8] bg-transparent text-[#071936] shadow-sm visited:text-[#071936] hover:border-[#19b8a5]/40 hover:bg-[#ecfbf8] hover:text-[#08766c] hover:shadow-sm focus:text-[#08766c] active:text-[#08766c] dark:border-[#31545a] dark:text-white dark:visited:text-white dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5] dark:focus:text-[#19b8a5] dark:active:text-[#19b8a5]',
         secondary: 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',
-        ghost: 'hover:bg-accent/10 hover:text-accent',
-        link: 'text-primary underline-offset-4 hover:underline',
-        gradient: 'relative overflow-hidden bg-gradient-to-r from-primary via-primary-500 to-primary-600 text-white shadow-lg hover:shadow-primary/30 hover:from-primary-600 hover:via-primary-400 hover:to-primary bg-[length:200%_100%] animate-gradient-shift hover:scale-[1.02]',
-        'gradient-accent': 'relative overflow-hidden bg-gradient-to-r from-accent via-accent-400 to-accent-600 text-white shadow-lg hover:shadow-accent/30 hover:from-accent-600 hover:via-accent-400 hover:to-accent bg-[length:200%_100%] animate-gradient-shift hover:scale-[1.02]',
+        ghost: 'hover:bg-[#ecfbf8] hover:text-[#08766c] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]',
+        link: 'text-[#08766c] underline-offset-4 hover:underline',
+        gradient: 'relative overflow-hidden bg-gradient-to-r from-[#19b8a5] via-[#0b7f78] to-[#08766c] text-white shadow-lg shadow-[rgba(25,184,165,0.22)] visited:text-white hover:from-[#14a794] hover:via-[#08766c] hover:to-[#0b7f78] hover:text-white hover:shadow-[rgba(25,184,165,0.3)] hover:scale-[1.02] focus:text-white active:from-[#08766c] active:via-[#0b7f78] active:to-[#08766c] active:text-white',
+        'gradient-accent': 'relative overflow-hidden bg-gradient-to-r from-[#19b8a5] via-[#8fb6cc] to-[#0b7f78] text-white shadow-lg shadow-[rgba(25,184,165,0.22)] visited:text-white hover:from-[#14a794] hover:via-[#19b8a5] hover:to-[#08766c] hover:text-white hover:shadow-[rgba(25,184,165,0.3)] hover:scale-[1.02] focus:text-white active:from-[#08766c] active:via-[#19b8a5] active:to-[#0b7f78] active:text-white',
       },
       size: {
         default: 'h-10 px-4 py-2',

@@ -38,20 +38,20 @@ const STATUS_CONFIG: Record<InquiryStatus, { label: string; icon: React.ReactNod
   pending: {
     label: 'Pending',
     icon: <Clock className="h-3 w-3" />,
-    className: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
-    dot: 'bg-amber-500',
+    className: 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]',
+    dot: 'bg-[#19b8a5]',
   },
   reviewed: {
     label: 'Reviewed',
     icon: <Eye className="h-3 w-3" />,
-    className: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20',
-    dot: 'bg-blue-500',
+    className: 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]',
+    dot: 'bg-[#19b8a5]',
   },
   contacted: {
     label: 'Contacted',
     icon: <MessageSquare className="h-3 w-3" />,
-    className: 'text-violet-600 dark:text-violet-400 bg-violet-500/10 border-violet-500/20',
-    dot: 'bg-violet-500',
+    className: 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]',
+    dot: 'bg-[#19b8a5]',
   },
   closed: {
     label: 'Closed',
@@ -133,7 +133,7 @@ function StatusSelect({ inquiry }: { inquiry: Inquiry }) {
         disabled={updateStatus.isPending}
         className={cn(
           'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all',
-          'hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring',
+          'hover:bg-[#dff7f4] focus:outline-none focus:ring-2 focus:ring-[#19b8a5]/30',
           'disabled:opacity-50',
           currentCfg.className,
         )}
@@ -145,7 +145,7 @@ function StatusSelect({ inquiry }: { inquiry: Inquiry }) {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-1 w-36 overflow-hidden rounded-xl border bg-popover shadow-lg">
+          <div className="absolute right-0 top-full z-50 mt-1 w-36 overflow-hidden rounded-[10px] border border-[#d9e2e8] bg-white shadow-[0_12px_28px_rgba(7,25,54,0.14)]">
             {STATUS_OPTIONS.map((opt) => {
               const cfg = STATUS_CONFIG[opt.value];
               const isActive = inquiry.status === opt.value;
@@ -156,13 +156,13 @@ function StatusSelect({ inquiry }: { inquiry: Inquiry }) {
                   className={cn(
                     'flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors',
                     isActive
-                      ? 'bg-accent text-foreground'
-                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                      ? 'bg-[#ecfbf8] text-[#08766c]'
+                      : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c]',
                   )}
                 >
                   <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
                   {cfg.label}
-                  {isActive && <Check className="ml-auto h-3 w-3 text-primary" />}
+                  {isActive && <Check className="ml-auto h-3 w-3 text-[#19b8a5]" />}
                 </button>
               );
             })}
@@ -198,11 +198,11 @@ function InquiryDetailModal({
     >
       <div className="flex max-h-[75vh] flex-col gap-0">
         {/* Header section with gradient */}
-        <div className="shrink-0 -mx-6 -mt-6 rounded-t-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 pb-4 pt-5">
+        <div className="shrink-0 -mx-6 -mt-6 rounded-t-2xl bg-gradient-to-br from-[#ecfbf8] via-[#f4fbfa] to-transparent px-6 pb-4 pt-5">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3.5">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 shadow-sm">
-                <User className="h-6 w-6 text-primary" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#ecfbf8] shadow-sm">
+                <User className="h-6 w-6 text-[#19b8a5]" />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-foreground">
@@ -231,14 +231,14 @@ function InquiryDetailModal({
           {/* Contact Info */}
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="flex items-center gap-1.5 text-[10px] text-slate-800 dark:text-slate-200">
+              <p className="flex items-center gap-1.5 text-[10px] text-foreground">
                 <Mail className="h-3 w-3" />
                 Email
               </p>
               <p className="mt-1 text-sm font-medium text-foreground truncate">{inquiry.email}</p>
             </div>
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="flex items-center gap-1.5 text-[10px] text-slate-800 dark:text-slate-200">
+              <p className="flex items-center gap-1.5 text-[10px] text-foreground">
                 <Phone className="h-3 w-3" />
                 Phone
               </p>
@@ -248,7 +248,7 @@ function InquiryDetailModal({
 
           {/* Location */}
           <div className="mb-4 rounded-xl border bg-card p-3.5">
-            <p className="flex items-center gap-1.5 text-[10px] text-slate-800 dark:text-slate-200">
+            <p className="flex items-center gap-1.5 text-[10px] text-foreground">
               <MapPin className="h-3 w-3" />
               Location
             </p>
@@ -260,7 +260,7 @@ function InquiryDetailModal({
           {/* Selected Vehicle */}
           <div className="mb-4 overflow-hidden rounded-xl border">
             <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2.5">
-              <Car className="h-4 w-4 text-primary" />
+              <Car className="h-4 w-4 text-[#19b8a5]" />
               <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Selected Vehicle</span>
             </div>
             <div className="grid grid-cols-2 divide-x divide-y divide-border sm:grid-cols-3">
@@ -273,7 +273,7 @@ function InquiryDetailModal({
                 { label: 'Trim', value: vehicleDisplay },
               ].map((item) => (
                 <div key={item.label} className="px-4 py-2.5">
-                  <p className="text-[10px] text-slate-800 dark:text-slate-200">{item.label}</p>
+                  <p className="text-[10px] text-foreground">{item.label}</p>
                   <p className="mt-0.5 text-xs font-medium text-foreground truncate" title={String(item.value)}>{item.value}</p>
                 </div>
               ))}
@@ -284,24 +284,24 @@ function InquiryDetailModal({
           {inquiry.valuationResult ? (
             <div className="overflow-hidden rounded-xl border">
               <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2.5">
-                <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <TrendingUp className="h-4 w-4 text-[#19b8a5]" />
                 <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Valuation Result</span>
               </div>
               <div className="grid grid-cols-3 divide-x divide-border">
-                <div className="bg-gradient-to-br from-primary/5 to-transparent p-4">
-                  <p className="text-[10px] text-slate-800 dark:text-slate-200">Min Price</p>
-                  <p className="mt-0.5 text-lg font-bold text-primary">
+                <div className="bg-gradient-to-br from-[#ecfbf8] to-transparent p-4">
+                  <p className="text-[10px] text-foreground">Min Price</p>
+                  <p className="mt-0.5 text-lg font-bold text-[#08766c]">
                     {formatCurrency(inquiry.valuationResult.pricing.minimumPrice)}
                   </p>
                 </div>
                 <div className="p-4">
-                  <p className="text-[10px] text-slate-800 dark:text-slate-200">Median Price</p>
+                  <p className="text-[10px] text-foreground">Median Price</p>
                   <p className="mt-0.5 text-lg font-bold text-foreground">
                     {formatCurrency(inquiry.valuationResult.pricing.medianPrice)}
                   </p>
                 </div>
                 <div className="p-4">
-                  <p className="text-[10px] text-slate-800 dark:text-slate-200">Max Price</p>
+                  <p className="text-[10px] text-foreground">Max Price</p>
                   <p className="mt-0.5 text-lg font-bold text-foreground">
                     {formatCurrency(inquiry.valuationResult.pricing.maximumPrice)}
                   </p>
@@ -408,7 +408,7 @@ export function AdminQueriesPage() {
               {statusCounts.pending > 0 && (
                 <>
                   <span className="mx-1.5 text-muted-foreground/30">·</span>
-                  <span className="font-medium text-amber-600 dark:text-amber-400">
+                  <span className="font-medium text-[#08766c] dark:text-[#19b8a5]">
                     {statusCounts.pending} pending
                   </span>
                 </>
@@ -436,7 +436,7 @@ export function AdminQueriesPage() {
                   setSearch(e.target.value);
                   setPage(1);
                 }}
-                className="h-9 w-48 rounded-lg border bg-background/50 pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary/50 focus:bg-background md:w-72"
+                className="h-9 w-48 rounded-[10px] border border-[#d9e2e8] bg-white pl-9 pr-3 text-sm text-[#071936] outline-none transition-colors placeholder:text-[#b8c5cc] hover:border-[#b7cbd5] focus:border-[#19b8a5]/60 focus:bg-white focus:ring-2 focus:ring-[#19b8a5]/15 md:w-72"
               />
             </div>
             {search && (
@@ -451,12 +451,12 @@ export function AdminQueriesPage() {
 
       {/* Status filter tabs */}
       <motion.div variants={itemVariants}>
-        <div className="flex items-center gap-1.5 rounded-xl border bg-card p-1.5 overflow-x-auto">
+        <div className="flex items-center gap-1.5 overflow-x-auto rounded-[12px] border-0 bg-white p-1.5 shadow-[0_8px_20px_rgba(18,38,63,0.05)]">
           {[
             { key: 'all' as const, label: 'All', count: statusCounts.all, color: '' },
-            { key: 'pending' as const, label: 'Pending', count: statusCounts.pending, color: 'bg-amber-500' },
-            { key: 'reviewed' as const, label: 'Reviewed', count: statusCounts.reviewed, color: 'bg-blue-500' },
-            { key: 'contacted' as const, label: 'Contacted', count: statusCounts.contacted, color: 'bg-violet-500' },
+            { key: 'pending' as const, label: 'Pending', count: statusCounts.pending, color: 'bg-[#19b8a5]' },
+            { key: 'reviewed' as const, label: 'Reviewed', count: statusCounts.reviewed, color: 'bg-[#19b8a5]' },
+            { key: 'contacted' as const, label: 'Contacted', count: statusCounts.contacted, color: 'bg-[#19b8a5]' },
             { key: 'closed' as const, label: 'Closed', count: statusCounts.closed, color: 'bg-muted-foreground' },
           ].map((tab) => (
             <button
@@ -465,8 +465,8 @@ export function AdminQueriesPage() {
               className={cn(
                 'flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-medium transition-all whitespace-nowrap',
                 statusFilter === tab.key
-                  ? 'bg-primary/10 text-primary shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
+                  ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm'
+                  : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c]',
               )}
             >
               {tab.color && <span className={cn('h-1.5 w-1.5 rounded-full', tab.color)} />}
@@ -474,8 +474,8 @@ export function AdminQueriesPage() {
               <span className={cn(
                 'ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
                 statusFilter === tab.key
-                  ? 'bg-primary/15 text-primary'
-                  : 'bg-muted text-muted-foreground',
+                  ? 'bg-[#dff7f4] text-[#08766c]'
+                  : 'bg-[#f4f8fb] text-[#8aa0ad]',
               )}>
                 {tab.count}
               </span>
@@ -487,9 +487,6 @@ export function AdminQueriesPage() {
       {/* Table card */}
       <motion.div variants={itemVariants}>
         <div className="rounded-2xl border bg-card overflow-hidden">
-          {/* Gradient top bar */}
-          <div className="h-1 bg-gradient-to-r from-primary/60 via-accent/60 to-primary/30" />
-
           {isLoading ? (
             <div className="p-6">
               <SkeletonTable rows={8} cols={8} />
@@ -499,14 +496,14 @@ export function AdminQueriesPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/20">
-                    <th className="w-10 px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">#</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Customer</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Contact</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Vehicle</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Body Type</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Status</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Date</th>
-                    <th className="px-4 py-3.5 text-right text-sm font-semibold text-slate-800 dark:text-slate-200">Actions</th>
+                    <th className="w-10 px-4 py-3.5 text-left text-sm font-semibold text-foreground">#</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Customer</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Contact</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Vehicle</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Body Type</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Status</th>
+                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Date</th>
+                    <th className="px-4 py-3.5 text-right text-sm font-semibold text-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -623,18 +620,18 @@ export function AdminQueriesPage() {
       {/* Pagination */}
       {sorted.length > pageSize && (
         <motion.div variants={itemVariants}>
-          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-            <p className="text-sm text-muted-foreground">
+          <div className="flex flex-col items-center justify-between gap-3 rounded-[12px] bg-white/70 px-3 py-2 shadow-[0_8px_20px_rgba(18,38,63,0.04)] dark:bg-[#0c2530]/80 sm:flex-row">
+            <p className="text-sm font-medium text-[#647887] dark:text-[#8fb6cc]">
               Page <span className="text-foreground">{page}</span> of <span className="text-foreground">{totalPages}</span>
               <span className="mx-2 text-muted-foreground/30">·</span>
               <span>{sorted.length} total</span>
             </p>
-            <div className="flex items-center gap-1.5">
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(1)} title="First page">
+            <div className="flex flex-wrap items-center justify-center gap-1.5">
+              <Button variant="ghost" size="sm" className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]" disabled={page <= 1} onClick={() => setPage(1)} title="First page">
                 <ChevronLeft className="h-3.5 w-3.5" />
                 <ChevronLeft className="-ml-2 h-3.5 w-3.5" />
               </Button>
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+              <Button variant="ghost" size="sm" className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]" disabled={page <= 1} onClick={() => setPage(page - 1)}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <div className="flex items-center gap-1">
@@ -644,20 +641,25 @@ export function AdminQueriesPage() {
                   ) : (
                     <Button
                       key={pageNum}
-                      variant={page === pageNum ? 'default' : 'outline'}
+                      variant="ghost"
                       size="sm"
                       onClick={() => setPage(pageNum)}
-                      className="min-w-[32px]"
+                      className={cn(
+                        'h-9 min-w-9 rounded-[10px] px-3 text-xs font-bold shadow-[0_6px_14px_rgba(18,38,63,0.05)]',
+                        page === pageNum
+                          ? '!bg-[#19b8a5] !text-white shadow-[0_8px_18px_rgba(25,184,165,0.28)]'
+                          : '!bg-white !text-[#071936] hover:!bg-[#dff7f4] hover:!text-[#08766c] dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]',
+                      )}
                     >
                       {pageNum}
                     </Button>
                   )
                 )}
               </div>
-              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+              <Button variant="ghost" size="sm" className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(totalPages)} title="Last page">
+              <Button variant="ghost" size="sm" className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]" disabled={page >= totalPages} onClick={() => setPage(totalPages)} title="Last page">
                 <ChevronRight className="h-3.5 w-3.5" />
                 <ChevronRight className="-ml-2 h-3.5 w-3.5" />
               </Button>

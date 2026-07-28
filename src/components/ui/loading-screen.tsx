@@ -64,28 +64,28 @@ export function LoadingScreen({ message = 'Loading...', className, progress }: L
       />
 
       {/* Ambient glow orbs */}
-      <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full bg-primary/8 blur-3xl" />
-      <div className="absolute bottom-1/3 right-1/4 h-56 w-56 rounded-full bg-accent/8 blur-3xl" />
+      <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full bg-[#19b8a5]/10 blur-3xl" />
+      <div className="absolute bottom-1/3 right-1/4 h-56 w-56 rounded-full bg-[#8fb6cc]/12 blur-3xl" />
 
       <div className="relative flex flex-col items-center gap-8">
         {/* Car icon with rotating ring */}
         <div className="relative flex items-center justify-center">
           {/* Outer scanning ring */}
           <div
-            className="absolute h-28 w-28 rounded-full border-2 border-primary/20"
+            className="absolute h-28 w-28 rounded-full border-2 border-[#19b8a5]/20"
             style={{
               animation: 'spin 3s linear infinite',
-              borderTopColor: 'hsl(var(--primary))',
+              borderTopColor: '#19b8a5',
               borderRightColor: 'transparent',
               borderBottomColor: 'transparent',
               borderLeftColor: 'transparent',
             }}
           />
           <div
-            className="absolute h-24 w-24 rounded-full border border-primary/10"
+            className="absolute h-24 w-24 rounded-full border border-[#8fb6cc]/25"
             style={{
               animation: 'spin 2s linear infinite reverse',
-              borderTopColor: 'hsl(var(--accent))',
+              borderTopColor: '#8fb6cc',
               borderRightColor: 'transparent',
               borderBottomColor: 'transparent',
               borderLeftColor: 'transparent',
@@ -94,7 +94,7 @@ export function LoadingScreen({ message = 'Loading...', className, progress }: L
 
           {/* Car icon */}
           <div className="animate-bounce-gentle">
-            <Car className="h-16 w-16 text-primary drop-shadow-[0_0_15px_hsl(var(--primary)/0.35)]" />
+            <Car className="h-16 w-16 text-[#19b8a5] drop-shadow-[0_0_15px_rgba(25,184,165,0.35)]" />
           </div>
         </div>
 
@@ -112,7 +112,7 @@ export function LoadingScreen({ message = 'Loading...', className, progress }: L
         <div className="w-72 space-y-3">
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-primary via-accent to-primary"
+              className="h-full rounded-full bg-gradient-to-r from-[#19b8a5] via-[#8fb6cc] to-[#19b8a5]"
               style={{ width: `${display}%` }}
             />
           </div>

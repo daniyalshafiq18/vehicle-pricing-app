@@ -1,7 +1,42 @@
 
 # Changelog
 
+## 2026-07-28
+
+### User-Facing Teal Color Alignment
+- Retinted the public loader, landing page badge/hover/card/CTA colors, public header/footer hover states, valuation wizard progress indicator, Step 1 form borders/focus rings/city dropdown/consent card, vehicle-selection dropdown hover/selected states, and valuation result cards to match the dashboard teal palette.
+- Removed the remaining valuation-page old color hooks by retinting the valuation canvas/card shell, Step 2 dropdown focus rings/search surfaces, empty-result borders, and valuation spec-card hover states to teal.
+- Removed the remaining landing-page orange/indigo accents by retinting global primary/accent theme tokens, shimmer text, grid glow, focus rings, and the public header wordmark to the dashboard teal palette.
+- Pinned landing navigation active/focus/pressed states and shared gradient CTA buttons to teal-only colors, and improved valuation dark-mode text contrast for page headings, form labels, and form inputs.
+- Locked shared button link states so landing CTAs and outline buttons keep teal/white text for visited, hover, focus, and pressed interactions instead of falling back to browser amber/blue link colors.
+- Added Montserrat, Plus Jakarta Sans, and Roboto Google Font loading, and set the global app sans stack to Plus Jakarta Sans with Montserrat and Roboto fallbacks.
+
+### Admin Dashboard UI Revamp
+- Rebuilt the admin dashboard with a reference-inspired pale blue canvas, compact white metric cards, navy typography, teal/soft-blue chart colors, responsive chart ordering, borderless leaderboard table styling, and matching vehicle intelligence modal surfaces while preserving existing dashboard text, navigation, data, and interactions.
+- Refined the dashboard and related admin surfaces: Top Models, Top Makes, and Body Types now show top five results; Powertrain and Top Models share matching chart height; the dashboard layout is sectioned without the previous blank left-column space; the admin canvas uses `#e5e7eb`; and Vehicles, Queries, Missing Vehicles, Price Suggestions, status dropdowns, tabs, hover states, cards, header, and notifications were retinted to the teal/reference UI system.
+- Polished the remaining admin chrome: added dark-mode aware header, notification, notification-count, and theme-switcher colors; retinted shared filter dropdown hover/selected/focus states to teal; removed colored top bars from Query and Price Suggestion cards; and aligned Missing Vehicles scrape action hover styling with the dashboard palette.
+- Removed the remaining admin indigo/orange token usage by switching notifications, notification counts, theme controls, Settings accents, Vehicles filter action buttons, Query pending text, and legacy admin chart helpers to the teal dashboard palette; also made the admin shell and dashboard canvas visibly respond to dark mode.
+- Restyled admin pagination across Vehicles, Queries, Missing Vehicles, and Price Suggestions with teal active page buttons, soft teal hover states, compact white controls, cleaner disabled arrows, aligned wrapping, and a styled Vehicles rows-per-page selector.
+- Moved the admin sidebar collapse control into the compact Admin Center brand row with a small panel icon treatment that matches the sidebar UI in expanded, collapsed, and hover-expanded states.
+- Reworked the admin header by removing the subtitle, moving a larger search field into the left title area, removing the old right-side search field, simplifying the notification bell away from the filled gradient style, and removing the Weekly Stats brand strip.
+- Fixed Top Models chart labels so make names are not duplicated when the model already includes the make, and widened/shifted the Y-axis label area for cleaner left alignment.
+- Reduced the Top Models chart label gutter so the horizontal bars start further left with less empty space.
+- Removed the admin header page icon/title block so the search field sits further left, removed the Weekly Stats circular car icon, and strengthened the Overall Performance Dashboard title weight.
+
 ## 2026-07-27
+
+### Power Pages Upload Metadata Fix
+- Added the required `adx_websiteid` and `adx_name` fields to the local Power Pages `website.yml` using the existing site id and name so PAC 2.8.1 can validate uploads.
+
+### Admin Sidebar Toggle Icon Update
+- Replaced the sidebar collapse/expand chevron icons with compact panel-style icons matching the provided reference while keeping the existing toggle functionality unchanged.
+
+### Build Script Regex Fix
+- Fixed `scripts/update-portal-template.mjs` so the portal manifest cleanup regex no longer uses unsupported JavaScript atomic groups, resolving the `Invalid regular expression: Invalid group` error during `npm run build`.
+- Made portal orphan cleanup opt-in via `CLEAN_PORTAL_ORPHANS=true` so normal builds do not create hundreds of web-file deletions that can make Power Apps CLI uploads time out.
+
+### Admin Sidebar UI Revamp
+- Restyled the admin sidebar into a compact white layout matching the provided reference: slimmer width, smaller navigation rows, pale icons, subtle grey active state, compact brand area, and bottom "Back to site" link while preserving all existing navigation labels, routes, badges, and collapse behavior.
 
 ### Power Automate — Flow 4 Design: Customer Email Notification
 - **New flow designed** — `MVR - Customer Email Notification` sends an email to the requesting user when their MVR's scrape status changes to `Scraped (4)`

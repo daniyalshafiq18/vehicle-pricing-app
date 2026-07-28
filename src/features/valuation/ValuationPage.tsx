@@ -30,7 +30,7 @@ export function ValuationPage() {
   ];
 
   return (
-    <section className="bg-slate-50/50 dark:bg-slate-950">
+    <section className="bg-[#f3f7f7] text-[#071936] dark:bg-[#061821] dark:text-white">
       <AnimatePresence mode="wait">
         <motion.div
           key="content"
@@ -41,14 +41,14 @@ export function ValuationPage() {
           <div className="mx-auto max-w-5xl">
             {/* Page header */}
             <div className="mb-8 text-center">
-              <h1 className="mb-2 text-3xl font-bold md:text-4xl">Vehicle Valuation</h1>
-              <p className="text-muted-foreground">
+              <h1 className="mb-2 text-3xl font-bold text-[#071936] dark:text-white md:text-4xl">Vehicle Valuation</h1>
+              <p className="text-[#647887] dark:text-[#b8cbd4]">
                 Get an accurate market valuation for any vehicle in the UAE
               </p>
             </div>
 
             {/* Card container — lifts the form off the page background */}
-            <div className="rounded-2xl border border-slate-100 bg-white p-8 shadow-xl shadow-slate-100/50 dark:border-slate-800 dark:bg-slate-900 dark:shadow-none md:p-10">
+            <div className="rounded-2xl border border-[#d9e2e8] bg-white p-8 text-[#071936] shadow-xl shadow-[rgba(18,38,63,0.06)] dark:border-[#31545a] dark:bg-[#0c2530] dark:text-white dark:shadow-none md:p-10">
               {/* Step indicator */}
               <WizardStepIndicator steps={steps} currentStep={currentStep} />
 

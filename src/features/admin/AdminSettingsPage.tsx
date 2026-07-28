@@ -47,7 +47,7 @@ function ToggleSwitch({
         />
         <div className={cn(
           'h-5 w-9 rounded-full transition-colors duration-200',
-          enabled ? 'bg-primary/60' : 'bg-muted'
+          enabled ? 'bg-[#19b8a5]' : 'bg-muted'
         )}>
           <div className={cn(
             'h-4 w-4 rounded-full bg-background transition-all duration-200 absolute top-0.5 shadow-sm',
@@ -100,8 +100,8 @@ export function AdminSettingsPage() {
           <Card className="group relative overflow-hidden border transition-all duration-300 hover:shadow-md">
             <CardContent className="relative p-5">
               <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/5 group-hover:bg-primary/10 transition-all group-hover:scale-110">
-                  <Database className="h-5 w-5 text-primary" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ecfbf8] transition-all group-hover:scale-110 group-hover:bg-[#dff7f4] dark:bg-[#0f3f43]">
+                  <Database className="h-5 w-5 text-[#19b8a5]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-semibold text-foreground">{s0.title}</h3>
@@ -131,8 +131,8 @@ export function AdminSettingsPage() {
           <Card className="group relative overflow-hidden border transition-all duration-300 hover:shadow-md">
             <CardContent className="relative p-5">
               <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/5 group-hover:bg-primary/10 transition-all group-hover:scale-110">
-                  <Palette className="h-5 w-5 text-primary" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ecfbf8] transition-all group-hover:scale-110 group-hover:bg-[#dff7f4] dark:bg-[#0f3f43]">
+                  <Palette className="h-5 w-5 text-[#19b8a5]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-semibold text-foreground">{s1.title}</h3>
@@ -152,8 +152,8 @@ export function AdminSettingsPage() {
           <Card className="group relative overflow-hidden border transition-all duration-300 hover:shadow-md">
             <CardContent className="relative p-5">
               <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/5 group-hover:bg-primary/10 transition-all group-hover:scale-110">
-                  <Bell className="h-5 w-5 text-primary" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ecfbf8] transition-all group-hover:scale-110 group-hover:bg-[#dff7f4] dark:bg-[#0f3f43]">
+                  <Bell className="h-5 w-5 text-[#19b8a5]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-semibold text-foreground">{s2.title}</h3>
@@ -174,8 +174,8 @@ export function AdminSettingsPage() {
           <Card className="group relative overflow-hidden border transition-all duration-300 hover:shadow-md">
             <CardContent className="relative p-5">
               <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/5 group-hover:bg-primary/10 transition-all group-hover:scale-110">
-                  <RefreshCw className="h-5 w-5 text-primary" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ecfbf8] transition-all group-hover:scale-110 group-hover:bg-[#dff7f4] dark:bg-[#0f3f43]">
+                  <RefreshCw className="h-5 w-5 text-[#19b8a5]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-semibold text-foreground">{s3.title}</h3>
@@ -198,8 +198,8 @@ export function AdminSettingsPage() {
           <Card className="group relative overflow-hidden border transition-all duration-300 hover:shadow-md">
             <CardContent className="relative p-5">
               <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/5 group-hover:bg-primary/10 transition-all group-hover:scale-110">
-                  <Shield className="h-5 w-5 text-primary" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ecfbf8] transition-all group-hover:scale-110 group-hover:bg-[#dff7f4] dark:bg-[#0f3f43]">
+                  <Shield className="h-5 w-5 text-[#19b8a5]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-semibold text-foreground">{s4.title}</h3>
@@ -222,8 +222,8 @@ export function AdminSettingsPage() {
           <Card className="group relative overflow-hidden border transition-all duration-300 hover:shadow-md">
             <CardContent className="relative p-5">
               <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/5 group-hover:bg-primary/10 transition-all group-hover:scale-110">
-                  <Globe className="h-5 w-5 text-primary" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#ecfbf8] transition-all group-hover:scale-110 group-hover:bg-[#dff7f4] dark:bg-[#0f3f43]">
+                  <Globe className="h-5 w-5 text-[#19b8a5]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-semibold text-foreground">{s5.title}</h3>

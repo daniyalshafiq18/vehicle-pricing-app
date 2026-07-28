@@ -6,14 +6,14 @@ import { formatCurrency, compactNumber } from '@utils';
 import type { PowertrainAnalysis } from '@types';
 import { Zap } from 'lucide-react';
 
-// ─── Colors ──────────────────────────────────────────────
+// ─── Warm Amber monochromatic palette ───────────────────
 const PT_COLORS: Record<string, string> = {
-  'Petrol/Diesel': '#6366f1', // indigo-500 (brand primary)
-  'Hybrid': '#14b8a6',       // teal-500
-  'Electric': '#8b5cf6',     // violet-500
+  'Petrol/Diesel': '#19b8a5',
+  Hybrid: '#8fb6cc',
+  Electric: '#d8e7ef',
 };
 
-const FALLBACK_COLORS = ['#6366f1', '#14b8a6', '#8b5cf6', '#f59e0b'];
+const FALLBACK_COLORS = ['#19b8a5', '#8fb6cc', '#d8e7ef', '#eef5f8'];
 
 interface PowertrainChartProps {
   data: PowertrainAnalysis[];
@@ -29,7 +29,7 @@ export function PowertrainChart({ data, className }: PowertrainChartProps) {
         title="Powertrain"
         subtitle="Fuel / powertrain type breakdown"
         icon={<Zap className="h-4 w-4" />}
-        accent="from-indigo-500/60 to-amber-500/60"
+        accent="from-[#19b8a5] to-[#8fb6cc]"
         isEmpty
         emptyTitle="No powertrain data available"
         className={className}
@@ -44,11 +44,11 @@ export function PowertrainChart({ data, className }: PowertrainChartProps) {
       title="Powertrain"
       subtitle={`${compactNumber(total)} vehicles across ${sorted.length} types`}
       icon={<Zap className="h-4 w-4" />}
-      accent="from-blue-500/60 to-emerald-500/60"
+      accent="from-[#19b8a5] to-[#8fb6cc]"
       className={className}
     >
       {/* Flex column: donut SVG takes available space, legend sits below */}
-      <div className="flex h-[320px] flex-col">
+      <div className="flex h-[300px] flex-col">
         <div className="flex-1 min-h-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -58,7 +58,7 @@ export function PowertrainChart({ data, className }: PowertrainChartProps) {
                 y="47%"
                 textAnchor="middle"
                 dominantBaseline="middle"
-                className="fill-foreground"
+                fill="#071936"
                 style={{ fontSize: 22, fontWeight: 700 }}
               >
                 {compactNumber(total)}
@@ -68,7 +68,7 @@ export function PowertrainChart({ data, className }: PowertrainChartProps) {
                 y="57%"
                 textAnchor="middle"
                 dominantBaseline="middle"
-                className="fill-muted-foreground"
+                fill="#8aa0ad"
                 style={{ fontSize: 11 }}
               >
                 Vehicles
@@ -83,8 +83,9 @@ export function PowertrainChart({ data, className }: PowertrainChartProps) {
                 innerRadius={60}
                 outerRadius={105}
                 paddingAngle={3}
-                strokeWidth={0}
-                cornerRadius={4}
+                stroke="#ffffff"
+                strokeWidth={3}
+                cornerRadius={5}
               >
                 {sorted.map((entry) => {
                   const color = PT_COLORS[entry.powertrain]
@@ -102,9 +103,13 @@ export function PowertrainChart({ data, className }: PowertrainChartProps) {
 
               <Tooltip
                 content={({ active, payload }) => {
-                  if (!active || !payload?.length) return null;
+                  if (!active || !payload?.length) {
+                    return null;
+                  }
                   const d = payload[0]?.payload as PowertrainAnalysis | undefined;
-                  if (!d) return null;
+                  if (!d) {
+                    return null;
+                  }
                   return (
                     <ChartTooltip
                       active
@@ -123,18 +128,18 @@ export function PowertrainChart({ data, className }: PowertrainChartProps) {
         </div>
 
         {/* ── Legend (inside the flex, takes natural height) ── */}
-        <div className="flex-shrink-0 flex flex-wrap justify-center gap-x-5 gap-y-1 pt-1 pb-0.5">
+        <div className="flex shrink-0 flex-wrap justify-center gap-x-5 gap-y-1 pb-0.5 pt-1">
           {sorted.map((entry) => {
             const color = PT_COLORS[entry.powertrain]
               ?? FALLBACK_COLORS[sorted.indexOf(entry) % FALLBACK_COLORS.length];
             return (
-              <div key={entry.powertrain} className="flex items-center gap-1.5 text-xs">
+              <div key={entry.powertrain} className="flex items-center gap-1.5 text-[11px]">
                 <span
                   className="inline-block h-2.5 w-2.5 rounded-full"
                   style={{ backgroundColor: color }}
                 />
-                <span className="text-muted-foreground">{entry.powertrain}</span>
-                <span className="font-medium text-foreground">{entry.percentage}%</span>
+                <span className="text-[#7e95a3]">{entry.powertrain}</span>
+                <span className="font-semibold text-[#071936]">{entry.percentage}%</span>
               </div>
             );
           })}

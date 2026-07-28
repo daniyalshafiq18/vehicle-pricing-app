@@ -3,37 +3,22 @@ import { Card, CardContent, EmptyState } from '@components/ui';
 import { cn } from '@utils';
 
 interface ChartCardProps {
-  /** Card title */
   title: string;
-  /** Subtitle shown below the title */
   subtitle?: string;
-  /** Accent bar color gradient (Tailwind) */
   accent?: string;
-  /** Icon shown beside the title */
   icon?: ReactNode;
-  /** Extra header actions (filters, toggles, etc.) */
   headerAction?: ReactNode;
-  /** Chart content */
   children?: ReactNode;
-  /** Class name overrides */
   className?: string;
-  /** Whether data is empty */
   isEmpty?: boolean;
-  /** Empty state title */
   emptyTitle?: string;
-  /** Empty state description */
   emptyDescription?: string;
 }
 
-/**
- * ChartCard — consistent wrapper for all dashboard chart widgets.
- * Renders a gradient accent bar, title bar, and chart content with
- * built-in empty-state handling.
- */
 export function ChartCard({
   title,
   subtitle,
-  accent = 'from-primary/60 to-primary/40',
+  accent: _accent,
   icon,
   headerAction,
   children,
@@ -43,34 +28,33 @@ export function ChartCard({
   emptyDescription,
 }: ChartCardProps) {
   return (
-    <Card className={cn('overflow-hidden border', className)}>
-      <div className={cn('h-1 bg-gradient-to-r', accent)} />
+    <Card
+      className={cn(
+        'overflow-hidden border-0 bg-white text-[#071936] shadow-[0_10px_28px_rgba(18,38,63,0.06)] hover:translate-y-0 hover:border-transparent hover:shadow-[0_14px_34px_rgba(18,38,63,0.09)]',
+        className,
+      )}
+    >
       <CardContent className="p-4 sm:p-5">
-        {/* ── Header ── */}
-        <div className="mb-4 flex items-start justify-between gap-2">
+        <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              {icon && (
-                <span className="shrink-0 text-muted-foreground/60">{icon}</span>
-              )}
-              <h3 className="text-sm font-semibold text-foreground truncate">{title}</h3>
+              {icon && <span className="shrink-0 text-[#8fb6cc]">{icon}</span>}
+              <h3 className="truncate text-[13px] font-semibold leading-5 tracking-normal text-[#071936]">
+                {title}
+              </h3>
             </div>
             {subtitle && (
-              <p className="mt-0.5 text-[11px] text-muted-foreground/60 truncate">{subtitle}</p>
+              <p className="mt-0.5 truncate text-[10px] font-medium leading-4 text-[#8aa0ad]">
+                {subtitle}
+              </p>
             )}
           </div>
-          {headerAction && (
-            <div className="shrink-0">{headerAction}</div>
-          )}
+          {headerAction && <div className="shrink-0">{headerAction}</div>}
         </div>
 
-        {/* ── Content / Empty ── */}
         {isEmpty ? (
           <div className="flex min-h-[200px] items-center justify-center">
-            <EmptyState
-              title={emptyTitle}
-              description={emptyDescription}
-            />
+            <EmptyState title={emptyTitle} description={emptyDescription} />
           </div>
         ) : (
           children
@@ -79,8 +63,6 @@ export function ChartCard({
     </Card>
   );
 }
-
-// ─── Shared Chart Tooltip ──────────────────────────────────────
 
 interface TooltipRow {
   label: string;
@@ -91,22 +73,13 @@ interface TooltipRow {
 interface ChartTooltipProps {
   active?: boolean;
   payload?: { name?: string; value?: number; color?: string; payload?: Record<string, unknown> }[];
-  /** Override the default header label */
   label?: string;
-  /** Format the header label */
   labelFormatter?: (label: string) => string;
-  /** Custom rows to render (takes precedence over automatic payload rows) */
   rows?: TooltipRow[];
-  /** Value formatter for automatic payload rows */
   valueFormatter?: (value: number) => string;
-  /** Hide default payload rows (use when providing custom rows) */
   hidePayload?: boolean;
 }
 
-/**
- * ChartTooltip — premium tooltip used across all dashboard charts.
- * Supports both automatic payload rendering and custom row content.
- */
 export function ChartTooltip({
   active,
   payload,
@@ -116,14 +89,16 @@ export function ChartTooltip({
   valueFormatter = (v) => v.toLocaleString(),
   hidePayload = false,
 }: ChartTooltipProps) {
-  if (!active || (!payload?.length && !rows?.length)) return null;
+  if (!active || (!payload?.length && !rows?.length)) {
+    return null;
+  }
 
   const headerLabel = label ? (labelFormatter ? labelFormatter(label) : label) : null;
 
   return (
-    <div className="rounded-lg border bg-background/95 backdrop-blur-sm px-3 py-2.5 shadow-xl text-xs min-w-[140px]">
+    <div className="min-w-[140px] rounded-[10px] border border-[#e6edf2] bg-white/95 px-3 py-2.5 text-xs shadow-[0_12px_28px_rgba(7,25,54,0.14)] backdrop-blur-sm">
       {headerLabel && (
-        <p className="mb-1.5 font-medium text-foreground/90 border-b border-border/50 pb-1">
+        <p className="mb-1.5 border-b border-[#eef3f6] pb-1 font-semibold text-[#071936]">
           {headerLabel}
         </p>
       )}
@@ -131,9 +106,9 @@ export function ChartTooltip({
         {rows
           ? rows.map((row, i) => (
               <div key={i} className="flex items-center justify-between gap-4">
-                <span className="text-muted-foreground">{row.label}</span>
+                <span className="text-[#7e95a3]">{row.label}</span>
                 <span
-                  className="font-medium tabular-nums"
+                  className="font-semibold tabular-nums"
                   style={row.color ? { color: row.color } : undefined}
                 >
                   {row.value}
@@ -143,9 +118,9 @@ export function ChartTooltip({
           : !hidePayload
             ? payload?.map((entry, i) => (
                 <div key={i} className="flex items-center justify-between gap-4">
-                  <span className="text-muted-foreground">{entry.name ?? 'Value'}</span>
+                  <span className="text-[#7e95a3]">{entry.name ?? 'Value'}</span>
                   <span
-                    className="font-medium tabular-nums"
+                    className="font-semibold tabular-nums"
                     style={entry.color ? { color: entry.color } : undefined}
                   >
                     {valueFormatter(entry.value ?? 0)}

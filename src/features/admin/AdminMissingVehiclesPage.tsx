@@ -35,20 +35,20 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; clas
   Pending: {
     label: 'Pending',
     icon: <Clock className="h-3 w-3" />,
-    className: 'border-primary/20 bg-primary/10 text-primary',
-    dot: 'bg-primary',
+    className: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c]',
+    dot: 'bg-[#19b8a5]',
   },
   Approved: {
     label: 'Approved',
     icon: <CheckCircle2 className="h-3 w-3" />,
-    className: 'border-success/20 bg-success/10 text-success',
-    dot: 'bg-success',
+    className: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c]',
+    dot: 'bg-[#19b8a5]',
   },
   'In Progress': {
     label: 'In Progress',
     icon: <AlertCircle className="h-3 w-3" />,
-    className: 'border-primary/20 bg-primary/10 text-primary',
-    dot: 'bg-primary',
+    className: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c]',
+    dot: 'bg-[#19b8a5]',
   },
   Reject: {
     label: 'Reject',
@@ -68,18 +68,18 @@ const SCRAPE_STATUS_CONFIG: Record<string, { label: string; className: string; d
   },
   Testing: {
     label: 'Testing',
-    className: 'border-primary/20 bg-primary/10 text-primary',
-    dot: 'bg-primary',
+    className: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c]',
+    dot: 'bg-[#19b8a5]',
   },
   'In Progress': {
     label: 'In Progress',
-    className: 'border-accent/20 bg-accent/10 text-accent-800 dark:text-accent-600',
-    dot: 'bg-accent',
+    className: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c]',
+    dot: 'bg-[#19b8a5]',
   },
   Scraped: {
     label: 'Scraped',
-    className: 'border-success/20 bg-success/10 text-success',
-    dot: 'bg-success',
+    className: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c]',
+    dot: 'bg-[#19b8a5]',
   },
   Failed: {
     label: 'Failed',
@@ -88,8 +88,8 @@ const SCRAPE_STATUS_CONFIG: Record<string, { label: string; className: string; d
   },
   Unreachable: {
     label: 'Unreachable',
-    className: 'border-accent/20 bg-accent/10 text-accent-800 dark:text-accent-600',
-    dot: 'bg-accent',
+    className: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c]',
+    dot: 'bg-[#19b8a5]',
   },
 };
 
@@ -168,7 +168,7 @@ function StatusSelect({ request }: { request: MissingVehicleRequest }) {
         disabled={isPending}
         className={cn(
           'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all',
-          'hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring',
+          'hover:bg-[#dff7f4] focus:outline-none focus:ring-2 focus:ring-[#19b8a5]/30',
           'disabled:opacity-50',
           currentCfg.className,
         )}
@@ -180,7 +180,7 @@ function StatusSelect({ request }: { request: MissingVehicleRequest }) {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-1 w-40 overflow-hidden rounded-xl border bg-popover shadow-lg">
+          <div className="absolute right-0 top-full z-50 mt-1 w-40 overflow-hidden rounded-[10px] border border-[#d9e2e8] bg-white shadow-[0_12px_28px_rgba(7,25,54,0.14)]">
             {STATUS_OPTIONS.map((opt) => {
               const cfg = STATUS_CONFIG[opt]!;
               const isActive = request.status === opt;
@@ -191,13 +191,13 @@ function StatusSelect({ request }: { request: MissingVehicleRequest }) {
                   className={cn(
                     'flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors',
                     isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:bg-primary/10 hover:text-primary',
+                      ? 'bg-[#ecfbf8] text-[#08766c]'
+                      : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c]',
                   )}
                 >
                   <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
                   {cfg.label}
-                  {isActive && <Check className="ml-auto h-3 w-3 text-primary" />}
+                  {isActive && <Check className="ml-auto h-3 w-3 text-[#19b8a5]" />}
                 </button>
               );
             })}
@@ -262,11 +262,11 @@ function MissingVehicleDetailModal({
     >
       <div className="flex max-h-[85vh] flex-col gap-0">
         {/* Header */}
-        <div className="shrink-0 -mx-6 -mt-6 rounded-t-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 pb-4 pt-5">
+        <div className="shrink-0 -mx-6 -mt-6 rounded-t-2xl bg-gradient-to-br from-[#ecfbf8] via-[#f4fbfa] to-transparent px-6 pb-4 pt-5">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3.5">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 shadow-sm">
-                <SearchX className="h-6 w-6 text-primary" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#ecfbf8] shadow-sm">
+                <SearchX className="h-6 w-6 text-[#19b8a5]" />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-foreground">
@@ -324,8 +324,8 @@ function MissingVehicleDetailModal({
           {/* ── Scrape Results Section ── */}
           <div className="mt-5">
             <div className="flex items-center gap-2 mb-3">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/10">
-                <Loader className="h-3.5 w-3.5 text-accent-700 dark:text-accent-600" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#ecfbf8]">
+                <Loader className="h-3.5 w-3.5 text-[#19b8a5]" />
               </div>
               <h3 className="text-sm font-semibold text-foreground">Scrape Results</h3>
               <ScrapeStatusBadge status={request.scrapeStatus} />
@@ -374,7 +374,7 @@ function MissingVehicleDetailModal({
                       href={request.scrapedSources}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline break-all"
+                      className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-[#08766c] hover:underline break-all"
                     >
                       <Globe className="h-3.5 w-3.5 shrink-0" />
                       {request.scrapedSources}
@@ -430,7 +430,7 @@ function ScrapedListingCount({ listings }: { listings: string | undefined }) {
   const parsed = parseScrapedListings(listings);
   if (!parsed || parsed.count == null) return null;
   return (
-    <span className="inline-flex items-center gap-1 rounded-md bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent-800 dark:text-accent-600">
+    <span className="inline-flex items-center gap-1 rounded-md bg-[#ecfbf8] px-2 py-0.5 text-[10px] font-medium text-[#08766c]">
       <SearchX className="h-3 w-3" />
       {String(parsed.count)} listings
     </span>
@@ -471,6 +471,7 @@ function ScrapeNowButton({
       <Button
         variant="ghost"
         size="icon-sm"
+        className="!text-[#647887] hover:!bg-[#dff7f4] hover:!text-[#08766c] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]"
         title={`Scrape ${request.make} ${request.model} from YallaMotor`}
         onClick={handleScrape}
         disabled={isPending}
@@ -484,6 +485,7 @@ function ScrapeNowButton({
     <Button
       variant="outline"
       size="sm"
+      className="!border-[#bfe9e2] !bg-white !text-[#08766c] hover:!bg-[#dff7f4] hover:!text-[#08766c] dark:!border-[#31545a] dark:!bg-[#0c2530] dark:!text-[#19b8a5] dark:hover:!bg-[#0f3f43]"
       onClick={handleScrape}
       disabled={isPending}
     >
@@ -539,6 +541,7 @@ function ScrapeAllPendingButton({ requests }: { requests: MissingVehicleRequest[
     <Button
       variant="outline"
       size="sm"
+      className="!border-[#bfe9e2] !bg-white !text-[#08766c] hover:!bg-[#dff7f4] hover:!text-[#08766c] dark:!border-[#31545a] dark:!bg-[#0c2530] dark:!text-[#19b8a5] dark:hover:!bg-[#0f3f43]"
       onClick={handleScrapeAll}
       disabled={isScrapingAll}
       title={`Scrape all ${pendingRequests.length} pending items`}
@@ -824,7 +827,7 @@ export function AdminMissingVehiclesPage() {
               {statusCounts.pending > 0 && (
                 <>
                   <span className="mx-1.5 text-muted-foreground/30">·</span>
-                  <span className="font-medium text-primary">
+                  <span className="font-medium text-[#08766c]">
                     {statusCounts.pending} pending
                   </span>
                 </>
@@ -843,7 +846,7 @@ export function AdminMissingVehiclesPage() {
                 className={cn(
                   'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-all',
                   viewMode === 'table'
-                    ? 'bg-primary/10 text-primary shadow-sm'
+                    ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
                 )}
                 title="Table view"
@@ -856,7 +859,7 @@ export function AdminMissingVehiclesPage() {
                 className={cn(
                   'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-all',
                   viewMode === 'card'
-                    ? 'bg-primary/10 text-primary shadow-sm'
+                    ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
                 )}
                 title="Card view"
@@ -875,7 +878,7 @@ export function AdminMissingVehiclesPage() {
                   setSearch(e.target.value);
                   setPage(1);
                 }}
-                className="h-9 w-48 rounded-lg border bg-background/50 pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary/50 focus:bg-background md:w-72"
+                className="h-9 w-48 rounded-[10px] border border-[#d9e2e8] bg-white pl-9 pr-3 text-sm text-[#071936] outline-none transition-colors placeholder:text-[#b8c5cc] hover:border-[#b7cbd5] focus:border-[#19b8a5]/60 focus:bg-white focus:ring-2 focus:ring-[#19b8a5]/15 md:w-72"
               />
             </div>
             {search && (
@@ -890,12 +893,12 @@ export function AdminMissingVehiclesPage() {
 
       {/* Status filter tabs */}
       <motion.div variants={itemVariants}>
-        <div className="flex items-center gap-1.5 rounded-xl border bg-card p-1.5 overflow-x-auto">
+        <div className="flex items-center gap-1.5 overflow-x-auto rounded-[12px] border-0 bg-white p-1.5 shadow-[0_8px_20px_rgba(18,38,63,0.05)]">
           {[
             { key: 'all' as const, label: 'All', count: statusCounts.all, color: '' },
-            { key: 'Pending' as const, label: 'Pending', count: statusCounts.pending, color: 'bg-primary' },
-            { key: 'Approved' as const, label: 'Approved', count: statusCounts.approved, color: 'bg-success' },
-            { key: 'In Progress' as const, label: 'In Progress', count: statusCounts.inProgress, color: 'bg-primary' },
+            { key: 'Pending' as const, label: 'Pending', count: statusCounts.pending, color: 'bg-[#19b8a5]' },
+            { key: 'Approved' as const, label: 'Approved', count: statusCounts.approved, color: 'bg-[#19b8a5]' },
+            { key: 'In Progress' as const, label: 'In Progress', count: statusCounts.inProgress, color: 'bg-[#19b8a5]' },
             { key: 'Reject' as const, label: 'Reject', count: statusCounts.reject, color: 'bg-destructive' },
           ].map((tab) => (
             <button
@@ -904,8 +907,8 @@ export function AdminMissingVehiclesPage() {
               className={cn(
                 'flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all whitespace-nowrap',
                 statusFilter === tab.key
-                  ? 'bg-primary/10 text-primary shadow-sm'
-                  : 'text-muted-foreground hover:bg-primary/10 hover:text-primary',
+                  ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm'
+                  : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c]',
               )}
             >
               {tab.color && <span className={cn('h-1.5 w-1.5 rounded-full', tab.color)} />}
@@ -913,8 +916,8 @@ export function AdminMissingVehiclesPage() {
               <span className={cn(
                 'ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
                 statusFilter === tab.key
-                  ? 'bg-primary/15 text-primary'
-                  : 'bg-muted text-muted-foreground',
+                  ? 'bg-[#dff7f4] text-[#08766c]'
+                  : 'bg-[#f4f8fb] text-[#8aa0ad]',
               )}>
                 {tab.count}
               </span>
@@ -967,8 +970,8 @@ export function AdminMissingVehiclesPage() {
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap">
                           <div className="flex items-center gap-2.5">
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                              <Car className="h-3.5 w-3.5 text-primary" />
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#ecfbf8]">
+                              <Car className="h-3.5 w-3.5 text-[#19b8a5]" />
                             </div>
                             <span className="font-medium text-foreground">{req.make}</span>
                           </div>
@@ -1144,18 +1147,18 @@ export function AdminMissingVehiclesPage() {
       {/* Pagination */}
       {sorted.length > pageSize && (
         <motion.div variants={itemVariants}>
-          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-            <p className="text-sm text-muted-foreground">
+          <div className="flex flex-col items-center justify-between gap-3 rounded-[12px] bg-white/70 px-3 py-2 shadow-[0_8px_20px_rgba(18,38,63,0.04)] dark:bg-[#0c2530]/80 sm:flex-row">
+            <p className="text-sm font-medium text-[#647887] dark:text-[#8fb6cc]">
               Page <span className="text-foreground">{page}</span> of <span className="text-foreground">{totalPages}</span>
               <span className="mx-2 text-muted-foreground/30">·</span>
               <span>{sorted.length} total</span>
             </p>
-            <div className="flex items-center gap-1.5">
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(1)} title="First page">
+            <div className="flex flex-wrap items-center justify-center gap-1.5">
+              <Button variant="ghost" size="sm" className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]" disabled={page <= 1} onClick={() => setPage(1)} title="First page">
                 <ChevronLeft className="h-3.5 w-3.5" />
                 <ChevronLeft className="-ml-2 h-3.5 w-3.5" />
               </Button>
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+              <Button variant="ghost" size="sm" className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]" disabled={page <= 1} onClick={() => setPage(page - 1)}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <div className="flex items-center gap-1">
@@ -1165,20 +1168,25 @@ export function AdminMissingVehiclesPage() {
                   ) : (
                     <Button
                       key={pageNum}
-                      variant={page === pageNum ? 'default' : 'outline'}
+                      variant="ghost"
                       size="sm"
                       onClick={() => setPage(pageNum)}
-                      className="min-w-[32px]"
+                      className={cn(
+                        'h-9 min-w-9 rounded-[10px] px-3 text-xs font-bold shadow-[0_6px_14px_rgba(18,38,63,0.05)]',
+                        page === pageNum
+                          ? '!bg-[#19b8a5] !text-white shadow-[0_8px_18px_rgba(25,184,165,0.28)]'
+                          : '!bg-white !text-[#071936] hover:!bg-[#dff7f4] hover:!text-[#08766c] dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]',
+                      )}
                     >
                       {pageNum}
                     </Button>
                   )
                 )}
               </div>
-              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+              <Button variant="ghost" size="sm" className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(totalPages)} title="Last page">
+              <Button variant="ghost" size="sm" className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]" disabled={page >= totalPages} onClick={() => setPage(totalPages)} title="Last page">
                 <ChevronRight className="h-3.5 w-3.5" />
                 <ChevronRight className="-ml-2 h-3.5 w-3.5" />
               </Button>

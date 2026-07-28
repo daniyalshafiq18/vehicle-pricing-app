@@ -121,32 +121,32 @@ export function Step2VehicleSelection() {
   // ── render ─────────────────────────────────────────────────────────
 
   return (
-    <div className="relative mx-auto max-w-2xl">
+    <div className="relative mx-auto max-w-2xl text-[#071936] dark:text-white">
       {/* Overlay spinner */}
       {isLoading && (
         <div className="absolute inset-0 z-40 flex flex-col items-center justify-center rounded-2xl bg-background/80 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-5">
             <div className="relative flex items-center justify-center">
               <div
-                className="absolute h-20 w-20 animate-spin rounded-full border-2 border-primary/20"
+                className="absolute h-20 w-20 animate-spin rounded-full border-2 border-[#19b8a5]/20"
                 style={{
-                  borderTopColor: 'hsl(var(--primary))',
+                  borderTopColor: '#19b8a5',
                   borderRightColor: 'transparent',
                   borderBottomColor: 'transparent',
                   borderLeftColor: 'transparent',
                 }}
               />
               <div
-                className="absolute h-14 w-14 animate-spin rounded-full border border-primary/10"
+                className="absolute h-14 w-14 animate-spin rounded-full border border-[#8fb6cc]/25"
                 style={{
                   animationDirection: 'reverse',
-                  borderTopColor: 'hsl(var(--accent))',
+                  borderTopColor: '#8fb6cc',
                   borderRightColor: 'transparent',
                   borderBottomColor: 'transparent',
                   borderLeftColor: 'transparent',
                 }}
               />
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader2 className="h-8 w-8 animate-spin text-[#19b8a5]" />
             </div>
             <div className="space-y-1 text-center">
               <p className="text-sm font-semibold text-foreground">Loading vehicle data</p>
@@ -158,10 +158,10 @@ export function Step2VehicleSelection() {
 
       <div className={cn(isLoading && 'pointer-events-none select-none', 'transition-opacity duration-300', isLoading && 'opacity-40')}>
         <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-3xl font-bold tracking-tight text-[#071936] dark:text-white">
             Vehicle Selection
           </h1>
-          <p className="mt-2 text-muted-foreground">
+          <p className="mt-2 text-[#647887] dark:text-[#b8cbd4]">
             Select your vehicle details to get an accurate market valuation.
           </p>
         </div>

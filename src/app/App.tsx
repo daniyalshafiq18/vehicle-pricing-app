@@ -47,7 +47,7 @@ function SplashGate({ children }: { children: ReactNode }) {
         </p>
         <button
           onClick={() => window.location.reload()}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          className="rounded-lg bg-[#19b8a5] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#14a794]"
         >
           Refresh Page
         </button>

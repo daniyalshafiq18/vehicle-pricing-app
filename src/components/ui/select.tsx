@@ -28,8 +28,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           id={selectId}
           className={cn(
             'flex h-10 w-full rounded-lg border bg-transparent px-3 py-2 text-sm shadow-sm transition-colors',
-            'border-input placeholder:text-muted-foreground',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            'border-[#d9e2e8] placeholder:text-muted-foreground hover:border-[#19b8a5]/45 dark:border-[#31545a]',
+            'focus-visible:outline-none focus-visible:border-[#19b8a5]/60 focus-visible:ring-2 focus-visible:ring-[#19b8a5]/25',
             'disabled:cursor-not-allowed disabled:opacity-50',
             error && 'border-destructive focus-visible:ring-destructive',
             className,

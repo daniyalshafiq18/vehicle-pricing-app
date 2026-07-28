@@ -35,23 +35,23 @@ import { cn, formatCurrency } from '@utils';
 const STATUS_VISUALS: Record<number, { icon: React.ReactNode; className: string; dot: string }> = {
   4: {
     icon: <Clock className="h-3 w-3" />,
-    className: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20',
-    dot: 'bg-amber-500',
+    className: 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]',
+    dot: 'bg-[#19b8a5]',
   },
   1: {
     icon: <CheckCircle2 className="h-3 w-3" />,
-    className: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    dot: 'bg-emerald-500',
+    className: 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]',
+    dot: 'bg-[#19b8a5]',
   },
   2: {
     icon: <XCircle className="h-3 w-3" />,
-    className: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/20',
-    dot: 'bg-red-500',
+    className: 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]',
+    dot: 'bg-[#19b8a5]',
   },
   3: {
     icon: <Edit className="h-3 w-3" />,
-    className: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20',
-    dot: 'bg-blue-500',
+    className: 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]',
+    dot: 'bg-[#19b8a5]',
   },
 };
 
@@ -97,7 +97,7 @@ function StatusSelect({ suggestion, options }: { suggestion: PriceSuggestion; op
         disabled={isPending}
         className={cn(
           'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all',
-          'hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring',
+          'hover:bg-[#dff7f4] focus:outline-none focus:ring-2 focus:ring-[#19b8a5]/30',
           'disabled:opacity-50',
           currentVisual?.className ?? 'text-muted-foreground bg-muted/30 border-muted',
         )}
@@ -109,7 +109,7 @@ function StatusSelect({ suggestion, options }: { suggestion: PriceSuggestion; op
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border bg-popover shadow-lg">
+          <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-[10px] border border-[#d9e2e8] bg-white shadow-[0_12px_28px_rgba(7,25,54,0.14)]">
             {options.map((opt) => {
               const visual = STATUS_VISUALS[opt.value];
               const isActive = suggestion.statusValue === opt.value;
@@ -120,13 +120,13 @@ function StatusSelect({ suggestion, options }: { suggestion: PriceSuggestion; op
                   className={cn(
                     'flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors',
                     isActive
-                      ? 'bg-accent text-foreground'
-                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                      ? 'bg-[#ecfbf8] text-[#08766c]'
+                      : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c]',
                   )}
                 >
                   <span className={cn('h-1.5 w-1.5 rounded-full', visual?.dot ?? 'bg-muted-foreground/40')} />
                   {opt.label}
-                  {isActive && <Check className="ml-auto h-3 w-3 text-primary" />}
+                  {isActive && <Check className="ml-auto h-3 w-3 text-[#19b8a5]" />}
                 </button>
               );
             })}
@@ -223,11 +223,11 @@ function PriceSuggestionDetailModal({
     >
       <div className="flex max-h-[85vh] flex-col gap-0">
         {/* Header */}
-        <div className="shrink-0 -mx-6 -mt-6 rounded-t-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 pb-4 pt-5">
+        <div className="shrink-0 -mx-6 -mt-6 rounded-t-2xl bg-gradient-to-br from-[#ecfbf8] via-[#f4fbfa] to-transparent px-6 pb-4 pt-5">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3.5">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-500/5 shadow-sm">
-                <DollarSign className="h-6 w-6 text-amber-500" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#ecfbf8] shadow-sm">
+                <DollarSign className="h-6 w-6 text-[#19b8a5]" />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-foreground">
@@ -286,7 +286,7 @@ function PriceSuggestionDetailModal({
                   type="number"
                   value={editMinPrice}
                   onChange={(e) => setEditMinPrice(Number(e.target.value))}
-                  className="h-9 w-full rounded-lg border bg-background pl-10 pr-3 text-sm font-medium text-foreground outline-none transition-colors focus:border-primary/50"
+                  className="h-9 w-full rounded-[10px] border border-[#d9e2e8] bg-white pl-10 pr-3 text-sm font-medium text-[#071936] outline-none transition-colors focus:border-[#19b8a5]/60 focus:ring-2 focus:ring-[#19b8a5]/15"
                 />
               </div>
               {editMinPrice > 0 && (
@@ -305,7 +305,7 @@ function PriceSuggestionDetailModal({
                   type="number"
                   value={editMaxPrice}
                   onChange={(e) => setEditMaxPrice(Number(e.target.value))}
-                  className="h-9 w-full rounded-lg border bg-background pl-10 pr-3 text-sm font-medium text-foreground outline-none transition-colors focus:border-primary/50"
+                  className="h-9 w-full rounded-[10px] border border-[#d9e2e8] bg-white pl-10 pr-3 text-sm font-medium text-[#071936] outline-none transition-colors focus:border-[#19b8a5]/60 focus:ring-2 focus:ring-[#19b8a5]/15"
                 />
               </div>
               {editMaxPrice > 0 && (
@@ -323,7 +323,7 @@ function PriceSuggestionDetailModal({
                   href={suggestion.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-1 flex items-center gap-1.5 text-sm font-medium text-primary break-words hover:underline"
+                  className="mt-1 flex items-center gap-1.5 text-sm font-medium text-[#08766c] break-words hover:underline"
                 >
                   {suggestion.sourceUrl}
                   <ExternalLink className="h-3 w-3 shrink-0" />
@@ -395,7 +395,6 @@ function PriceSuggestionCard({
       className="group h-full"
     >
       <UICard className="overflow-hidden border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 h-full">
-        <div className="h-1 bg-gradient-to-r from-emerald-500/60 via-emerald-400/60 to-emerald-500/30" />
         <CardContent className="p-5 flex flex-col h-full">
           {/* Header: vehicle name + status */}
           <div className="flex items-start justify-between mb-4 shrink-0 gap-3">
@@ -436,7 +435,7 @@ function PriceSuggestionCard({
           {suggestion.sourceUrl && (
             <div className="mt-3 rounded-xl bg-muted/40 p-3 shrink-0">
               <p className="text-[10px] text-slate-800 dark:text-slate-200">Source</p>
-              <p className="mt-0.5 truncate text-xs text-primary">{suggestion.sourceUrl}</p>
+              <p className="mt-0.5 truncate text-xs text-[#08766c]">{suggestion.sourceUrl}</p>
             </div>
           )}
 
@@ -601,7 +600,7 @@ export function AdminPriceSuggestionsPage() {
                   return (
                     <>
                       <span className="mx-1.5 text-muted-foreground/30">·</span>
-                      <span className="font-medium text-amber-600 dark:text-amber-400">
+                      <span className="font-medium text-[#08766c] dark:text-[#19b8a5]">
                         {pendingTab.count} pending
                       </span>
                     </>
@@ -619,7 +618,7 @@ export function AdminPriceSuggestionsPage() {
                 className={cn(
                   'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
                   viewMode === 'table'
-                    ? 'bg-primary/10 text-primary shadow-sm'
+                    ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
                 )}
                 title="Table view"
@@ -632,7 +631,7 @@ export function AdminPriceSuggestionsPage() {
                 className={cn(
                   'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
                   viewMode === 'card'
-                    ? 'bg-primary/10 text-primary shadow-sm'
+                    ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
                 )}
                 title="Card view"
@@ -651,7 +650,7 @@ export function AdminPriceSuggestionsPage() {
                   setSearch(e.target.value);
                   setPage(1);
                 }}
-                className="h-9 w-48 rounded-lg border bg-background/50 pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary/50 md:w-72"
+                className="h-9 w-48 rounded-[10px] border border-[#d9e2e8] bg-white pl-9 pr-3 text-sm text-[#071936] outline-none transition-colors placeholder:text-[#b8c5cc] hover:border-[#b7cbd5] focus:border-[#19b8a5]/60 focus:ring-2 focus:ring-[#19b8a5]/15 md:w-72"
               />
             </div>
             {search && (
@@ -666,7 +665,7 @@ export function AdminPriceSuggestionsPage() {
 
       {/* Status filter tabs — built dynamically from Dataverse options */}
       <motion.div variants={itemVariants}>
-        <div className="flex items-center gap-1.5 rounded-xl border bg-card p-1.5 overflow-x-auto">
+        <div className="flex items-center gap-1.5 overflow-x-auto rounded-[12px] border-0 bg-white p-1.5 shadow-[0_8px_20px_rgba(18,38,63,0.05)]">
           {filterTabs.map((tab) => (
             <button
               key={String(tab.value)}
@@ -674,8 +673,8 @@ export function AdminPriceSuggestionsPage() {
               className={cn(
                 'flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-medium transition-all whitespace-nowrap',
                 statusFilterValue === tab.value
-                  ? 'bg-primary/10 text-primary shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50',
+                  ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm'
+                  : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c]',
               )}
             >
               {tab.color && <span className={cn('h-1.5 w-1.5 rounded-full', tab.color)} />}
@@ -683,8 +682,8 @@ export function AdminPriceSuggestionsPage() {
               <span className={cn(
                 'ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
                 statusFilterValue === tab.value
-                  ? 'bg-primary/15 text-primary'
-                  : 'bg-muted text-muted-foreground',
+                  ? 'bg-[#dff7f4] text-[#08766c]'
+                  : 'bg-[#f4f8fb] text-[#8aa0ad]',
               )}>
                 {tab.count}
               </span>
@@ -702,8 +701,6 @@ export function AdminPriceSuggestionsPage() {
           animate="visible"
         >
           <div className="rounded-2xl border bg-card overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-primary/60 via-accent/60 to-primary/30" />
-
             {isLoading ? (
               <div className="p-6">
                 <SkeletonTable rows={8} cols={5} />
@@ -914,18 +911,18 @@ export function AdminPriceSuggestionsPage() {
       {/* Pagination */}
       {sorted.length > pageSize && (
         <motion.div variants={itemVariants}>
-          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-            <p className="text-sm text-muted-foreground">
+          <div className="flex flex-col items-center justify-between gap-3 rounded-[12px] bg-white/70 px-3 py-2 shadow-[0_8px_20px_rgba(18,38,63,0.04)] dark:bg-[#0c2530]/80 sm:flex-row">
+            <p className="text-sm font-medium text-[#647887] dark:text-[#8fb6cc]">
               Page <span className="text-foreground">{page}</span> of <span className="text-foreground">{totalPages}</span>
               <span className="mx-2 text-muted-foreground/30">·</span>
               <span>{sorted.length} total</span>
             </p>
-            <div className="flex items-center gap-1.5">
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(1)} title="First page">
+            <div className="flex flex-wrap items-center justify-center gap-1.5">
+              <Button variant="ghost" size="sm" className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]" disabled={page <= 1} onClick={() => setPage(1)} title="First page">
                 <ChevronLeft className="h-3.5 w-3.5" />
                 <ChevronLeft className="-ml-2 h-3.5 w-3.5" />
               </Button>
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+              <Button variant="ghost" size="sm" className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]" disabled={page <= 1} onClick={() => setPage(page - 1)}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <div className="flex items-center gap-1">
@@ -935,20 +932,25 @@ export function AdminPriceSuggestionsPage() {
                   ) : (
                     <Button
                       key={pageNum}
-                      variant={page === pageNum ? 'default' : 'outline'}
+                      variant="ghost"
                       size="sm"
                       onClick={() => setPage(pageNum)}
-                      className="min-w-[32px]"
+                      className={cn(
+                        'h-9 min-w-9 rounded-[10px] px-3 text-xs font-bold shadow-[0_6px_14px_rgba(18,38,63,0.05)]',
+                        page === pageNum
+                          ? '!bg-[#19b8a5] !text-white shadow-[0_8px_18px_rgba(25,184,165,0.28)]'
+                          : '!bg-white !text-[#071936] hover:!bg-[#dff7f4] hover:!text-[#08766c] dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]',
+                      )}
                     >
                       {pageNum}
                     </Button>
                   )
                 )}
               </div>
-              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+              <Button variant="ghost" size="sm" className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(totalPages)} title="Last page">
+              <Button variant="ghost" size="sm" className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]" disabled={page >= totalPages} onClick={() => setPage(totalPages)} title="Last page">
                 <ChevronRight className="h-3.5 w-3.5" />
                 <ChevronRight className="-ml-2 h-3.5 w-3.5" />
               </Button>
