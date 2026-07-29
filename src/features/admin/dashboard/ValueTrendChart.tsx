@@ -92,8 +92,8 @@ export function ValueTrendChart({ data, className }: ValueTrendChartProps) {
             }}
             options={makeOptions}
             placement="bottom-end"
-            className="h-8 w-36 rounded-[8px] border-0 bg-[#f4f8fb] px-2.5 text-[11px] font-semibold text-[#071936] shadow-none hover:bg-[#eaf2f6] focus-visible:ring-[#19b8a5]/30 sm:w-40"
-            dropdownClassName="border-[#dce8ee] bg-white"
+            className="h-8 w-36 rounded-[8px] border-0 bg-[#f4f8fb] px-2.5 text-xs font-semibold text-[#071936] shadow-none hover:bg-[#eaf2f6] focus-visible:ring-[#19b8a5]/30 dark:bg-[#071936] dark:text-white dark:hover:bg-[#0f3f43] sm:w-40"
+            dropdownClassName="border-[#dce8ee] bg-white dark:border-[#31545a] dark:bg-[#071936]"
           />
           <CustomSelect
             placeholder="All models"
@@ -102,8 +102,8 @@ export function ValueTrendChart({ data, className }: ValueTrendChartProps) {
             options={modelOptions}
             disabled={!selectedMake}
             placement="bottom-end"
-            className="h-8 w-36 rounded-[8px] border-0 bg-[#f4f8fb] px-2.5 text-[11px] font-semibold text-[#071936] shadow-none hover:bg-[#eaf2f6] focus-visible:ring-[#19b8a5]/30 sm:w-44"
-            dropdownClassName="border-[#dce8ee] bg-white"
+            className="h-8 w-36 rounded-[8px] border-0 bg-[#f4f8fb] px-2.5 text-xs font-semibold text-[#071936] shadow-none hover:bg-[#eaf2f6] focus-visible:ring-[#19b8a5]/30 dark:bg-[#071936] dark:text-white dark:hover:bg-[#0f3f43] sm:w-44"
+            dropdownClassName="border-[#dce8ee] bg-white dark:border-[#31545a] dark:bg-[#071936]"
           />
         </div>
       }

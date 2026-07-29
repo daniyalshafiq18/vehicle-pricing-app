@@ -38,14 +38,14 @@ const itemVariants = {
 };
 
 const statusColors: Record<string, string> = {
-  Pending: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c]',
-  Approved: 'border-[#cdebe6] bg-[#ecfbf8] text-[#08766c]',
-  'In Progress': 'border-[#cfe0ea] bg-[#f0f7fa] text-[#427189]',
-  Reject: 'border-[#f4c7c7] bg-[#fff0f0] text-[#b42323]',
-  Reviewed: 'border-[#cdebe6] bg-[#ecfbf8] text-[#08766c]',
-  Contacted: 'border-[#cfe0ea] bg-[#f0f7fa] text-[#427189]',
-  Closed: 'border-[#e5edf2] bg-[#f6f9fb] text-[#647887]',
-  Unknown: 'border-[#e5edf2] bg-[#f6f9fb] text-[#7e95a3]',
+  Pending: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c] dark:border-[#19b8a5]/35 dark:bg-[#0f3f43] dark:text-[#5eead4]',
+  Approved: 'border-[#cdebe6] bg-[#ecfbf8] text-[#08766c] dark:border-[#19b8a5]/35 dark:bg-[#0f3f43] dark:text-[#5eead4]',
+  'In Progress': 'border-[#cfe0ea] bg-[#f0f7fa] text-[#427189] dark:border-[#8fb6cc]/35 dark:bg-[#102d38] dark:text-[#b8cbd4]',
+  Reject: 'border-[#f4c7c7] bg-[#fff0f0] text-[#b42323] dark:border-[#fca5a5]/35 dark:bg-[#3a161a] dark:text-[#fca5a5]',
+  Reviewed: 'border-[#cdebe6] bg-[#ecfbf8] text-[#08766c] dark:border-[#19b8a5]/35 dark:bg-[#0f3f43] dark:text-[#5eead4]',
+  Contacted: 'border-[#cfe0ea] bg-[#f0f7fa] text-[#427189] dark:border-[#8fb6cc]/35 dark:bg-[#102d38] dark:text-[#b8cbd4]',
+  Closed: 'border-[#e5edf2] bg-[#f6f9fb] text-[#647887] dark:border-[#31545a] dark:bg-[#071936] dark:text-[#8fb6cc]',
+  Unknown: 'border-[#e5edf2] bg-[#f6f9fb] text-[#7e95a3] dark:border-[#31545a] dark:bg-[#071936] dark:text-[#8fb6cc]',
 };
 
 export function AdminDashboardPage() {
@@ -149,10 +149,10 @@ export function AdminDashboardPage() {
     >
       <motion.div variants={itemVariants} className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-[20px] font-extrabold leading-7 tracking-normal text-[#071936] dark:text-white sm:text-[22px]">
+          <h1 className="text-2xl font-semibold leading-7 text-[#071936] dark:text-white sm:text-3xl">
             Overall Performance Dashboard
           </h1>
-          <p className="mt-1 text-[11px] font-medium text-[#7e95a3] dark:text-[#8fb6cc]">
+          <p className="mt-1 text-xs font-medium text-[#7e95a3] dark:text-[#8fb6cc]">
             <span className="font-semibold text-[#071936] dark:text-white">{formatNumber(overview.totalVehicles)}</span> vehicles across{' '}
             <span className="font-semibold text-[#071936] dark:text-white">{formatNumber(overview.totalMakes)}</span> makes
             {totalFiltered !== totalUnfiltered && (
@@ -161,18 +161,18 @@ export function AdminDashboardPage() {
             <span className="text-[#9aabb5]"> · Updated {new Date(overview.lastUpdated).toLocaleDateString()}</span>
           </p>
         </div>
-        <div className="flex items-center gap-2 self-start rounded-[8px] bg-white px-3 py-2 text-[11px] font-semibold text-[#071936] shadow-[0_8px_24px_rgba(18,38,63,0.05)] sm:self-auto">
-          <span className="text-[#8aa0ad]">Period</span>
+        <div className="flex items-center gap-2 self-start rounded-[8px] bg-white px-3 py-2 text-xs font-medium text-[#071936] shadow-[0_8px_24px_rgba(18,38,63,0.05)] dark:bg-[#0c2530] dark:text-white dark:shadow-none sm:self-auto">
+          <span className="text-[#8aa0ad] dark:text-[#8fb6cc]">Period</span>
           <span>Week till date</span>
         </div>
       </motion.div>
 
       <div className="grid gap-3 xl:grid-cols-12">
         <motion.div variants={itemVariants} className="xl:col-span-4">
-          <Card className="h-full border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.06)] hover:translate-y-0 hover:border-transparent">
+          <Card className="h-full border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.06)] hover:translate-y-0 hover:border-transparent dark:bg-[#0c2530] dark:shadow-none">
             <CardContent className="p-4 sm:p-5">
               <div className="mb-5">
-                <h2 className="text-[15px] font-bold leading-5 text-[#071936] dark:text-white">Weekly Stats</h2>
+                <h2 className="text-sm font-semibold leading-5 text-[#071936] dark:text-white">Weekly Stats</h2>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -192,16 +192,16 @@ export function AdminDashboardPage() {
                         }
                       }}
                       className={cn(
-                        'group min-h-[76px] rounded-[4px] bg-[#f7fafc] p-3 text-left transition-colors hover:bg-[#edf5f7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#19b8a5]/35',
-                        selected && 'bg-[#e7f8f5] ring-2 ring-[#19b8a5]/30',
+                        'group min-h-[76px] rounded-[4px] bg-[#f7fafc] p-3 text-left transition-colors hover:bg-[#edf5f7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#19b8a5]/35 dark:bg-[#071936] dark:hover:bg-[#0f3f43]',
+                        selected && 'bg-[#e7f8f5] ring-2 ring-[#19b8a5]/30 dark:bg-[#0f3f43]',
                       )}
                     >
                       <div className="mb-2 flex items-center justify-between gap-2">
-                        <span className="truncate text-[10px] font-medium leading-4 text-[#8aa0ad]">{kpi.label}</span>
+                        <span className="truncate text-xs font-medium leading-4 text-[#8aa0ad] dark:text-[#8fb6cc]">{kpi.label}</span>
                         <kpi.icon className="h-3.5 w-3.5 shrink-0 text-[#8fb6cc] group-hover:text-[#19b8a5]" />
                       </div>
-                      <p className="text-[15px] font-bold leading-5 text-[#071936]">{kpi.value}</p>
-                      <p className="mt-1 truncate text-[10px] font-semibold leading-4 text-[#647887]">{kpi.subtitle}</p>
+                      <p className="text-xl font-semibold leading-6 text-[#071936] tabular-nums dark:text-white">{kpi.value}</p>
+                      <p className="mt-1 truncate text-xs font-medium leading-4 text-[#647887] dark:text-[#8fb6cc]">{kpi.subtitle}</p>
                     </button>
                   );
                 })}
@@ -230,14 +230,14 @@ export function AdminDashboardPage() {
 
         {activeView !== 'default' && (
           <motion.div variants={itemVariants} className="xl:col-span-12">
-            <Card className="border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.06)] hover:translate-y-0 hover:border-transparent">
+            <Card className="border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.06)] hover:translate-y-0 hover:border-transparent dark:bg-[#0c2530] dark:shadow-none">
               <CardContent className="p-4 sm:p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-[14px] font-bold text-[#071936]">
+                    <h3 className="text-sm font-semibold text-[#071936] dark:text-white">
                       {activeView === 'queries' ? 'Inquiries' : 'Missing Vehicle Requests'}
                     </h3>
-                    <p className="mt-0.5 text-[10px] font-medium text-[#8aa0ad]">
+                    <p className="mt-0.5 text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">
                       {activeView === 'queries'
                         ? `${inquiries?.length ?? 0} total inquiries grouped by status`
                         : `${missingVehicles?.length ?? 0} total requests grouped by status`}
@@ -246,7 +246,7 @@ export function AdminDashboardPage() {
                   <button
                     type="button"
                     onClick={() => setActiveView('default')}
-                    className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#f4f8fb] text-[#7e95a3] transition-colors hover:bg-[#eaf2f6] hover:text-[#071936]"
+                    className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#f4f8fb] text-[#7e95a3] transition-colors hover:bg-[#eaf2f6] hover:text-[#071936] dark:bg-[#071936] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]"
                     aria-label="Close status breakdown"
                   >
                     <X className="h-4 w-4" />
@@ -257,12 +257,12 @@ export function AdminDashboardPage() {
                     <div
                       key={status}
                       className={cn(
-                        'flex items-center justify-between rounded-[8px] border px-4 py-3 transition-colors hover:bg-white',
+                        'flex items-center justify-between rounded-[8px] border px-4 py-3 transition-colors hover:bg-white dark:hover:bg-[#0f3f43]',
                         statusColors[status] || statusColors.Unknown,
                       )}
                     >
-                      <span className="text-[12px] font-semibold">{status}</span>
-                      <span className="text-[18px] font-bold tabular-nums">{count}</span>
+                      <span className="text-xs font-semibold">{status}</span>
+                      <span className="text-lg font-semibold tabular-nums">{count}</span>
                     </div>
                   ))}
                 </div>
@@ -288,16 +288,16 @@ export function AdminDashboardPage() {
 
         <motion.div variants={itemVariants} className="xl:col-span-12">
           <LazyChart height={500} rootMargin="300px">
-            <Card className="overflow-hidden border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.06)] hover:translate-y-0 hover:border-transparent">
+            <Card className="overflow-hidden border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.06)] hover:translate-y-0 hover:border-transparent dark:bg-[#0c2530] dark:shadow-none">
               <CardContent className="p-4 sm:p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-[15px] font-bold leading-5 text-[#071936]">Premium Vehicle Leaderboard</h3>
-                    <p className="mt-0.5 text-[10px] font-medium text-[#8aa0ad]">
+                    <h3 className="text-sm font-semibold leading-5 text-[#071936] dark:text-white">Premium Vehicle Leaderboard</h3>
+                    <p className="mt-0.5 text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">
                       Top {premiumLeaderboard.length} vehicles by market value
                     </p>
                   </div>
-                  <span className="rounded-[8px] bg-[#ecfbf8] px-3 py-1 text-[10px] font-bold text-[#08766c]">Top 100</span>
+                  <span className="rounded-[8px] bg-[#ecfbf8] px-3 py-1 text-xs font-medium text-[#08766c]">Top 100</span>
                 </div>
                 <PremiumLeaderboard
                   data={premiumLeaderboard}
@@ -309,7 +309,7 @@ export function AdminDashboardPage() {
         </motion.div>
       </div>
 
-      <motion.div variants={itemVariants} className="mt-5 flex flex-wrap items-center justify-center gap-2 text-[11px] font-medium text-[#8aa0ad]">
+      <motion.div variants={itemVariants} className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">
         <Clock className="h-3.5 w-3.5" />
         <span>
           Last updated: {new Date(overview.lastUpdated).toLocaleDateString('en-US', {

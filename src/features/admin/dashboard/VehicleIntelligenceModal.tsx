@@ -18,8 +18,8 @@ import {
   Car,
 } from 'lucide-react';
 
-const statCardClass = 'rounded-[8px] border-0 bg-white p-3 shadow-[0_8px_20px_rgba(18,38,63,0.05)]';
-const sectionTitleClass = 'mb-3 flex items-center gap-2 text-[12px] font-bold uppercase tracking-normal text-[#7e95a3]';
+const statCardClass = 'rounded-[8px] border-0 bg-white p-3 shadow-[0_8px_20px_rgba(18,38,63,0.05)] dark:bg-[#071936] dark:shadow-none';
+const sectionTitleClass = 'mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-normal text-[#7e95a3] dark:text-[#8fb6cc]';
 
 export function VehicleIntelligenceModal() {
   const selectedVehicleId = useDashboardStore((s) => s.selectedVehicleId);
@@ -55,7 +55,7 @@ export function VehicleIntelligenceModal() {
       title={isLoading ? 'Loading...' : `${vehicle?.year} ${vehicle?.make} ${vehicle?.model}`}
       description={vehicle?.spec || 'Vehicle Intelligence'}
       size="xl"
-      className="border-0 bg-[#f3f7fa] text-[#071936] shadow-[0_24px_60px_rgba(7,25,54,0.18)]"
+      className="border-0 bg-[#f3f7fa] text-[#071936] shadow-[0_24px_60px_rgba(7,25,54,0.18)] dark:bg-[#0c2530] dark:text-white dark:shadow-none"
     >
       <div className="max-h-[70vh] space-y-5 overflow-y-auto pr-1">
         {isLoading ? (
@@ -82,8 +82,8 @@ export function VehicleIntelligenceModal() {
                   { label: 'Spec', value: vehicle.spec || '-' },
                 ].map((s) => (
                   <div key={s.label} className={statCardClass}>
-                    <p className="text-[11px] font-medium text-[#8aa0ad]">{s.label}</p>
-                    <p className="mt-0.5 font-semibold text-[#071936]">{s.value}</p>
+                    <p className="text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">{s.label}</p>
+                    <p className="mt-0.5 font-semibold text-[#071936] dark:text-white">{s.value}</p>
                   </div>
                 ))}
               </div>
@@ -103,16 +103,16 @@ export function VehicleIntelligenceModal() {
                     { label: 'Median', value: formatCurrency(pricing.medianPrice || 0) },
                   ].map((p) => (
                     <div key={p.label} className={statCardClass}>
-                      <p className="text-[11px] font-medium text-[#8aa0ad]">{p.label}</p>
-                      <p className="mt-0.5 font-bold text-[#071936]">{p.value}</p>
+                      <p className="text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">{p.label}</p>
+                      <p className="mt-0.5 font-semibold text-[#071936] dark:text-white">{p.value}</p>
                     </div>
                   ))}
                 </div>
 
                 <div className={`${statCardClass} mt-3`}>
-                  <div className="flex items-center justify-between text-xs font-medium text-[#7e95a3]">
+                  <div className="flex items-center justify-between text-xs font-medium text-[#7e95a3] dark:text-[#8fb6cc]">
                     <span>{formatCurrency(pricing.priceRange.min)}</span>
-                    <span className="text-[#071936]/70">Price Range</span>
+                    <span className="text-[#071936]/70 dark:text-white/70">Price Range</span>
                     <span>{formatCurrency(pricing.priceRange.max)}</span>
                   </div>
                   <div className="relative mt-2 h-2 overflow-hidden rounded-full bg-[#eaf2f6]">
@@ -124,7 +124,7 @@ export function VehicleIntelligenceModal() {
                       }}
                     />
                     <div
-                      className="absolute top-1/2 h-full w-0.5 -translate-y-1/2 rounded-full bg-[#071936]"
+                      className="absolute top-1/2 h-full w-0.5 -translate-y-1/2 rounded-full bg-[#071936] dark:bg-white"
                       style={{
                         left: `${((pricing.averagePrice - pricing.priceRange.min) / (pricing.priceRange.max - pricing.priceRange.min)) * 100}%`,
                       }}
@@ -134,8 +134,8 @@ export function VehicleIntelligenceModal() {
 
                 <div className={`${statCardClass} mt-3 flex items-center gap-2 px-4 py-2.5`}>
                   <TrendIcon className={`h-4 w-4 ${trendColor}`} />
-                  <span className="text-xs font-medium text-[#7e95a3]">Market Trend:</span>
-                  <span className={`flex items-center gap-1 text-sm font-bold ${trendColor}`}>
+                  <span className="text-xs font-medium text-[#7e95a3] dark:text-[#8fb6cc]">Market Trend:</span>
+                  <span className={`flex items-center gap-1 text-sm font-semibold ${trendColor}`}>
                     {pricing.marketTrend.direction === 'up'
                       ? 'Appreciating'
                       : pricing.marketTrend.direction === 'down'
@@ -145,7 +145,7 @@ export function VehicleIntelligenceModal() {
                       ({pricing.marketTrend.percentage > 0 ? '+' : ''}{pricing.marketTrend.percentage}%)
                     </span>
                   </span>
-                  <span className="ml-auto text-[10px] font-medium text-[#8aa0ad]">
+                  <span className="ml-auto text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">
                     Sample: {pricing.sampleSize} vehicles
                   </span>
                 </div>
@@ -170,8 +170,8 @@ export function VehicleIntelligenceModal() {
                     <div className="flex items-center gap-3">
                       <t.icon className="h-5 w-5 shrink-0 text-[#8fb6cc]" />
                       <div className="min-w-0">
-                        <p className="text-xs font-medium text-[#8aa0ad]">{t.label}</p>
-                        <p className="truncate font-semibold text-[#071936]">{t.value}</p>
+                        <p className="text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">{t.label}</p>
+                        <p className="truncate font-semibold text-[#071936] dark:text-white">{t.value}</p>
                       </div>
                     </div>
                   </div>
@@ -193,8 +193,8 @@ export function VehicleIntelligenceModal() {
                   { label: 'Seats', value: vehicle.seats },
                 ].map((d) => (
                   <div key={d.label} className={statCardClass}>
-                    <p className="text-xs font-medium text-[#8aa0ad]">{d.label}</p>
-                    <p className="mt-0.5 font-semibold text-[#071936]">{d.value}</p>
+                    <p className="text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">{d.label}</p>
+                    <p className="mt-0.5 font-semibold text-[#071936] dark:text-white">{d.value}</p>
                   </div>
                 ))}
               </div>
@@ -202,8 +202,8 @@ export function VehicleIntelligenceModal() {
 
             {vehicle.description && (
               <div>
-                <h4 className="mb-2 text-[12px] font-bold uppercase tracking-normal text-[#7e95a3]">Description</h4>
-                <p className="text-sm leading-relaxed text-[#647887]">{vehicle.description}</p>
+                <h4 className="mb-2 text-xs font-medium uppercase tracking-normal text-[#7e95a3] dark:text-[#8fb6cc]">Description</h4>
+                <p className="text-sm leading-relaxed text-[#647887] dark:text-[#b8cbd4]">{vehicle.description}</p>
               </div>
             )}
 
@@ -217,14 +217,14 @@ export function VehicleIntelligenceModal() {
                   {comparables.map((c, i) => (
                     <div key={i} className={`${statCardClass} flex items-center justify-between px-4 py-2.5`}>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-[#071936]">
+                        <p className="truncate text-sm font-semibold text-[#071936] dark:text-white">
                           {c.vehicle.year} {c.vehicle.make} {c.vehicle.model}
                         </p>
-                        <p className="text-[10px] font-medium text-[#8aa0ad]">{c.vehicle.spec} · {c.vehicle.bodyType}</p>
+                        <p className="text-xs font-medium text-[#8aa0ad]">{c.vehicle.spec} · {c.vehicle.bodyType}</p>
                       </div>
                       <div className="ml-4 shrink-0 text-right">
-                        <p className="text-sm font-bold text-[#071936]">{formatCurrency(c.pricing.averagePrice)}</p>
-                        <p className="text-[10px] font-medium text-[#8aa0ad]">
+                        <p className="text-sm font-semibold text-[#071936] dark:text-white">{formatCurrency(c.pricing.averagePrice)}</p>
+                        <p className="text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">
                           {c.priceDifferencePercentage > 0 ? '+' : ''}{c.priceDifferencePercentage.toFixed(1)}% diff
                         </p>
                       </div>
@@ -236,8 +236,8 @@ export function VehicleIntelligenceModal() {
           </>
         ) : (
           <div className="flex flex-col items-center justify-center py-12">
-            <p className="text-lg font-bold text-[#071936]">Vehicle not found</p>
-            <p className="mt-1 text-sm font-medium text-[#8aa0ad]">The requested vehicle could not be loaded.</p>
+            <p className="text-lg font-semibold text-[#071936] dark:text-white">Vehicle not found</p>
+            <p className="mt-1 text-sm font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">The requested vehicle could not be loaded.</p>
           </div>
         )}
       </div>
