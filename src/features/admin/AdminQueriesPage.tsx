@@ -71,7 +71,7 @@ const STATUS_OPTIONS: { value: InquiryStatus; label: string }[] = [
 function StatusBadge({ status }: { status: InquiryStatus }) {
   const cfg = STATUS_CONFIG[status];
   return (
-    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium', cfg.className)}>
+    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium', cfg.className)}>
       <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
       {cfg.label}
     </span>
@@ -145,7 +145,7 @@ function StatusSelect({ inquiry }: { inquiry: Inquiry }) {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-1 w-36 overflow-hidden rounded-[10px] border border-[#d9e2e8] bg-white shadow-[0_12px_28px_rgba(7,25,54,0.14)]">
+          <div className="absolute right-0 top-full z-50 mt-1 w-36 overflow-hidden rounded-[10px] border border-[#d9e2e8] bg-white shadow-[0_12px_28px_rgba(7,25,54,0.14)] dark:border-[#31545a] dark:bg-[#071936] dark:shadow-none">
             {STATUS_OPTIONS.map((opt) => {
               const cfg = STATUS_CONFIG[opt.value];
               const isActive = inquiry.status === opt.value;
@@ -157,7 +157,7 @@ function StatusSelect({ inquiry }: { inquiry: Inquiry }) {
                     'flex w-full items-center gap-2.5 px-3 py-2 text-xs font-medium transition-colors',
                     isActive
                       ? 'bg-[#ecfbf8] text-[#08766c]'
-                      : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c]',
+                      : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]',
                   )}
                 >
                   <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
@@ -205,7 +205,7 @@ function InquiryDetailModal({
                 <User className="h-6 w-6 text-[#19b8a5]" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-foreground">
+                <h2 className="text-lg font-semibold text-foreground">
                   {inquiry.firstName} {inquiry.lastName}
                 </h2>
                 <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -231,14 +231,14 @@ function InquiryDetailModal({
           {/* Contact Info */}
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="flex items-center gap-1.5 text-[10px] text-foreground">
+              <p className="flex items-center gap-1.5 text-xs text-foreground">
                 <Mail className="h-3 w-3" />
                 Email
               </p>
               <p className="mt-1 text-sm font-medium text-foreground truncate">{inquiry.email}</p>
             </div>
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="flex items-center gap-1.5 text-[10px] text-foreground">
+              <p className="flex items-center gap-1.5 text-xs text-foreground">
                 <Phone className="h-3 w-3" />
                 Phone
               </p>
@@ -248,7 +248,7 @@ function InquiryDetailModal({
 
           {/* Location */}
           <div className="mb-4 rounded-xl border bg-card p-3.5">
-            <p className="flex items-center gap-1.5 text-[10px] text-foreground">
+            <p className="flex items-center gap-1.5 text-xs text-foreground">
               <MapPin className="h-3 w-3" />
               Location
             </p>
@@ -261,7 +261,7 @@ function InquiryDetailModal({
           <div className="mb-4 overflow-hidden rounded-xl border">
             <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2.5">
               <Car className="h-4 w-4 text-[#19b8a5]" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Selected Vehicle</span>
+              <span className="text-xs font-medium uppercase tracking-wider text-foreground">Selected Vehicle</span>
             </div>
             <div className="grid grid-cols-2 divide-x divide-y divide-border sm:grid-cols-3">
               {[
@@ -273,7 +273,7 @@ function InquiryDetailModal({
                 { label: 'Trim', value: vehicleDisplay },
               ].map((item) => (
                 <div key={item.label} className="px-4 py-2.5">
-                  <p className="text-[10px] text-foreground">{item.label}</p>
+                  <p className="text-xs text-foreground">{item.label}</p>
                   <p className="mt-0.5 text-xs font-medium text-foreground truncate" title={String(item.value)}>{item.value}</p>
                 </div>
               ))}
@@ -285,24 +285,24 @@ function InquiryDetailModal({
             <div className="overflow-hidden rounded-xl border">
               <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2.5">
                 <TrendingUp className="h-4 w-4 text-[#19b8a5]" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-foreground">Valuation Result</span>
+                <span className="text-xs font-medium uppercase tracking-wider text-foreground">Valuation Result</span>
               </div>
               <div className="grid grid-cols-3 divide-x divide-border">
                 <div className="bg-gradient-to-br from-[#ecfbf8] to-transparent p-4">
-                  <p className="text-[10px] text-foreground">Min Price</p>
-                  <p className="mt-0.5 text-lg font-bold text-[#08766c]">
+                  <p className="text-xs text-foreground">Min Price</p>
+                  <p className="mt-0.5 text-lg font-semibold text-[#08766c]">
                     {formatCurrency(inquiry.valuationResult.pricing.minimumPrice)}
                   </p>
                 </div>
                 <div className="p-4">
-                  <p className="text-[10px] text-foreground">Median Price</p>
-                  <p className="mt-0.5 text-lg font-bold text-foreground">
+                  <p className="text-xs text-foreground">Median Price</p>
+                  <p className="mt-0.5 text-lg font-semibold text-foreground">
                     {formatCurrency(inquiry.valuationResult.pricing.medianPrice)}
                   </p>
                 </div>
                 <div className="p-4">
-                  <p className="text-[10px] text-foreground">Max Price</p>
-                  <p className="mt-0.5 text-lg font-bold text-foreground">
+                  <p className="text-xs text-foreground">Max Price</p>
+                  <p className="mt-0.5 text-lg font-semibold text-foreground">
                     {formatCurrency(inquiry.valuationResult.pricing.maximumPrice)}
                   </p>
                 </div>
@@ -402,7 +402,7 @@ export function AdminQueriesPage() {
       <motion.div variants={itemVariants}>
         <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">Queries</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Queries</h1>
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{inquiries?.length ?? 0}</span> total inquiries
               {statusCounts.pending > 0 && (
@@ -422,6 +422,7 @@ export function AdminQueriesPage() {
               onClick={exportInquiries}
               disabled={!inquiries?.length}
               title="Export all inquiries as CSV"
+              className="!border-[#d9e2e8] !bg-white !text-[#19b8a5] hover:!border-[#19b8a5]/50 hover:!bg-[#ecfbf8] hover:!text-[#08766c] dark:!border-[#31545a] dark:!bg-[#0c2530] dark:!text-[#19b8a5] dark:hover:!bg-[#0f3f43]"
             >
               <Download className="mr-1.5 h-4 w-4" />
               Export
@@ -436,7 +437,7 @@ export function AdminQueriesPage() {
                   setSearch(e.target.value);
                   setPage(1);
                 }}
-                className="h-9 w-48 rounded-[10px] border border-[#d9e2e8] bg-white pl-9 pr-3 text-sm text-[#071936] outline-none transition-colors placeholder:text-[#b8c5cc] hover:border-[#b7cbd5] focus:border-[#19b8a5]/60 focus:bg-white focus:ring-2 focus:ring-[#19b8a5]/15 md:w-72"
+                className="h-9 w-48 rounded-[10px] border border-[#d9e2e8] bg-white pl-9 pr-3 text-sm text-[#071936] outline-none transition-colors placeholder:text-[#b8c5cc] hover:border-[#b7cbd5] focus:border-[#19b8a5]/60 focus:bg-white focus:ring-2 focus:ring-[#19b8a5]/15 dark:border-[#31545a] dark:bg-[#0c2530] dark:text-white dark:placeholder:text-[#6f8d99] dark:hover:border-[#19b8a5]/50 dark:focus:bg-[#0c2530] md:w-72"
               />
             </div>
             {search && (
@@ -451,7 +452,7 @@ export function AdminQueriesPage() {
 
       {/* Status filter tabs */}
       <motion.div variants={itemVariants}>
-        <div className="flex items-center gap-1.5 overflow-x-auto rounded-[12px] border-0 bg-white p-1.5 shadow-[0_8px_20px_rgba(18,38,63,0.05)]">
+        <div className="flex items-center gap-1.5 overflow-x-auto rounded-[12px] border-0 bg-white p-1.5 shadow-[0_8px_20px_rgba(18,38,63,0.05)] dark:bg-[#0c2530] dark:shadow-none">
           {[
             { key: 'all' as const, label: 'All', count: statusCounts.all, color: '' },
             { key: 'pending' as const, label: 'Pending', count: statusCounts.pending, color: 'bg-[#19b8a5]' },
@@ -466,16 +467,16 @@ export function AdminQueriesPage() {
                 'flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-medium transition-all whitespace-nowrap',
                 statusFilter === tab.key
                   ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm'
-                  : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c]',
+                  : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]',
               )}
             >
               {tab.color && <span className={cn('h-1.5 w-1.5 rounded-full', tab.color)} />}
               {tab.label}
               <span className={cn(
-                'ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
+                'ml-0.5 rounded-full px-1.5 py-0.5 text-xs font-semibold',
                 statusFilter === tab.key
                   ? 'bg-[#dff7f4] text-[#08766c]'
-                  : 'bg-[#f4f8fb] text-[#8aa0ad]',
+                  : 'bg-[#f4f8fb] text-[#8aa0ad] dark:bg-[#071936] dark:text-[#8fb6cc]',
               )}>
                 {tab.count}
               </span>
@@ -495,15 +496,15 @@ export function AdminQueriesPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-muted/20">
-                    <th className="w-10 px-4 py-3.5 text-left text-sm font-semibold text-foreground">#</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Customer</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Contact</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Vehicle</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Body Type</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Status</th>
-                    <th className="px-4 py-3.5 text-left text-sm font-semibold text-foreground">Date</th>
-                    <th className="px-4 py-3.5 text-right text-sm font-semibold text-foreground">Actions</th>
+                  <tr className="border-b border-[#e5edf2] bg-[#f4f8fb] dark:border-[#17383d] dark:bg-[#071936]">
+                    <th className="w-10 px-4 py-3.5 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">#</th>
+                    <th className="px-4 py-3.5 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Customer</th>
+                    <th className="px-4 py-3.5 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Contact</th>
+                    <th className="px-4 py-3.5 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Vehicle</th>
+                    <th className="px-4 py-3.5 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Body Type</th>
+                    <th className="px-4 py-3.5 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Status</th>
+                    <th className="px-4 py-3.5 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Date</th>
+                    <th className="px-4 py-3.5 text-right text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -521,7 +522,7 @@ export function AdminQueriesPage() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className={cn(
-                              'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold',
+                              'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold',
                               STATUS_CONFIG[inquiry.status].className,
                             )}>
                               {inquiry.firstName[0]}{inquiry.lastName[0]}
@@ -563,7 +564,7 @@ export function AdminQueriesPage() {
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex flex-col">
                             <span className="text-xs text-foreground">{formatShortDate(inquiry.createdAt)}</span>
-                            <span className="text-[10px] text-muted-foreground">
+                            <span className="text-xs text-muted-foreground">
                               {new Date(inquiry.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </span>
                           </div>
@@ -645,7 +646,7 @@ export function AdminQueriesPage() {
                       size="sm"
                       onClick={() => setPage(pageNum)}
                       className={cn(
-                        'h-9 min-w-9 rounded-[10px] px-3 text-xs font-bold shadow-[0_6px_14px_rgba(18,38,63,0.05)]',
+                        'h-9 min-w-9 rounded-[10px] px-3 text-xs font-semibold shadow-[0_6px_14px_rgba(18,38,63,0.05)]',
                         page === pageNum
                           ? '!bg-[#19b8a5] !text-white shadow-[0_8px_18px_rgba(25,184,165,0.28)]'
                           : '!bg-white !text-[#071936] hover:!bg-[#dff7f4] hover:!text-[#08766c] dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]',

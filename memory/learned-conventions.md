@@ -21,6 +21,7 @@ metadata:
 - **Portal orphan cleanup is opt-in** — avoid deleting large batches of Power Pages web-file records during normal builds; large deletion payloads can make `pac paportal upload` time out.
 - **Strict TypeScript** — `noUnusedLocals`, `noUnusedParameters`, `noUncheckedIndexedAccess` are enabled
 - **Centralize currency display** — use `formatCurrency()` for user-facing prices and display the `AED` ISO currency code consistently; do not add a Dirham SVG or custom currency font
+- **Typography convention** — use Inter for all UI text. Reserve `font-mono` for actual code/preformatted text; use `tabular-nums` for aligned prices, counts, dates, and metrics.
 - **Price entry UX** — show `AED` inside price inputs and format thousands separators while typing; keep state and submitted payloads digit-only, without a duplicate formatted preview below the fields
 - **Splash progress represents complete startup** — vehicle pagination must not consume 100%; reserve the final progress segment for API data that layouts/pages request immediately, and prefetch it into React Query before routes mount
 

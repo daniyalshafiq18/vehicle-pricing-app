@@ -65,7 +65,7 @@ export function Step1PersonalInfo() {
   return (
     <div className="mx-auto max-w-2xl text-[#071936] dark:text-white">
       <div className="mb-10 text-center">
-        <h1 className="text-3xl font-bold tracking-tight text-[#071936] dark:text-white">Personal Information</h1>
+        <h1 className="text-2xl font-semibold text-[#071936] dark:text-white sm:text-3xl">Personal Information</h1>
         <p className="mt-2 text-[#647887] dark:text-[#b8cbd4]">
           Enter your details to receive the complete valuation report.
         </p>

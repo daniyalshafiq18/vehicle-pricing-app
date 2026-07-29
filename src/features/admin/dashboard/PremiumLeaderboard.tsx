@@ -33,26 +33,26 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
       size: 40,
       enableColumnFilter: false,
       cell: (info) => (
-        <span className="font-mono text-[11px] font-semibold text-[#8aa0ad]">{info.getValue()}</span>
+        <span className="text-xs font-semibold text-[#8aa0ad] tabular-nums">{info.getValue()}</span>
       ),
     }),
     columnHelper.accessor('year', {
       header: 'Year',
       size: 60,
       cell: (info) => (
-        <span className="font-semibold text-[#071936]">{info.getValue()}</span>
+        <span className="font-semibold text-[#071936] tabular-nums dark:text-white">{info.getValue()}</span>
       ),
     }),
     columnHelper.accessor('make', {
       header: 'Make',
       cell: (info) => (
-        <span className="font-semibold text-[#071936]">{info.getValue()}</span>
+        <span className="font-semibold text-[#071936] dark:text-white">{info.getValue()}</span>
       ),
     }),
     columnHelper.accessor('model', {
       header: 'Model',
       cell: (info) => (
-        <span className="text-[#071936]">{info.getValue()}</span>
+        <span className="text-[#071936] dark:text-white">{info.getValue()}</span>
       ),
     }),
     columnHelper.accessor('spec', {
@@ -65,14 +65,14 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
       header: 'Min Price',
       size: 100,
       cell: (info) => (
-        <span className="font-mono text-[11px] font-semibold text-[#647887]">{formatCurrency(info.getValue() || 0)}</span>
+        <span className="text-xs font-semibold text-[#647887] tabular-nums">{formatCurrency(info.getValue() || 0)}</span>
       ),
     }),
     columnHelper.accessor('maxPrice', {
       header: 'Max Price',
       size: 100,
       cell: (info) => (
-        <span className="font-mono text-[11px] font-semibold text-[#647887]">{formatCurrency(info.getValue() || 0)}</span>
+        <span className="text-xs font-semibold text-[#647887] tabular-nums">{formatCurrency(info.getValue() || 0)}</span>
       ),
     }),
   ], []);
@@ -131,23 +131,23 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
             placeholder="Search vehicles..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="w-full rounded-[8px] border-0 bg-[#f4f8fb] py-2 pl-9 pr-3 text-[11px] font-medium text-[#071936] outline-none transition-colors placeholder:text-[#9aabb5] focus:bg-[#edf5f7] focus:ring-2 focus:ring-[#19b8a5]/25"
+            className="w-full rounded-[8px] border-0 bg-[#f4f8fb] py-2 pl-9 pr-3 text-xs font-medium text-[#071936] outline-none transition-colors placeholder:text-[#9aabb5] focus:bg-[#edf5f7] focus:ring-2 focus:ring-[#19b8a5]/25 dark:bg-[#071936] dark:text-white dark:placeholder:text-[#6f8d99] dark:focus:bg-[#071936]"
           />
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-semibold text-[#8aa0ad]">
+          <span className="text-xs font-medium text-[#8aa0ad]">
             {data.length} vehicles
           </span>
           <button
             onClick={exportCSV}
-            className="inline-flex items-center gap-1.5 rounded-[8px] bg-[#f4f8fb] px-3 py-1.5 text-[10px] font-bold text-[#647887] transition-colors hover:bg-[#ecfbf8] hover:text-[#08766c]"
+            className="inline-flex items-center gap-1.5 rounded-[8px] bg-[#f4f8fb] px-3 py-1.5 text-xs font-medium text-[#647887] transition-colors hover:bg-[#ecfbf8] hover:text-[#08766c] dark:bg-[#071936] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]"
           >
             <Download className="h-3 w-3" />
             CSV
           </button>
           <button
             onClick={exportTSV}
-            className="inline-flex items-center gap-1.5 rounded-[8px] bg-[#f4f8fb] px-3 py-1.5 text-[10px] font-bold text-[#647887] transition-colors hover:bg-[#ecfbf8] hover:text-[#08766c]"
+            className="inline-flex items-center gap-1.5 rounded-[8px] bg-[#f4f8fb] px-3 py-1.5 text-xs font-medium text-[#647887] transition-colors hover:bg-[#ecfbf8] hover:text-[#08766c] dark:bg-[#071936] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]"
           >
             <FileSpreadsheet className="h-3 w-3" />
             TSV
@@ -156,15 +156,15 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-[10px] bg-white">
+      <div className="overflow-x-auto rounded-[10px] bg-white dark:bg-[#071936]">
         <table className="w-full">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="bg-[#f6f9fb]">
+              <tr key={headerGroup.id} className="bg-[#f6f9fb] dark:bg-[#0a2029]">
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-normal text-[#8aa0ad]"
+                    className="px-3 py-2.5 text-left text-xs font-medium uppercase tracking-normal text-[#8aa0ad]"
                   >
                     <div
                       className="flex cursor-pointer select-none items-center gap-1"
@@ -185,11 +185,11 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
             {table.getRowModel().rows.map((row) => (
               <tr
                 key={row.id}
-                className="cursor-pointer transition-colors hover:bg-[#f3faf9]"
+                className="cursor-pointer transition-colors hover:bg-[#f3faf9] dark:hover:bg-[#0f3f43]/60"
                 onClick={() => onVehicleSelect(row.original.vehicleId)}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-3 py-2.5 text-[12px]">
+                  <td key={cell.id} className="px-3 py-2.5 text-xs">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
@@ -208,14 +208,14 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
 
       {/* Pagination */}
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-semibold text-[#8aa0ad]">
+        <span className="text-xs font-medium text-[#8aa0ad]">
           Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
         </span>
         <div className="flex items-center gap-2">
           <button
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
-            className="inline-flex items-center gap-1 rounded-[8px] bg-[#f4f8fb] px-2.5 py-1.5 text-[10px] font-bold text-[#647887] transition-colors hover:bg-[#ecfbf8] hover:text-[#08766c] disabled:opacity-30"
+            className="inline-flex items-center gap-1 rounded-[8px] bg-[#f4f8fb] px-2.5 py-1.5 text-xs font-medium text-[#647887] transition-colors hover:bg-[#ecfbf8] hover:text-[#08766c] disabled:opacity-30 dark:bg-[#071936] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]"
           >
             <ChevronLeft className="h-3 w-3" />
             Prev
@@ -223,7 +223,7 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
           <button
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
-            className="inline-flex items-center gap-1 rounded-[8px] bg-[#f4f8fb] px-2.5 py-1.5 text-[10px] font-bold text-[#647887] transition-colors hover:bg-[#ecfbf8] hover:text-[#08766c] disabled:opacity-30"
+            className="inline-flex items-center gap-1 rounded-[8px] bg-[#f4f8fb] px-2.5 py-1.5 text-xs font-medium text-[#647887] transition-colors hover:bg-[#ecfbf8] hover:text-[#08766c] disabled:opacity-30 dark:bg-[#071936] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]"
           >
             Next
             <ChevronRight className="h-3 w-3" />

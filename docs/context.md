@@ -120,6 +120,7 @@ Mutations use `react-hot-toast` for success/error feedback (configured globally 
 - State persisted to `localStorage` via `useThemeStore`
 - Colour variables in `src/styles/globals.css` — no hardcoded colours in components
 - `ThemeSwitcher` component in admin top bar
+- Typography uses Inter as the single UI font via `tailwind.config.ts` and `globals.css`; dense numeric UI uses `tabular-nums` instead of monospace font overrides
 
 ### Performance
 

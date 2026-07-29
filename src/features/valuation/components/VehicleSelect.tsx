@@ -266,7 +266,7 @@ export function VehicleSelect({
                     className="flex w-full items-center gap-3 border-t border-[#bfe9e2] bg-[#ecfbf8]/60 px-4 py-3 text-left text-sm font-medium text-[#08766c] transition-colors hover:bg-[#dff7f4] dark:border-[#31545a] dark:bg-[#0f3f43] dark:text-[#19b8a5]"
                   >
                     <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[#19b8a5]/30 bg-[#ecfbf8] dark:bg-[#0f3f43]">
-                      <span className="text-[10px] font-bold text-[#19b8a5]">+</span>
+                      <span className="text-xs font-semibold text-[#19b8a5]">+</span>
                     </div>
                     <span>
                       Use "<span className="font-semibold">{searchQuery}</span>"

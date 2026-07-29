@@ -43,7 +43,7 @@ export default defineConfig({
           // Note: React is intentionally kept in the main vendor chunk to avoid
           // circular dependency issues (vendor -> react -> vendor)
           if (id.includes('node_modules/recharts')) {
-            return 'vendor-charts';
+            return 'vendor-recharts';
           }
           if (id.includes('node_modules/framer-motion')) {
             return 'vendor-animation';
