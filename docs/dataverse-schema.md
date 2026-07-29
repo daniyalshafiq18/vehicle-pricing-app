@@ -440,6 +440,7 @@ This table records vehicles that users searched for but do not currently exist i
 | Horsepower | `vpi_horsepower` | Whole Number | Engine horsepower |
 | Seats | `vpi_seats` | Choice | Number of seats |
 | Transmission Type | `vpi_transmissiontype` | Choice | Automatic, Manual, CVT, etc. |
+| **Category** | `vpi_category` | Choice | Regional spec: GCC (1), Non-GCC (2), Other/Standard (3) |
 | Min Price | `vpi_minprice` | Currency | Estimated minimum market price (user or scraped) |
 | Max Price | `vpi_maxprice` | Currency | Estimated maximum market price (user or scraped) |
 | Min Mileage | `vpi_minmilage` | Decimal | Minimum mileage supplied by user |
