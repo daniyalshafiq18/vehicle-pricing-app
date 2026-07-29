@@ -85,7 +85,7 @@ export function AdminSettingsPage() {
       transition={{ duration: 0.3 }}
     >
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Settings</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Settings</h1>
         <p className="text-sm text-muted-foreground">Configure application preferences and data sources</p>
       </div>
 
@@ -112,12 +112,12 @@ export function AdminSettingsPage() {
                         <p className="text-sm text-foreground">Current Source</p>
                         <p className="text-xs text-muted-foreground">Microsoft Dataverse</p>
                       </div>
-                      <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
                         Active
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      All vehicle data is fetched from Microsoft Dataverse via the Power Pages Web API. Uses CSRF-authenticated requests via <code className="text-xs bg-muted px-1 rounded">safeFetch</code>.
+                      All vehicle data is fetched from Microsoft Dataverse via the Power Pages Web API. Uses CSRF-authenticated requests via <code className="text-[10px] bg-muted px-1 rounded">safeFetch</code>.
                     </p>
                   </div>
                 </div>
@@ -230,11 +230,11 @@ export function AdminSettingsPage() {
                   <p className="text-sm text-muted-foreground mb-4">{s5.desc}</p>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted-foreground">Currency</label>
+                      <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Currency</label>
                       <Select value="AED" options={[{ value: 'AED', label: 'AED - UAE Dirham' }]} onChange={() => {}} />
                     </div>
                     <div>
-                      <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted-foreground">Region</label>
+                      <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Region</label>
                       <Select value="UAE" options={[{ value: 'UAE', label: 'United Arab Emirates' }]} onChange={() => {}} />
                     </div>
                   </div>

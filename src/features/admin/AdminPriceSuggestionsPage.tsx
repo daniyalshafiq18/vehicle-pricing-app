@@ -59,14 +59,14 @@ function StatusBadge({ suggestion }: { suggestion: PriceSuggestion }) {
   const visual = suggestion.statusValue != null ? STATUS_VISUALS[suggestion.statusValue] : null;
   if (!visual) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium text-muted-foreground bg-muted/30 border-muted">
+      <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground bg-muted/30 border-muted">
         <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
         {suggestion.status || 'Unknown'}
       </span>
     );
   }
   return (
-    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium', visual.className)}>
+    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium', visual.className)}>
       <span className={cn('h-1.5 w-1.5 rounded-full', visual.dot)} />
       {suggestion.status}
     </span>
@@ -109,7 +109,7 @@ function StatusSelect({ suggestion, options }: { suggestion: PriceSuggestion; op
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-[10px] border border-[#d9e2e8] bg-white shadow-[0_12px_28px_rgba(7,25,54,0.14)] dark:border-[#31545a] dark:bg-[#071936] dark:shadow-none">
+          <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-[10px] border border-[#d9e2e8] bg-white shadow-[0_12px_28px_rgba(7,25,54,0.14)]">
             {options.map((opt) => {
               const visual = STATUS_VISUALS[opt.value];
               const isActive = suggestion.statusValue === opt.value;
@@ -230,7 +230,7 @@ function PriceSuggestionDetailModal({
                 <DollarSign className="h-6 w-6 text-[#19b8a5]" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-foreground">
+                <h2 className="text-lg font-bold text-foreground">
                   Price Suggestion
                 </h2>
                 <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -256,7 +256,7 @@ function PriceSuggestionDetailModal({
           {/* Vehicle info */}
           {suggestion.vehicleName && (
             <div className="mb-4 rounded-xl border bg-gradient-to-r from-blue-500/5 to-transparent p-3.5">
-              <p className="text-xs text-slate-800 dark:text-slate-200">Vehicle</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Vehicle</p>
               <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-foreground">
                 <DollarSign className="h-4 w-4 text-blue-500" />
                 {suggestion.vehicleName}
@@ -267,30 +267,30 @@ function PriceSuggestionDetailModal({
           <div className="grid grid-cols-2 gap-3">
             {/* Submitted By (read-only) */}
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="text-xs text-slate-800 dark:text-slate-200">Submitted By</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Submitted By</p>
               <p className="mt-1 text-sm font-medium text-foreground break-words">{suggestion.submittedBy || '—'}</p>
             </div>
 
             {/* Status (read-only) */}
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="text-xs text-slate-800 dark:text-slate-200">Status</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Status</p>
               <p className="mt-1 text-sm font-medium text-foreground">{suggestion.status || 'Pending'}</p>
             </div>
 
             {/* Min Price (editable) */}
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="text-xs text-slate-800 dark:text-slate-200">Min Price</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Min Price</p>
               <div className="relative mt-1">
                 <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground/50">AED</span>
                 <input
                   type="number"
                   value={editMinPrice}
                   onChange={(e) => setEditMinPrice(Number(e.target.value))}
-                  className="h-9 w-full rounded-[10px] border border-[#d9e2e8] bg-white pl-10 pr-3 text-sm font-medium text-[#071936] outline-none transition-colors focus:border-[#19b8a5]/60 focus:ring-2 focus:ring-[#19b8a5]/15 dark:border-[#31545a] dark:bg-[#0c2530] dark:text-white dark:placeholder:text-[#6f8d99]"
+                  className="h-9 w-full rounded-[10px] border border-[#d9e2e8] bg-white pl-10 pr-3 text-sm font-medium text-[#071936] outline-none transition-colors focus:border-[#19b8a5]/60 focus:ring-2 focus:ring-[#19b8a5]/15"
                 />
               </div>
               {editMinPrice > 0 && (
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-[10px] text-muted-foreground">
                   Formatted: <span className="font-medium text-foreground/80">{formatCurrency(editMinPrice)}</span>
                 </p>
               )}
@@ -298,18 +298,18 @@ function PriceSuggestionDetailModal({
 
             {/* Max Price (editable) */}
             <div className="rounded-xl border bg-card p-3.5">
-              <p className="text-xs text-slate-800 dark:text-slate-200">Max Price</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Max Price</p>
               <div className="relative mt-1">
                 <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground/50">AED</span>
                 <input
                   type="number"
                   value={editMaxPrice}
                   onChange={(e) => setEditMaxPrice(Number(e.target.value))}
-                  className="h-9 w-full rounded-[10px] border border-[#d9e2e8] bg-white pl-10 pr-3 text-sm font-medium text-[#071936] outline-none transition-colors focus:border-[#19b8a5]/60 focus:ring-2 focus:ring-[#19b8a5]/15 dark:border-[#31545a] dark:bg-[#0c2530] dark:text-white dark:placeholder:text-[#6f8d99]"
+                  className="h-9 w-full rounded-[10px] border border-[#d9e2e8] bg-white pl-10 pr-3 text-sm font-medium text-[#071936] outline-none transition-colors focus:border-[#19b8a5]/60 focus:ring-2 focus:ring-[#19b8a5]/15"
                 />
               </div>
               {editMaxPrice > 0 && (
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-[10px] text-muted-foreground">
                   Formatted: <span className="font-medium text-foreground/80">{formatCurrency(editMaxPrice)}</span>
                 </p>
               )}
@@ -317,7 +317,7 @@ function PriceSuggestionDetailModal({
 
             {/* Source URL (read-only) */}
             <div className="rounded-xl border bg-card p-3.5 col-span-2">
-              <p className="text-xs text-slate-800 dark:text-slate-200">Source URL</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Source URL</p>
               {suggestion.sourceUrl ? (
                 <a
                   href={suggestion.sourceUrl}
@@ -337,7 +337,7 @@ function PriceSuggestionDetailModal({
           {/* Comment (read-only) */}
           {suggestion.comment && (
             <div className="mt-3 rounded-xl border bg-card p-3.5">
-              <p className="text-xs text-slate-800 dark:text-slate-200">Comment</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Comment</p>
               <p className="mt-1 text-sm font-medium text-foreground">{suggestion.comment}</p>
             </div>
           )}
@@ -399,7 +399,7 @@ function PriceSuggestionCard({
           {/* Header: vehicle name + status */}
           <div className="flex items-start justify-between mb-4 shrink-0 gap-3">
             <div className="min-w-0 flex-1">
-              <h3 className="text-lg font-semibold text-foreground leading-tight truncate">
+              <h3 className="text-lg font-bold text-foreground leading-tight truncate">
                 {suggestion.vehicleName || suggestion.vehicleId || 'Unknown Vehicle'}
               </h3>
               {suggestion.submittedBy && (
@@ -409,7 +409,7 @@ function PriceSuggestionCard({
                 </p>
               )}
             </div>
-            <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium shrink-0', statusClassName)}>
+            <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium shrink-0', statusClassName)}>
               <span className={cn('h-1.5 w-1.5 rounded-full', statusDot)} />
               {statusLabel}
             </span>
@@ -418,14 +418,14 @@ function PriceSuggestionCard({
           {/* Price details */}
           <div className="flex items-stretch gap-3">
             <div className="flex-1 rounded-xl border bg-gradient-to-br from-emerald-500/10 to-transparent p-3.5">
-              <p className="text-xs text-slate-800 dark:text-slate-200">Min Price</p>
-              <p className="mt-1 text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Min Price</p>
+              <p className="mt-1 text-lg font-bold text-emerald-600 dark:text-emerald-400">
                 {suggestion.minPrice ? formatCurrency(suggestion.minPrice) : '—'}
               </p>
             </div>
             <div className="flex-1 rounded-xl border bg-gradient-to-br from-blue-500/10 to-transparent p-3.5">
-              <p className="text-xs text-slate-800 dark:text-slate-200">Max Price</p>
-              <p className="mt-1 text-lg font-semibold text-blue-600 dark:text-blue-400">
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Max Price</p>
+              <p className="mt-1 text-lg font-bold text-blue-600 dark:text-blue-400">
                 {suggestion.maxPrice ? formatCurrency(suggestion.maxPrice) : '—'}
               </p>
             </div>
@@ -434,7 +434,7 @@ function PriceSuggestionCard({
           {/* Source URL */}
           {suggestion.sourceUrl && (
             <div className="mt-3 rounded-xl bg-muted/40 p-3 shrink-0">
-              <p className="text-xs text-slate-800 dark:text-slate-200">Source</p>
+              <p className="text-[10px] text-slate-800 dark:text-slate-200">Source</p>
               <p className="mt-0.5 truncate text-xs text-[#08766c]">{suggestion.sourceUrl}</p>
             </div>
           )}
@@ -454,7 +454,7 @@ function PriceSuggestionCard({
           {/* Footer: date + action */}
           <div className="mt-3 flex items-center justify-between border-t pt-3 shrink-0">
             <div>
-              <p className="text-xs font-medium text-slate-800 dark:text-slate-200">Submitted</p>
+              <p className="text-[10px] font-medium text-slate-800 dark:text-slate-200">Submitted</p>
               <p className="text-xs text-foreground">
                 {suggestion.createdOn
                   ? new Date(suggestion.createdOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -591,7 +591,7 @@ export function AdminPriceSuggestionsPage() {
       <motion.div variants={itemVariants}>
         <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Price Suggestions</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Price Suggestions</h1>
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{suggestions?.length ?? 0}</span> total suggestions
               {(() => {
@@ -611,6 +611,35 @@ export function AdminPriceSuggestionsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex items-center rounded-lg border bg-card p-0.5">
+              <button
+                onClick={() => setViewMode('table')}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
+                  viewMode === 'table'
+                    ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+                title="Table view"
+              >
+                <LayoutList className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Table</span>
+              </button>
+              <button
+                onClick={() => setViewMode('card')}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
+                  viewMode === 'card'
+                    ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+                title="Card view"
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Card</span>
+              </button>
+            </div>
             <div className="relative">
               <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
               <input
@@ -621,7 +650,7 @@ export function AdminPriceSuggestionsPage() {
                   setSearch(e.target.value);
                   setPage(1);
                 }}
-                className="h-9 w-48 rounded-[10px] border border-[#d9e2e8] bg-white pl-9 pr-3 text-sm text-[#071936] outline-none transition-colors placeholder:text-[#b8c5cc] hover:border-[#b7cbd5] focus:border-[#19b8a5]/60 focus:ring-2 focus:ring-[#19b8a5]/15 dark:border-[#31545a] dark:bg-[#0c2530] dark:text-white dark:placeholder:text-[#6f8d99] dark:hover:border-[#19b8a5]/50 md:w-72"
+                className="h-9 w-48 rounded-[10px] border border-[#d9e2e8] bg-white pl-9 pr-3 text-sm text-[#071936] outline-none transition-colors placeholder:text-[#b8c5cc] hover:border-[#b7cbd5] focus:border-[#19b8a5]/60 focus:ring-2 focus:ring-[#19b8a5]/15 md:w-72"
               />
             </div>
             {search && (
@@ -630,39 +659,13 @@ export function AdminPriceSuggestionsPage() {
                 Clear
               </Button>
             )}
-            <div className="flex items-center rounded-[10px] border border-[#d9e2e8] bg-white p-0.5 shadow-[0_6px_14px_rgba(18,38,63,0.05)] dark:border-[#31545a] dark:bg-[#0c2530] dark:shadow-none">
-              <button
-                onClick={() => setViewMode('table')}
-                className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-[8px] text-xs font-medium transition-all',
-                  viewMode === 'table'
-                    ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm dark:bg-[#0f3f43] dark:text-[#19b8a5]'
-                    : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]',
-                )}
-                title="Table view"
-              >
-                <LayoutList className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={() => setViewMode('card')}
-                className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-[8px] text-xs font-medium transition-all',
-                  viewMode === 'card'
-                    ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm dark:bg-[#0f3f43] dark:text-[#19b8a5]'
-                    : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]',
-                )}
-                title="Card view"
-              >
-                <LayoutGrid className="h-3.5 w-3.5" />
-              </button>
-            </div>
           </div>
         </div>
       </motion.div>
 
       {/* Status filter tabs — built dynamically from Dataverse options */}
       <motion.div variants={itemVariants}>
-        <div className="flex items-center gap-1.5 overflow-x-auto rounded-[12px] border-0 bg-white p-1.5 shadow-[0_8px_20px_rgba(18,38,63,0.05)] dark:bg-[#0c2530] dark:shadow-none">
+        <div className="flex items-center gap-1.5 overflow-x-auto rounded-[12px] border-0 bg-white p-1.5 shadow-[0_8px_20px_rgba(18,38,63,0.05)]">
           {filterTabs.map((tab) => (
             <button
               key={String(tab.value)}
@@ -671,16 +674,16 @@ export function AdminPriceSuggestionsPage() {
                 'flex items-center gap-2 rounded-lg px-3.5 py-2 text-xs font-medium transition-all whitespace-nowrap',
                 statusFilterValue === tab.value
                   ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm'
-                  : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]',
+                  : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c]',
               )}
             >
               {tab.color && <span className={cn('h-1.5 w-1.5 rounded-full', tab.color)} />}
               {tab.label}
               <span className={cn(
-                'ml-0.5 rounded-full px-1.5 py-0.5 text-xs font-semibold',
+                'ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
                 statusFilterValue === tab.value
                   ? 'bg-[#dff7f4] text-[#08766c]'
-                  : 'bg-[#f4f8fb] text-[#8aa0ad] dark:bg-[#071936] dark:text-[#8fb6cc]',
+                  : 'bg-[#f4f8fb] text-[#8aa0ad]',
               )}>
                 {tab.count}
               </span>
@@ -725,15 +728,15 @@ export function AdminPriceSuggestionsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-[#e5edf2] bg-[#f4f8fb] dark:border-[#17383d] dark:bg-[#071936]">
-                      <th className="w-10 px-4 py-3.5 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">#</th>
-                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Vehicle</th>
-                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Submitted By</th>
-                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Min Price</th>
-                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Max Price</th>
-                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Status</th>
-                      <th className="px-4 py-3.5 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Submitted</th>
-                      <th className="px-4 py-3.5 text-right text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Actions</th>
+                    <tr className="border-b bg-muted/20">
+                      <th className="w-10 px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">#</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Vehicle</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Submitted By</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Min Price</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Max Price</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Status</th>
+                      <th className="px-4 py-3.5 text-left text-sm font-semibold text-slate-800 dark:text-slate-200">Submitted</th>
+                      <th className="px-4 py-3.5 text-right text-sm font-semibold text-slate-800 dark:text-slate-200">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -778,7 +781,7 @@ export function AdminPriceSuggestionsPage() {
                               {s.createdOn ? formatShortDate(s.createdOn) : '—'}
                             </span>
                             {s.createdOn && (
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-[10px] text-muted-foreground">
                                 {new Date(s.createdOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                               </span>
                             )}
@@ -933,7 +936,7 @@ export function AdminPriceSuggestionsPage() {
                       size="sm"
                       onClick={() => setPage(pageNum)}
                       className={cn(
-                        'h-9 min-w-9 rounded-[10px] px-3 text-xs font-semibold shadow-[0_6px_14px_rgba(18,38,63,0.05)]',
+                        'h-9 min-w-9 rounded-[10px] px-3 text-xs font-bold shadow-[0_6px_14px_rgba(18,38,63,0.05)]',
                         page === pageNum
                           ? '!bg-[#19b8a5] !text-white shadow-[0_8px_18px_rgba(25,184,165,0.28)]'
                           : '!bg-white !text-[#071936] hover:!bg-[#dff7f4] hover:!text-[#08766c] dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]',

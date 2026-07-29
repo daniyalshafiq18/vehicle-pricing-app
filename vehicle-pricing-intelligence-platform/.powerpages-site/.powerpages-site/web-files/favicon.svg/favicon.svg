@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Car body -->
+  <rect x="4" y="13" width="24" height="13" rx="3" fill="#8B5CF6"/>
+  <!-- Cabin -->
+  <rect x="11" y="7" width="10" height="7" rx="2" fill="#7C3AED"/>
+  <!-- Wheels -->
+  <circle cx="10" cy="26" r="3.5" fill="#1F1F2E"/>
+  <circle cx="22" cy="26" r="3.5" fill="#1F1F2E"/>
+  <!-- Hubcaps -->
+  <circle cx="10" cy="26" r="1.5" fill="#8B5CF6"/>
+  <circle cx="22" cy="26" r="1.5" fill="#8B5CF6"/>
+</svg>

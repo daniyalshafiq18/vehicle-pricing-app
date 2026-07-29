@@ -133,13 +133,13 @@ export function PowertrainChart({ data, className }: PowertrainChartProps) {
             const color = PT_COLORS[entry.powertrain]
               ?? FALLBACK_COLORS[sorted.indexOf(entry) % FALLBACK_COLORS.length];
             return (
-              <div key={entry.powertrain} className="flex items-center gap-1.5 text-xs">
+              <div key={entry.powertrain} className="flex items-center gap-1.5 text-[11px]">
                 <span
                   className="inline-block h-2.5 w-2.5 rounded-full"
                   style={{ backgroundColor: color }}
                 />
-                <span className="text-[#7e95a3] dark:text-[#8fb6cc]">{entry.powertrain}</span>
-                <span className="font-semibold text-[#071936] dark:text-white">{entry.percentage}%</span>
+                <span className="text-[#7e95a3]">{entry.powertrain}</span>
+                <span className="font-semibold text-[#071936]">{entry.percentage}%</span>
               </div>
             );
           })}

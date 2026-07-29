@@ -37,7 +37,7 @@ export function WizardStepIndicator({ steps, currentStep }: WizardStepIndicatorP
                   isCompleted &&
                     'bg-[#ecfbf8] text-[#08766c] dark:bg-[#0f3f43] dark:text-[#19b8a5]',
                   isCurrent &&
-                    'bg-[#19b8a5] font-semibold text-white shadow-lg shadow-[rgba(25,184,165,0.3)]',
+                    'bg-[#19b8a5] font-bold text-white shadow-lg shadow-[rgba(25,184,165,0.3)]',
                   !isCompleted &&
                     !isCurrent &&
                     'border-2 border-slate-200 text-slate-400 dark:border-slate-700 dark:text-slate-500',

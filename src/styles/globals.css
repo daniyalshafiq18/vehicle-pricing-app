@@ -130,9 +130,8 @@
     @apply border-border;
   }
   body {
-    @apply bg-background font-sans text-sm font-normal leading-normal text-foreground antialiased;
+    @apply bg-background text-foreground;
     font-feature-settings: 'rlig' 1, 'calt' 1;
-    font-optical-sizing: auto;
   }
 
   /* Smooth theme transition on specific properties only */

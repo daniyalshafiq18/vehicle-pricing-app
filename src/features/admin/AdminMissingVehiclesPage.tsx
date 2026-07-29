@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useMissingVehicleRequests, useUpdateMissingVehicleRequestStatus, useApproveMissingVehicleRequest, useTriggerScrape } from '@hooks';
 import { Button, Dialog, SkeletonTable, Card as UICard, CardContent } from '@components/ui';
 import { motion } from 'framer-motion';
@@ -97,14 +97,14 @@ function ScrapeStatusBadge({ status }: { status: string | undefined }) {
   const cfg = SCRAPE_STATUS_CONFIG[status ?? ''];
   if (!cfg) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground bg-muted/30 border-muted">
+      <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium text-muted-foreground bg-muted/30 border-muted">
         <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
         {status || '—'}
       </span>
     );
   }
   return (
-    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium', cfg.className)}>
+    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium', cfg.className)}>
       <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
       {cfg.label}
     </span>
@@ -127,14 +127,14 @@ function StatusBadge({ status }: { status: string | undefined }) {
   if (!cfg) {
     const fallback = STATUS_CONFIG['Pending']!;
     return (
-      <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium', fallback.className)}>
+      <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium', fallback.className)}>
         <span className={cn('h-1.5 w-1.5 rounded-full', fallback.dot)} />
         {status || 'Pending'}
       </span>
     );
   }
   return (
-    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium', cfg.className)}>
+    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium', cfg.className)}>
       <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
       {cfg.label}
     </span>
@@ -180,7 +180,7 @@ function StatusSelect({ request }: { request: MissingVehicleRequest }) {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-1 w-40 overflow-hidden rounded-[10px] border border-[#d9e2e8] bg-white shadow-[0_12px_28px_rgba(7,25,54,0.14)] dark:border-[#31545a] dark:bg-[#071936] dark:shadow-none">
+          <div className="absolute right-0 top-full z-50 mt-1 w-40 overflow-hidden rounded-[10px] border border-[#d9e2e8] bg-white shadow-[0_12px_28px_rgba(7,25,54,0.14)]">
             {STATUS_OPTIONS.map((opt) => {
               const cfg = STATUS_CONFIG[opt]!;
               const isActive = request.status === opt;
@@ -269,7 +269,7 @@ function MissingVehicleDetailModal({
                 <SearchX className="h-6 w-6 text-[#19b8a5]" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-foreground">
+                <h2 className="text-lg font-bold text-foreground">
                   {request.make} {request.model}
                 </h2>
                 <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -311,7 +311,7 @@ function MissingVehicleDetailModal({
               { label: 'Contact Email', value: request.contactEmail },
             ].map((item) => (
               <div key={item.label} className="rounded-xl border bg-card p-3.5">
-                <p className="text-xs text-foreground">
+                <p className="text-[10px] text-foreground">
                   {item.label}
                 </p>
                 <p className="mt-1 text-sm font-medium text-foreground break-words">
@@ -339,11 +339,11 @@ function MissingVehicleDetailModal({
                     return (
                       <>
                         <div className="rounded-xl border bg-card p-3.5">
-                          <p className="text-xs text-foreground">Listings Found</p>
-                          <p className="mt-1 text-sm font-semibold text-foreground">{String(parsed.count ?? '—')}</p>
+                          <p className="text-[10px] text-foreground">Listings Found</p>
+                          <p className="mt-1 text-sm font-bold text-foreground">{String(parsed.count ?? '—')}</p>
                         </div>
                         <div className="rounded-xl border bg-card p-3.5">
-                          <p className="text-xs text-foreground">Source</p>
+                          <p className="text-[10px] text-foreground">Source</p>
                           <p className="mt-1 text-sm font-medium text-foreground">{String(parsed.source ?? '—')}</p>
                         </div>
                       </>
@@ -353,23 +353,23 @@ function MissingVehicleDetailModal({
                 })()}
                 {request.scrapedMinPrice != null && (
                   <div className="rounded-xl border bg-card p-3.5">
-                    <p className="text-xs text-foreground">Scraped Min Price</p>
-                    <p className="mt-1 text-sm font-semibold text-success">
+                    <p className="text-[10px] text-foreground">Scraped Min Price</p>
+                    <p className="mt-1 text-sm font-bold text-success">
                       {formatCurrency(request.scrapedMinPrice)}
                     </p>
                   </div>
                 )}
                 {request.scrapedMaxPrice != null && (
                   <div className="rounded-xl border bg-card p-3.5">
-                    <p className="text-xs text-foreground">Scraped Max Price</p>
-                    <p className="mt-1 text-sm font-semibold text-success">
+                    <p className="text-[10px] text-foreground">Scraped Max Price</p>
+                    <p className="mt-1 text-sm font-bold text-success">
                       {formatCurrency(request.scrapedMaxPrice)}
                     </p>
                   </div>
                 )}
                 {request.scrapedSources && (
                   <div className="col-span-2 rounded-xl border bg-card p-3.5">
-                    <p className="text-xs text-foreground">Source URL</p>
+                    <p className="text-[10px] text-foreground">Source URL</p>
                     <a
                       href={request.scrapedSources}
                       target="_blank"
@@ -384,8 +384,8 @@ function MissingVehicleDetailModal({
                 )}
                 {request.scrapedListings && !parseScrapedListings(request.scrapedListings) && (
                   <div className="col-span-2 rounded-xl border bg-card p-3.5">
-                    <p className="text-xs text-foreground">Raw Scraped Data</p>
-                    <pre className="mt-1 max-h-32 overflow-auto rounded-lg bg-muted/50 p-2 text-xs text-foreground break-all whitespace-pre-wrap">
+                    <p className="text-[10px] text-foreground">Raw Scraped Data</p>
+                    <pre className="mt-1 max-h-32 overflow-auto rounded-lg bg-muted/50 p-2 text-[11px] text-foreground break-all whitespace-pre-wrap">
                       {request.scrapedListings}
                     </pre>
                   </div>
@@ -430,7 +430,7 @@ function ScrapedListingCount({ listings }: { listings: string | undefined }) {
   const parsed = parseScrapedListings(listings);
   if (!parsed || parsed.count == null) return null;
   return (
-    <span className="inline-flex items-center gap-1 rounded-md bg-[#ecfbf8] px-2 py-0.5 text-xs font-medium text-[#08766c]">
+    <span className="inline-flex items-center gap-1 rounded-md bg-[#ecfbf8] px-2 py-0.5 text-[10px] font-medium text-[#08766c]">
       <SearchX className="h-3 w-3" />
       {String(parsed.count)} listings
     </span>
@@ -583,7 +583,7 @@ function MissingVehicleCard({
           {/* Header: make model year + status */}
           <div className="flex items-start justify-between mb-4 shrink-0 gap-3">
             <div className="min-w-0">
-              <h3 className="text-lg font-semibold text-foreground leading-tight truncate">
+              <h3 className="text-lg font-bold text-foreground leading-tight truncate">
                 {request.make} {request.model}
               </h3>
               {request.modelYear && (
@@ -592,7 +592,7 @@ function MissingVehicleCard({
                 </span>
               )}
             </div>
-            <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium shrink-0', cfg.className)}>
+            <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-medium shrink-0', cfg.className)}>
               <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
               {cfg.label}
             </span>
@@ -609,7 +609,7 @@ function MissingVehicleCard({
               { label: 'Drive Type', value: request.driveType },
             ].map((spec) => (
               <div key={spec.label} className="rounded-xl bg-muted/40 p-3 transition-colors hover:bg-muted/60">
-                <p className="text-xs font-medium text-foreground">{spec.label}</p>
+                <p className="text-[10px] font-medium text-foreground">{spec.label}</p>
                 <p className="mt-0.5 text-sm font-semibold text-foreground truncate">
                   {spec.value || '—'}
                 </p>
@@ -621,15 +621,15 @@ function MissingVehicleCard({
           {(request.minPrice != null || request.maxPrice != null) && (
             <div className="mt-3 flex items-center gap-3 rounded-xl border bg-card p-3 shrink-0">
               <div className="flex-1">
-                <p className="text-xs text-foreground">Min Price</p>
-                <p className="text-sm font-semibold text-foreground">
+                <p className="text-[10px] text-foreground">Min Price</p>
+                <p className="text-sm font-bold text-foreground">
                   {request.minPrice != null ? formatCurrency(request.minPrice) : '—'}
                 </p>
               </div>
               <div className="h-8 w-px bg-border" />
               <div className="flex-1">
-                <p className="text-xs text-foreground">Max Price</p>
-                <p className="text-sm font-semibold text-foreground">
+                <p className="text-[10px] text-foreground">Max Price</p>
+                <p className="text-sm font-bold text-foreground">
                   {request.maxPrice != null ? formatCurrency(request.maxPrice) : '—'}
                 </p>
               </div>
@@ -647,8 +647,8 @@ function MissingVehicleCard({
                 <div className="flex items-center gap-3 rounded-xl border bg-card p-3">
                   {request.scrapedMinPrice != null && (
                     <div className="flex-1">
-                      <p className="text-xs text-foreground">Scraped Min</p>
-                      <p className="text-sm font-semibold text-success">
+                      <p className="text-[10px] text-foreground">Scraped Min</p>
+                      <p className="text-sm font-bold text-success">
                         {formatCurrency(request.scrapedMinPrice)}
                       </p>
                     </div>
@@ -658,8 +658,8 @@ function MissingVehicleCard({
                   )}
                   {request.scrapedMaxPrice != null && (
                     <div className="flex-1">
-                      <p className="text-xs text-foreground">Scraped Max</p>
-                      <p className="text-sm font-semibold text-success">
+                      <p className="text-[10px] text-foreground">Scraped Max</p>
+                      <p className="text-sm font-bold text-success">
                         {formatCurrency(request.scrapedMaxPrice)}
                       </p>
                     </div>
@@ -688,13 +688,13 @@ function MissingVehicleCard({
           {/* Footer: requested by + action */}
           <div className="mt-3 flex items-center justify-between border-t pt-3 shrink-0">
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-foreground">Requested by</p>
+              <p className="text-[10px] font-medium text-foreground">Requested by</p>
               <p className="text-sm font-medium text-foreground truncate" title={request.contactName || request.contactEmail || ''}>
                 <User className="mr-1 inline h-3 w-3 text-muted-foreground/60" />
                 {request.contactName || request.contactEmail || '—'}
               </p>
               {request.createdOn && (
-                <p className="text-xs text-muted-foreground/60">
+                <p className="text-[10px] text-muted-foreground/60">
                   {new Date(request.createdOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
               )}
@@ -746,8 +746,6 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-const CARD_BATCH_SIZE = 18;
-
 // ─── Main Page ───────────────────────────────────────────────────
 
 export function AdminMissingVehiclesPage() {
@@ -756,8 +754,6 @@ export function AdminMissingVehiclesPage() {
   const [selectedRequest, setSelectedRequest] = useState<MissingVehicleRequest | null>(null);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string | 'all'>('all');
-  const [cardLimit, setCardLimit] = useState(CARD_BATCH_SIZE);
-  const cardLoadMoreRef = useRef<HTMLDivElement | null>(null);
   const pageSize = 15;
 
   const { data: requests, isLoading } = useMissingVehicleRequests();
@@ -795,34 +791,7 @@ export function AdminMissingVehiclesPage() {
   );
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
-  const paginated = viewMode === 'card'
-    ? sorted.slice(0, cardLimit)
-    : sorted.slice((page - 1) * pageSize, page * pageSize);
-  const hasMoreCards = viewMode === 'card' && paginated.length < sorted.length;
-
-  useEffect(() => {
-    setCardLimit(CARD_BATCH_SIZE);
-  }, [search, statusFilter]);
-
-  useEffect(() => {
-    if (viewMode !== 'card' || !hasMoreCards) {
-      return undefined;
-    }
-    const node = cardLoadMoreRef.current;
-    if (!node) {
-      return undefined;
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          setCardLimit((current) => current + CARD_BATCH_SIZE);
-        }
-      },
-      { rootMargin: '500px 0px' },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [viewMode, hasMoreCards, paginated.length]);
+  const paginated = sorted.slice((page - 1) * pageSize, page * pageSize);
 
   const getPageNumbers = useCallback(() => {
     const pages: (number | 'ellipsis')[] = [];
@@ -852,7 +821,7 @@ export function AdminMissingVehiclesPage() {
       <motion.div variants={itemVariants}>
         <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h1 className="text-lg font-semibold tracking-tight text-foreground">Missing Vehicles</h1>
+            <h1 className="text-lg font-bold tracking-tight text-foreground">Missing Vehicles</h1>
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{requests?.length ?? 0}</span> total requests
               {statusCounts.pending > 0 && (
@@ -870,6 +839,35 @@ export function AdminMissingVehiclesPage() {
             {statusFilter === 'all' || statusFilter === 'Pending' ? (
               <ScrapeAllPendingButton requests={requests ?? []} />
             ) : null}
+            {/* View toggle */}
+            <div className="flex items-center rounded-lg border bg-card p-0.5">
+              <button
+                onClick={() => setViewMode('table')}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-all',
+                  viewMode === 'table'
+                    ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+                title="Table view"
+              >
+                <LayoutList className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Table</span>
+              </button>
+              <button
+                onClick={() => setViewMode('card')}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-all',
+                  viewMode === 'card'
+                    ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+                title="Card view"
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Card</span>
+              </button>
+            </div>
             <div className="relative">
               <SearchX className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
               <input
@@ -878,54 +876,24 @@ export function AdminMissingVehiclesPage() {
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
-                  setCardLimit(CARD_BATCH_SIZE);
                   setPage(1);
                 }}
-                className="h-9 w-48 rounded-[10px] border border-[#d9e2e8] bg-white pl-9 pr-3 text-sm text-[#071936] outline-none transition-colors placeholder:text-[#b8c5cc] hover:border-[#b7cbd5] focus:border-[#19b8a5]/60 focus:bg-white focus:ring-2 focus:ring-[#19b8a5]/15 dark:border-[#31545a] dark:bg-[#0c2530] dark:text-white dark:placeholder:text-[#6f8d99] dark:hover:border-[#19b8a5]/50 dark:focus:bg-[#0c2530] md:w-72"
+                className="h-9 w-48 rounded-[10px] border border-[#d9e2e8] bg-white pl-9 pr-3 text-sm text-[#071936] outline-none transition-colors placeholder:text-[#b8c5cc] hover:border-[#b7cbd5] focus:border-[#19b8a5]/60 focus:bg-white focus:ring-2 focus:ring-[#19b8a5]/15 md:w-72"
               />
             </div>
             {search && (
-              <Button variant="ghost" size="sm" onClick={() => { setSearch(''); setCardLimit(CARD_BATCH_SIZE); setPage(1); }}>
+              <Button variant="ghost" size="sm" onClick={() => { setSearch(''); setPage(1); }}>
                 <RotateCcw className="mr-1.5 h-3 w-3" />
                 Clear
               </Button>
             )}
-            <div className="flex items-center rounded-[10px] border border-[#d9e2e8] bg-white p-0.5 shadow-[0_6px_14px_rgba(18,38,63,0.05)] dark:border-[#31545a] dark:bg-[#0c2530] dark:shadow-none">
-              <button
-                onClick={() => setViewMode('table')}
-                className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-[8px] text-sm font-medium transition-all',
-                  viewMode === 'table'
-                    ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm dark:bg-[#0f3f43] dark:text-[#19b8a5]'
-                    : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]',
-                )}
-                title="Table view"
-              >
-                <LayoutList className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={() => {
-                  setViewMode('card');
-                  setCardLimit(CARD_BATCH_SIZE);
-                }}
-                className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-[8px] text-sm font-medium transition-all',
-                  viewMode === 'card'
-                    ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm dark:bg-[#0f3f43] dark:text-[#19b8a5]'
-                    : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]',
-                )}
-                title="Card view"
-              >
-                <LayoutGrid className="h-3.5 w-3.5" />
-              </button>
-            </div>
           </div>
         </div>
       </motion.div>
 
       {/* Status filter tabs */}
       <motion.div variants={itemVariants}>
-        <div className="flex items-center gap-1.5 overflow-x-auto rounded-[12px] border-0 bg-white p-1.5 shadow-[0_8px_20px_rgba(18,38,63,0.05)] dark:bg-[#0c2530] dark:shadow-none">
+        <div className="flex items-center gap-1.5 overflow-x-auto rounded-[12px] border-0 bg-white p-1.5 shadow-[0_8px_20px_rgba(18,38,63,0.05)]">
           {[
             { key: 'all' as const, label: 'All', count: statusCounts.all, color: '' },
             { key: 'Pending' as const, label: 'Pending', count: statusCounts.pending, color: 'bg-[#19b8a5]' },
@@ -935,21 +903,21 @@ export function AdminMissingVehiclesPage() {
           ].map((tab) => (
             <button
               key={tab.key}
-              onClick={() => { setStatusFilter(tab.key); setCardLimit(CARD_BATCH_SIZE); setPage(1); }}
+              onClick={() => { setStatusFilter(tab.key); setPage(1); }}
               className={cn(
                 'flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all whitespace-nowrap',
                 statusFilter === tab.key
                   ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm'
-                  : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]',
+                  : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c]',
               )}
             >
               {tab.color && <span className={cn('h-1.5 w-1.5 rounded-full', tab.color)} />}
               {tab.label}
               <span className={cn(
-                'ml-0.5 rounded-full px-1.5 py-0.5 text-xs font-semibold',
+                'ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
                 statusFilter === tab.key
                   ? 'bg-[#dff7f4] text-[#08766c]'
-                  : 'bg-[#f4f8fb] text-[#8aa0ad] dark:bg-[#071936] dark:text-[#8fb6cc]',
+                  : 'bg-[#f4f8fb] text-[#8aa0ad]',
               )}>
                 {tab.count}
               </span>
@@ -975,19 +943,19 @@ export function AdminMissingVehiclesPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-[#e5edf2] bg-[#f4f8fb] dark:border-[#17383d] dark:bg-[#071936]">
-                      <th className="w-10 px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">#</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Make</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Model</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Year</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Trim</th>
-                      <th className="px-3 py-3 text-right text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Min Price</th>
-                      <th className="px-3 py-3 text-right text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Max Price</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Status</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Scraped</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Requester</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Date</th>
-                      <th className="px-3 py-3 text-right text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Actions</th>
+                    <tr className="border-b bg-muted/20">
+                      <th className="w-10 px-3 py-3 text-left text-sm font-semibold text-foreground">#</th>
+                      <th className="px-3 py-3 text-left text-sm font-semibold text-foreground">Make</th>
+                      <th className="px-3 py-3 text-left text-sm font-semibold text-foreground">Model</th>
+                      <th className="px-3 py-3 text-left text-sm font-semibold text-foreground">Year</th>
+                      <th className="px-3 py-3 text-left text-sm font-semibold text-foreground">Trim</th>
+                      <th className="px-3 py-3 text-right text-sm font-semibold text-foreground">Min Price</th>
+                      <th className="px-3 py-3 text-right text-sm font-semibold text-foreground">Max Price</th>
+                      <th className="px-3 py-3 text-left text-sm font-semibold text-foreground">Status</th>
+                      <th className="px-3 py-3 text-left text-sm font-semibold text-foreground">Scraped</th>
+                      <th className="px-3 py-3 text-left text-sm font-semibold text-foreground">Requester</th>
+                      <th className="px-3 py-3 text-left text-sm font-semibold text-foreground">Date</th>
+                      <th className="px-3 py-3 text-right text-sm font-semibold text-foreground">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -1045,7 +1013,7 @@ export function AdminMissingVehiclesPage() {
                             {req.contactName || req.contactEmail || '—'}
                           </p>
                           {req.contactName && req.contactEmail && req.contactEmail !== req.contactName && (
-                            <p className="text-xs text-muted-foreground truncate max-w-[130px]">{req.contactEmail}</p>
+                            <p className="text-[10px] text-muted-foreground truncate max-w-[130px]">{req.contactEmail}</p>
                           )}
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap">
@@ -1054,7 +1022,7 @@ export function AdminMissingVehiclesPage() {
                               {req.createdOn ? formatShortDate(req.createdOn) : '—'}
                             </span>
                             {req.createdOn && (
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-[10px] text-muted-foreground">
                                 {new Date(req.createdOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                               </span>
                             )}
@@ -1129,29 +1097,20 @@ export function AdminMissingVehiclesPage() {
         >
           {isLoading ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: CARD_BATCH_SIZE }).map((_, i) => (
+              {Array.from({ length: 6 }).map((_, i) => (
                 <MissingVehicleCardSkeleton key={i} />
               ))}
             </div>
           ) : paginated.length > 0 ? (
-            <>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {paginated.map((req) => (
-                  <MissingVehicleCard
-                    key={req.id}
-                    request={req}
-                    onClick={() => setSelectedRequest(req)}
-                  />
-                ))}
-              </div>
-              {hasMoreCards && (
-                <div ref={cardLoadMoreRef} className="flex h-16 items-center justify-center">
-                  <span className="text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">
-                    Loading more requests...
-                  </span>
-                </div>
-              )}
-            </>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {paginated.map((req) => (
+                <MissingVehicleCard
+                  key={req.id}
+                  request={req}
+                  onClick={() => setSelectedRequest(req)}
+                />
+              ))}
+            </div>
           ) : (
             <div className="rounded-2xl border bg-card">
               <div className="flex flex-col items-center justify-center py-20">
@@ -1186,7 +1145,7 @@ export function AdminMissingVehiclesPage() {
       )}
 
       {/* Pagination */}
-      {viewMode === 'table' && sorted.length > pageSize && (
+      {sorted.length > pageSize && (
         <motion.div variants={itemVariants}>
           <div className="flex flex-col items-center justify-between gap-3 rounded-[12px] bg-white/70 px-3 py-2 shadow-[0_8px_20px_rgba(18,38,63,0.04)] dark:bg-[#0c2530]/80 sm:flex-row">
             <p className="text-sm font-medium text-[#647887] dark:text-[#8fb6cc]">
@@ -1213,7 +1172,7 @@ export function AdminMissingVehiclesPage() {
                       size="sm"
                       onClick={() => setPage(pageNum)}
                       className={cn(
-                        'h-9 min-w-9 rounded-[10px] px-3 text-xs font-semibold shadow-[0_6px_14px_rgba(18,38,63,0.05)]',
+                        'h-9 min-w-9 rounded-[10px] px-3 text-xs font-bold shadow-[0_6px_14px_rgba(18,38,63,0.05)]',
                         page === pageNum
                           ? '!bg-[#19b8a5] !text-white shadow-[0_8px_18px_rgba(25,184,165,0.28)]'
                           : '!bg-white !text-[#071936] hover:!bg-[#dff7f4] hover:!text-[#08766c] dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]',

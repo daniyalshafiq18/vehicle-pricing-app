@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useVehicles, useVehicleHierarchy, usePricing, useBatchPricing } from '@hooks';
 import { useVehicleStore } from '@stores';
 import { useDebounce } from '@utils';
@@ -60,8 +60,6 @@ const trendIcons: Record<string, React.ReactNode> = {
   stable: <Minus className="h-3 w-3 text-muted-foreground" />,
 };
 
-const GRID_BATCH_SIZE = 18;
-
 // ─── Confidence Badge ────────────────────────────────────────
 function ConfidenceBadge({ score }: { score: number }) {
   const color = score >= 85 ? 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]'
@@ -70,7 +68,7 @@ function ConfidenceBadge({ score }: { score: number }) {
     : 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]';
 
   return (
-    <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium', color)}>
+    <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium', color)}>
       <Zap className="h-2.5 w-2.5" />
       {score}%
     </span>
@@ -121,8 +119,8 @@ function PricingDetailSection({ vehicleId }: { vehicleId: string }) {
           { label: 'P75', value: formatCurrency(range.p75) },
           { label: 'P90', value: formatCurrency(range.p90) },
         ].map((item) => (
-          <div key={item.label} className="rounded-[8px] border-0 bg-white p-3 shadow-[0_8px_20px_rgba(18,38,63,0.05)] dark:bg-[#071936] dark:shadow-none">
-            <p className="text-xs text-foreground">{item.label}</p>
+          <div key={item.label} className="rounded-[8px] border-0 bg-white p-3 shadow-[0_8px_20px_rgba(18,38,63,0.05)]">
+            <p className="text-[10px] text-foreground">{item.label}</p>
             <p className="mt-0.5 text-sm font-semibold text-foreground">{item.value}</p>
           </div>
         ))}
@@ -143,7 +141,7 @@ function PricingDetailSection({ vehicleId }: { vehicleId: string }) {
             style={{ left: `${((pricing.averagePrice - range.min) / (range.max - range.min)) * 100}%` }}
           />
         </div>
-        <div className="flex items-center justify-between text-xs text-muted-foreground/60">
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground/60">
           <span>P25</span>
           <span className="font-medium text-foreground/60">AVG</span>
           <span>P75</span>
@@ -151,7 +149,7 @@ function PricingDetailSection({ vehicleId }: { vehicleId: string }) {
       </div>
 
       {/* Market trend */}
-      <div className="flex items-center gap-4 rounded-[8px] border-0 bg-white p-3 shadow-[0_8px_20px_rgba(18,38,63,0.05)] dark:bg-[#071936] dark:shadow-none">
+      <div className="flex items-center gap-4 rounded-[8px] border-0 bg-white p-3 shadow-[0_8px_20px_rgba(18,38,63,0.05)]">
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">Market Trend:</span>
           <span className={cn('flex items-center gap-1 text-sm font-medium', trendColor)}>
@@ -216,7 +214,7 @@ function VehicleDetailDialog({
           </h4>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {specs.map((s) => (
-              <div key={s.label} className="rounded-[8px] border-0 bg-white p-3 shadow-[0_8px_20px_rgba(18,38,63,0.05)] dark:bg-[#071936] dark:shadow-none">
+              <div key={s.label} className="rounded-[8px] border-0 bg-white p-3 shadow-[0_8px_20px_rgba(18,38,63,0.05)]">
                 <p className="text-xs text-muted-foreground">{s.label}</p>
                 <p className="mt-0.5 font-medium text-foreground">{s.value}</p>
               </div>
@@ -233,7 +231,7 @@ function VehicleDetailDialog({
           </h4>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {technical.map((t) => (
-              <div key={t.label} className="rounded-[8px] border-0 bg-white p-3 shadow-[0_8px_20px_rgba(18,38,63,0.05)] dark:bg-[#071936] dark:shadow-none">
+              <div key={t.label} className="rounded-[8px] border-0 bg-white p-3 shadow-[0_8px_20px_rgba(18,38,63,0.05)]">
                 <div className="flex items-center gap-3">
                   <t.icon className="h-5 w-5 shrink-0 text-muted-foreground" />
                   <div className="min-w-0">
@@ -253,7 +251,7 @@ function VehicleDetailDialog({
           </h4>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {dimensions.map((d) => (
-              <div key={d.label} className="rounded-[8px] border-0 bg-white p-3 shadow-[0_8px_20px_rgba(18,38,63,0.05)] dark:bg-[#071936] dark:shadow-none">
+              <div key={d.label} className="rounded-[8px] border-0 bg-white p-3 shadow-[0_8px_20px_rgba(18,38,63,0.05)]">
                 <p className="text-xs text-muted-foreground">{d.label}</p>
                 <p className="mt-0.5 font-medium text-foreground">{d.value}</p>
               </div>
@@ -523,12 +521,12 @@ function FilterBar({
   if (filters.maxPrice) filterChips.push({ key: 'maxPrice', label: `Max: AED ${Number(filters.maxPrice).toLocaleString()}` });
 
   return (
-    <div className="rounded-[14px] border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.06)] dark:bg-[#0c2530] dark:shadow-none">
+    <div className="rounded-[14px] border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.06)]">
       {/* Primary filters — always visible, all independent */}
       <div className="p-4">
         <div className="flex flex-wrap items-end gap-3">
           <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'year' ? 'z-50' : 'z-0')}>
-            <label className="mb-1.5 block text-xs font-semibold text-foreground">Year</label>
+            <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Year</label>
             <CustomSelect
               placeholder="All Years"
               options={yearOptions}
@@ -538,7 +536,7 @@ function FilterBar({
             />
           </div>
           <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'make' ? 'z-50' : 'z-0')}>
-            <label className="mb-1.5 block text-xs font-semibold text-foreground">Make</label>
+            <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Make</label>
             <CustomSelect
               placeholder="All Makes"
               options={makeOptions}
@@ -548,7 +546,7 @@ function FilterBar({
             />
           </div>
           <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'model' ? 'z-50' : 'z-0')}>
-            <label className="mb-1.5 block text-xs font-semibold text-foreground">Model</label>
+            <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Model</label>
             <CustomSelect
               placeholder="All Models"
               options={modelOptions}
@@ -573,7 +571,7 @@ function FilterBar({
               )} />
               {expanded ? 'Fewer' : 'More'}
               {!expanded && activeFilterCount > 0 && (
-                <span className="ml-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#19b8a5] px-1 text-xs font-semibold text-white">
+                <span className="ml-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#19b8a5] px-1 text-[10px] font-bold text-white">
                   {activeFilterCount}
                 </span>
               )}
@@ -600,45 +598,45 @@ function FilterBar({
           >
             <div className="border-t border-border" />
             <div className="p-4">
-              <span className="mb-3 block text-xs font-semibold text-foreground">Advanced Filters</span>
+              <span className="mb-3 block text-[11px] font-semibold text-foreground">Advanced Filters</span>
               <div className="flex flex-wrap items-end gap-3">
                 <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'bodyType' ? 'z-50' : 'z-0')}>
-                  <label className="mb-1.5 block text-xs font-semibold text-foreground">Body Type</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Body Type</label>
                   <CustomSelect placeholder="All Types" options={bodyTypeOptions} value={filters.bodyType} onChange={(v) => onFilterChange('bodyType', v)} onOpenChange={(o) => setOpenDropdown(o ? 'bodyType' : null)} />
                 </div>
                 <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'transmission' ? 'z-50' : 'z-0')}>
-                  <label className="mb-1.5 block text-xs font-semibold text-foreground">Transmission</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Transmission</label>
                   <CustomSelect placeholder="All" options={transmissionOptions} value={filters.transmission} onChange={(v) => onFilterChange('transmission', v)} onOpenChange={(o) => setOpenDropdown(o ? 'transmission' : null)} />
                 </div>
                 <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'category' ? 'z-50' : 'z-0')}>
-                  <label className="mb-1.5 block text-xs font-semibold text-foreground">Category</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Category</label>
                   <CustomSelect placeholder="All" options={categoryOptions} value={filters.category} onChange={(v) => onFilterChange('category', v)} onOpenChange={(o) => setOpenDropdown(o ? 'category' : null)} />
                 </div>
                 <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'driveType' ? 'z-50' : 'z-0')}>
-                  <label className="mb-1.5 block text-xs font-semibold text-foreground">Drive Type</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Drive Type</label>
                   <CustomSelect placeholder="All" options={driveTypeOptions} value={filters.driveType} onChange={(v) => onFilterChange('driveType', v)} onOpenChange={(o) => setOpenDropdown(o ? 'driveType' : null)} />
                 </div>
                 <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'spec' ? 'z-50' : 'z-0')}>
-                  <label className="mb-1.5 block text-xs font-semibold text-foreground">Spec</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Spec</label>
                   <CustomSelect placeholder="All" options={specOptions} value={filters.spec} onChange={(v) => onFilterChange('spec', v)} onOpenChange={(o) => setOpenDropdown(o ? 'spec' : null)} />
                 </div>
                 <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'powertrain' ? 'z-50' : 'z-0')}>
-                  <label className="mb-1.5 block text-xs font-semibold text-foreground">Powertrain</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Powertrain</label>
                   <CustomSelect placeholder="All" options={powertrainOptions} value={filters.powertrain} onChange={(v) => onFilterChange('powertrain', v)} onOpenChange={(o) => setOpenDropdown(o ? 'powertrain' : null)} />
                 </div>
                 <div className={cn("flex-1 min-w-[140px] relative", openDropdown === 'vehicleType' ? 'z-50' : 'z-0')}>
-                  <label className="mb-1.5 block text-xs font-semibold text-foreground">Vehicle Type</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Vehicle Type</label>
                   <CustomSelect placeholder="All" options={vehicleTypeOptions} value={filters.vehicleType} onChange={(v) => onFilterChange('vehicleType', v)} onOpenChange={(o) => setOpenDropdown(o ? 'vehicleType' : null)} />
                 </div>
                 <div className="flex-1 min-w-[140px]">
-                  <label className="mb-1.5 block text-xs font-semibold text-foreground">Min Price</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Min Price</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">AED</span>
                     <input type="number" placeholder="No min" value={filters.minPrice ?? ''} onChange={(e) => onFilterChange('minPrice', e.target.value || undefined)} className="flex h-10 w-full rounded-xl border border-input bg-card pl-12 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
                   </div>
                 </div>
                 <div className="flex-1 min-w-[140px]">
-                  <label className="mb-1.5 block text-xs font-semibold text-foreground">Max Price</label>
+                  <label className="mb-1.5 block text-[11px] font-semibold text-foreground">Max Price</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">AED</span>
                     <input type="number" placeholder="No max" value={filters.maxPrice ?? ''} onChange={(e) => onFilterChange('maxPrice', e.target.value || undefined)} className="flex h-10 w-full rounded-xl border border-input bg-card pl-12 pr-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
@@ -663,7 +661,7 @@ function FilterBar({
               {filterChips.map((chip) => (
                 <span
                   key={chip.key}
-                  className="inline-flex items-center gap-1 rounded-full border border-[#bfe9e2] bg-[#ecfbf8] px-2.5 py-0.5 text-xs font-medium text-[#08766c]"
+                  className="inline-flex items-center gap-1 rounded-full border border-[#bfe9e2] bg-[#ecfbf8] px-2.5 py-0.5 text-[10px] font-medium text-[#08766c]"
                 >
                   {chip.label}
                   <button onClick={() => onFilterChange(chip.key, undefined)} className="ml-0.5 rounded-full p-0.5 opacity-60 transition-opacity hover:opacity-100">
@@ -710,6 +708,8 @@ function VehicleCard({ vehicle, pricing, onClick }: {
       className="group h-full"
     >
       <Card className="overflow-hidden border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 h-full">
+        {/* Gradient top bar */}
+        <div className="h-1 bg-gradient-to-r from-[#19b8a5]/70 via-[#8fb6cc]/70 to-[#19b8a5]/35" />
         <CardContent className="p-5 flex flex-col h-full">
           {/* Header row: year + spec badge */}
           <div className="flex items-center justify-between mb-4 shrink-0">
@@ -722,7 +722,7 @@ function VehicleCard({ vehicle, pricing, onClick }: {
           </div>
 
           {/* Make & Model */}
-          <h3 className="text-lg font-semibold text-foreground leading-tight">
+          <h3 className="text-lg font-bold text-foreground leading-tight">
             {vehicle.make} {vehicle.model}
           </h3>
 
@@ -737,7 +737,7 @@ function VehicleCard({ vehicle, pricing, onClick }: {
               <div key={spec.label} className="rounded-xl bg-muted/40 p-3 transition-colors hover:bg-muted/60">
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <spec.icon className="h-3 w-3" />
-                  <span className="text-xs">{spec.label}</span>
+                  <span className="text-[10px]">{spec.label}</span>
                 </div>
                 <p className="mt-0.5 text-sm font-semibold text-foreground">{spec.value}</p>
               </div>
@@ -746,15 +746,15 @@ function VehicleCard({ vehicle, pricing, onClick }: {
 
           {/* Classification tags */}
           <div className="mt-3 flex flex-wrap items-center gap-1.5 shrink-0">
-            <span className="inline-flex items-center rounded-lg border bg-card px-2 py-0.5 text-xs text-muted-foreground">
+            <span className="inline-flex items-center rounded-lg border bg-card px-2 py-0.5 text-[10px] text-muted-foreground">
               <Car className="mr-1 h-2.5 w-2.5" />
               {vehicle.bodyType}
             </span>
-            <span className="inline-flex items-center rounded-lg border bg-card px-2 py-0.5 text-xs text-muted-foreground">
+            <span className="inline-flex items-center rounded-lg border bg-card px-2 py-0.5 text-[10px] text-muted-foreground">
               <Layers className="mr-1 h-2.5 w-2.5" />
               {vehicle.category}
             </span>
-            <span className="inline-flex items-center rounded-lg border bg-card px-2 py-0.5 text-xs text-muted-foreground">
+            <span className="inline-flex items-center rounded-lg border bg-card px-2 py-0.5 text-[10px] text-muted-foreground">
               <Zap className="mr-1 h-2.5 w-2.5" />
               {vehicle.powertrain}
             </span>
@@ -766,12 +766,12 @@ function VehicleCard({ vehicle, pricing, onClick }: {
           {/* Bottom: price + actions */}
           <div className="mt-4 flex items-center justify-between border-t pt-4 shrink-0">
             <div>
-              <p className="text-xs font-medium text-foreground">Market Price</p>
-              <p className="text-lg font-semibold text-[#08766c]">
+              <p className="text-[10px] font-medium text-foreground">Market Price</p>
+              <p className="text-lg font-bold text-[#08766c]">
                 {pricing?.averagePrice ? formatCurrency(pricing.averagePrice) : '—'}
               </p>
               {pricing && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[10px] text-muted-foreground">
                   {formatCurrency(pricing.minimumPrice)} — {formatCurrency(pricing.maximumPrice)}
                 </p>
               )}
@@ -793,8 +793,6 @@ export function AdminVehiclesPage() {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
-  const [gridLimit, setGridLimit] = useState(GRID_BATCH_SIZE);
-  const gridLoadMoreRef = useRef<HTMLDivElement | null>(null);
   const [localFilters, setLocalFilters] = useState<Record<string, string | undefined>>({
     year: filters.year ? String(filters.year) : undefined,
     make: filters.make,
@@ -825,9 +823,7 @@ export function AdminVehiclesPage() {
     maxPrice: localFilters.maxPrice ? Number(localFilters.maxPrice) : undefined,
   }), [filters, search, localFilters]);
 
-  const vehiclePage = viewMode === 'grid' ? 1 : page;
-  const vehiclePageSize = viewMode === 'grid' ? gridLimit : pageSize;
-  const { data, isLoading } = useVehicles(queryFilters, sort, vehiclePage, vehiclePageSize);
+  const { data, isLoading } = useVehicles(queryFilters, sort, page, pageSize);
 
   // ── Batch pricing (eliminates N+1 individual usePricing hooks) ──
   const vehicleIds = useMemo(() => data?.vehicles.map((v) => v.id) ?? [], [data?.vehicles]);
@@ -844,31 +840,6 @@ export function AdminVehiclesPage() {
   );
 
   const totalPages = Math.max(1, Math.ceil((data?.total ?? 0) / pageSize));
-  const hasMoreGridVehicles = viewMode === 'grid' && (data?.vehicles.length ?? 0) < (data?.total ?? 0);
-
-  useEffect(() => {
-    setGridLimit(GRID_BATCH_SIZE);
-  }, [debouncedSearch, localFilters, sort.field, sort.direction]);
-
-  useEffect(() => {
-    if (viewMode !== 'grid' || !hasMoreGridVehicles) {
-      return undefined;
-    }
-    const node = gridLoadMoreRef.current;
-    if (!node) {
-      return undefined;
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          setGridLimit((current) => current + GRID_BATCH_SIZE);
-        }
-      },
-      { rootMargin: '500px 0px' },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [viewMode, hasMoreGridVehicles, data?.vehicles.length]);
 
   const SortIcon = ({ field }: { field: typeof sort.field }) => {
     if (sort.field !== field) return <ArrowUpDown className="ml-1 h-3 w-3 text-muted-foreground/50" />;
@@ -883,7 +854,6 @@ export function AdminVehiclesPage() {
 
   const handleFilterChange = useCallback((key: string, value: string | undefined) => {
     setLocalFilters((prev) => ({ ...prev, [key]: value }));
-    setGridLimit(GRID_BATCH_SIZE);
     setPage(1);
   }, [setPage]);
 
@@ -891,7 +861,6 @@ export function AdminVehiclesPage() {
     setLocalFilters({});
     resetFilters();
     setSearch('');
-    setGridLimit(GRID_BATCH_SIZE);
     setPage(1);
   }, [resetFilters, setPage]);
 
@@ -943,17 +912,46 @@ export function AdminVehiclesPage() {
       {/* Header */}
       <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Vehicles</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Vehicles</h1>
           <p className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{formatNumber(data?.total ?? 0)}</span> vehicles in the database
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex items-center rounded-lg border bg-card p-0.5">
+            <button
+              onClick={() => setViewMode('table')}
+              className={cn(
+                'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
+                viewMode === 'table'
+                  ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm'
+                  : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c]',
+              )}
+              title="Table view"
+            >
+              <LayoutList className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Table</span>
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={cn(
+                'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all',
+                viewMode === 'grid'
+                  ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm'
+                  : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c]',
+              )}
+              title="Grid view"
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Grid</span>
+            </button>
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
             <Input
               placeholder="Search vehicles..."
-              className="w-48 bg-white pl-9 text-[#071936] dark:bg-[#0c2530] dark:text-white md:w-64"
+              className="w-48 md:w-64 pl-9"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -961,46 +959,10 @@ export function AdminVehiclesPage() {
               }}
             />
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportCSV}
-            disabled={!data?.vehicles.length}
-            title="Export vehicles as CSV"
-            className="!border-[#d9e2e8] !bg-white !text-[#071936] hover:!border-[#19b8a5]/50 hover:!bg-[#ecfbf8] hover:!text-[#08766c] dark:!border-[#31545a] dark:!bg-[#0c2530] dark:!text-[#19b8a5] dark:hover:!bg-[#0f3f43]"
-          >
+          <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={!data?.vehicles.length} title="Export vehicles as CSV">
             <Download className="mr-1.5 h-4 w-4" />
             Export
           </Button>
-          <div className="flex items-center rounded-[10px] border border-[#d9e2e8] bg-white p-0.5 shadow-[0_6px_14px_rgba(18,38,63,0.05)] dark:border-[#31545a] dark:bg-[#0c2530] dark:shadow-none">
-            <button
-              onClick={() => setViewMode('table')}
-              className={cn(
-                'flex h-8 w-8 items-center justify-center rounded-[8px] text-xs font-medium transition-all',
-                viewMode === 'table'
-                  ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm dark:bg-[#0f3f43] dark:text-[#19b8a5]'
-                  : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]',
-              )}
-              title="Table view"
-            >
-              <LayoutList className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => {
-                setViewMode('grid');
-                setGridLimit(GRID_BATCH_SIZE);
-              }}
-              className={cn(
-                'flex h-8 w-8 items-center justify-center rounded-[8px] text-xs font-medium transition-all',
-                viewMode === 'grid'
-                  ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm dark:bg-[#0f3f43] dark:text-[#19b8a5]'
-                  : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]',
-              )}
-              title="Grid view"
-            >
-              <LayoutGrid className="h-3.5 w-3.5" />
-            </button>
-          </div>
         </div>
       </div>
 
@@ -1014,7 +976,7 @@ export function AdminVehiclesPage() {
       {/* Table / Grid toggle */}
       {viewMode === 'table' ? (
         /* ── Table View ── */
-        <div className="overflow-hidden rounded-[14px] border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.06)] dark:bg-[#0c2530] dark:shadow-none">
+        <div className="overflow-hidden rounded-[14px] border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.06)]">
           {isLoading ? (
             <div className="p-6">
               <SkeletonTable rows={10} cols={9} />
@@ -1023,33 +985,33 @@ export function AdminVehiclesPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-[#e5edf2] bg-[#f4f8fb] dark:border-[#17383d] dark:bg-[#071936]">
-                    <th className="px-4 py-3.5 text-center text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">#</th>
-                    <th className="px-4 py-3.5 text-center text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">
-                      <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-[#08766c] dark:hover:text-[#19b8a5]" onClick={() => handleSort('year')}>
+                  <tr className="border-b">
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">#</th>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">
+                      <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('year')}>
                         Year <SortIcon field="year" />
                       </span>
                     </th>
-                    <th className="px-4 py-3.5 text-center text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">
-                      <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-[#08766c] dark:hover:text-[#19b8a5]" onClick={() => handleSort('make')}>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">
+                      <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('make')}>
                         Make <SortIcon field="make" />
                       </span>
                     </th>
-                    <th className="px-4 py-3.5 text-center text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">
-                      <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-[#08766c] dark:hover:text-[#19b8a5]" onClick={() => handleSort('model')}>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">
+                      <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('model')}>
                         Model <SortIcon field="model" />
                       </span>
                     </th>
-                    <th className="px-4 py-3.5 text-center text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Spec</th>
-                    <th className="px-4 py-3.5 text-center text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Body Type</th>
-                    <th className="px-4 py-3.5 text-center text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Engine</th>
-                    <th className="px-4 py-3.5 text-center text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Hp</th>
-                    <th className="min-w-[110px] px-4 py-3.5 text-center text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">
-                      <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-[#08766c] dark:hover:text-[#19b8a5]" onClick={() => handleSort('price')}>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">Spec</th>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">Body Type</th>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">Engine</th>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">Hp</th>
+                    <th className="min-w-[110px] px-4 py-3.5 text-center text-sm font-semibold text-foreground">
+                      <span className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground" onClick={() => handleSort('price')}>
                         Price <SortIcon field="price" />
                       </span>
                     </th>
-                    <th className="px-4 py-3.5 text-center text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Actions</th>
+                    <th className="px-4 py-3.5 text-center text-sm font-semibold text-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -1107,9 +1069,9 @@ export function AdminVehiclesPage() {
         /* ── Grid / Card View ── */
         <div className="rounded-2xl">
           {isLoading ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: GRID_BATCH_SIZE }).map((_, i) => (
-                <div key={i} className="h-[320px] animate-pulse rounded-[14px] border-0 bg-white p-5 shadow-[0_10px_28px_rgba(18,38,63,0.06)] dark:bg-[#0c2530] dark:shadow-none">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="h-[320px] animate-pulse rounded-[14px] border-0 bg-white p-5 shadow-[0_10px_28px_rgba(18,38,63,0.06)]">
                   <div className="mb-4 h-4 w-20 rounded bg-muted" />
                   <div className="mb-2 h-6 w-40 rounded bg-muted" />
                   <div className="mt-4 grid grid-cols-2 gap-2">
@@ -1126,27 +1088,18 @@ export function AdminVehiclesPage() {
               ))}
             </div>
           ) : data?.vehicles && data.vehicles.length > 0 ? (
-            <>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {data.vehicles.map((vehicle) => (
-                  <VehicleCard
-                    key={vehicle.id}
-                    vehicle={vehicle}
-                    pricing={pricingMap?.get(vehicle.id)}
-                    onClick={() => setSelectedVehicle(vehicle)}
-                  />
-                ))}
-              </div>
-              {hasMoreGridVehicles && (
-                <div ref={gridLoadMoreRef} className="flex h-16 items-center justify-center">
-                  <span className="text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">
-                    Loading more vehicles...
-                  </span>
-                </div>
-              )}
-            </>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {data.vehicles.map((vehicle) => (
+                <VehicleCard
+                  key={vehicle.id}
+                  vehicle={vehicle}
+                  pricing={pricingMap?.get(vehicle.id)}
+                  onClick={() => setSelectedVehicle(vehicle)}
+                />
+              ))}
+            </div>
           ) : (
-            <div className="rounded-[14px] border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.06)] dark:bg-[#0c2530] dark:shadow-none">
+            <div className="rounded-[14px] border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.06)]">
               <VehiclesEmptyState onReset={handleResetFilters} />
             </div>
           )}
@@ -1154,7 +1107,6 @@ export function AdminVehiclesPage() {
       )}
 
       {/* Pagination */}
-      {viewMode === 'table' && (
       <div className="flex flex-col items-center justify-between gap-3 rounded-[12px] bg-white/70 px-3 py-2 shadow-[0_8px_20px_rgba(18,38,63,0.04)] dark:bg-[#0c2530]/80 sm:flex-row">
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-sm font-medium text-[#647887] dark:text-[#8fb6cc]">
@@ -1163,7 +1115,7 @@ export function AdminVehiclesPage() {
             <span>{formatNumber(data?.total ?? 0)} total</span>
           </p>
           <div className="flex items-center gap-1.5">
-            <label className="text-xs font-semibold text-[#647887] dark:text-[#8fb6cc]">Rows:</label>
+            <label className="text-[10px] font-semibold text-[#647887] dark:text-[#8fb6cc]">Rows:</label>
             <select
               value={pageSize}
               onChange={(e) => setPageSize(Number(e.target.value))}
@@ -1194,7 +1146,7 @@ export function AdminVehiclesPage() {
                   size="sm"
                   onClick={() => setPage(pageNum)}
                   className={cn(
-                    'h-9 min-w-9 rounded-[10px] px-3 text-xs font-semibold shadow-[0_6px_14px_rgba(18,38,63,0.05)]',
+                    'h-9 min-w-9 rounded-[10px] px-3 text-xs font-bold shadow-[0_6px_14px_rgba(18,38,63,0.05)]',
                     page === pageNum
                       ? '!bg-[#19b8a5] !text-white shadow-[0_8px_18px_rgba(25,184,165,0.28)]'
                       : '!bg-white !text-[#071936] hover:!bg-[#dff7f4] hover:!text-[#08766c] dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]',
@@ -1214,7 +1166,6 @@ export function AdminVehiclesPage() {
           </Button>
         </div>
       </div>
-      )}
 
       {selectedVehicle && (
         <VehicleDetailDialog

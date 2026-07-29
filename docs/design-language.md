@@ -84,34 +84,31 @@ min-[2560px]:max-w-[90%] ← ultra-wide screens
 ### Font stack
 
 ```css
-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+font-sans: Inter, system-ui, sans-serif;
 font-mono: JetBrains Mono, Fira Code, monospace;
 ```
-
-Inter is the only UI font. `font-mono` is reserved for actual code/preformatted text; prices, counts, dates, and dashboard metrics use `tabular-nums` instead.
 
 ### Type scale
 
 | Usage | Class | Size | Weight |
 |---|---|---|---|
 | Hero heading | `text-4xl md:text-6xl lg:text-7xl font-extrabold` | 36/48/60 → 60/72/80px | 800 |
-| Page heading | `text-2xl sm:text-3xl font-semibold` | 24 → 30px | 600 |
-| Section heading | `text-3xl md:text-4xl font-semibold` | 30 → 36px | 600 |
-| Card / modal title | `text-lg font-semibold` | 18px | 600 |
-| KPI / stat value | `text-xl` to `text-2xl font-semibold tabular-nums` | 20–24px | 600 |
-| Body / table cell | `text-sm font-normal` | 14px | 400 |
-| Label / nav / button / filter | `text-sm font-medium` | 14px | 500 |
-| Small / metadata | `text-xs font-normal` | 12px | 400 |
-| Badge / count | `text-xs font-medium` | 12px | 500 |
-| Fixed tiny badge | `text-[10px] font-medium` | 10px | 500 |
-| Numeric data | `tabular-nums` with the surrounding text size | — | — |
+| Section heading | `text-3xl md:text-4xl font-bold` | 30 → 36px | 700 |
+| Card title | `text-2xl font-semibold` | 24px | 600 |
+| Subheading / modal title | `text-xl font-semibold` | 20px | 600 |
+| Feature / stat value | `text-lg font-semibold` | 18px | 600 |
+| Body | `text-sm` | 14px | 400 |
+| Small / metadata | `text-xs` | 12px | 400 |
+| Tiny (label, uppercase) | `text-[10px] font-medium uppercase tracking-wider` | 10px | 500 |
+| Badge text | `text-xs font-semibold` | 12px | 600 |
+| Chart value (tabular) | `text-sm font-medium tabular-nums` | 14px | 500 |
 
 ### Leading / tracking
 
 - Headings: `leading-tight` (~1.1)
 - Body: default (1.5)
 - Numeric tabular data: `tabular-nums` for aligned digits
-- Uppercase labels: `font-medium tracking-wider` (0.05em)
+- Uppercase labels: `tracking-wider` (0.05em)
 
 ### Gradient text effects
 
@@ -606,7 +603,7 @@ Data     → Render
 | Headings | Title Case | "Vehicle Specifications" |
 | Buttons | Sentence case | "Start Valuation" |
 | Labels (form) | Sentence case | "First name" |
-| Labels (uppercase data) | `text-xs font-medium uppercase tracking-wider` | "ENGINE", "HORSEPOWER" |
+| Labels (uppercase data) | `text-[10px] uppercase tracking-wider` | "ENGINE", "HORSEPOWER" |
 | Placeholder | Sentence case, no period | "Search..." |
 | Description text | Sentence case, period | "We couldn't find this vehicle..." |
 | Error messages | Full sentence | "We couldn't generate a valuation..." |
@@ -660,7 +657,7 @@ Data     → Render
 | Primary scale | 50–950 | `globals.css` + `tailwind.config.ts` | All `primary-*` classes |
 | Accent scale | 50–900 | `globals.css` + `tailwind.config.ts` | All `accent-*` classes |
 | Sidebar scale | 5 vars | `globals.css` + `tailwind.config.ts` | `sidebar-*` classes |
-| Inter font | `Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif` | `tailwind.config.ts` | Body + headings |
+| Inter font | `Inter, system-ui, sans-serif` | `tailwind.config.ts` | Body + headings |
 | JetBrains Mono | `JetBrains Mono, Fira Code, monospace` | `tailwind.config.ts` | Code |
 | Shadow tokens | 6 levels | Inline Tailwind / `.interactive-card` | Cards, buttons, modals |
 | Animation tokens | 18 keyframes | `globals.css` + `tailwind.config.ts` | Loading, hover, entrance |

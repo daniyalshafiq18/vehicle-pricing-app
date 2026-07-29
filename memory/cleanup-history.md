@@ -7,10 +7,6 @@ metadata:
 
 # Cleanup History
 
-## 2026-07-29 - Power Pages Stale Asset Cleanup
-- Removed obsolete hashed Vite asset web-file directories from `vehicle-pricing-intelligence-platform/.powerpages-site/web-files/`, including the failing `analyticsRepository-Bim_5Jb3.js`, because PAC was trying to upload stale generated assets that no longer match the current build.
-- Left only the current `dist/assets` web-file directories in the Power Pages package and broadened the cleanup matcher in `scripts/update-portal-template.mjs` to catch legacy lowercase `analyticsrepository`/`usepricing` chunks plus old `charts-*` and `table-*` chunks.
-
 ## 2026-07-23 — Design Language Audit Removed
 - Removed `docs/design-language-audit.md` and `docs/design-language-evolution.md` at user's request
 

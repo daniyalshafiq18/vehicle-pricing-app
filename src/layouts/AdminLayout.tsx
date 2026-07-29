@@ -42,7 +42,7 @@ const pageTitles: Record<string, string> = {
 
 /** Shared notification badge style. */
 const badgeClass = (collapsed: boolean) => cn(
-  'ml-auto flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#19b8a5] px-1.5 text-[10px] font-medium leading-none text-white shadow-sm',
+  'ml-auto flex h-4 min-w-[16px] items-center justify-center rounded-full bg-slate-900 px-1.5 text-[9px] font-semibold leading-none text-white',
   collapsed && 'hidden',
 );
 
@@ -80,7 +80,7 @@ function AdminLayoutContent() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'relative flex shrink-0 flex-col border-r border-slate-100 bg-white text-slate-950 shadow-[1px_0_0_rgba(15,23,42,0.02)] transition-all duration-300 dark:border-[#17383d] dark:bg-[#071936] dark:text-white dark:shadow-none',
+          'relative flex shrink-0 flex-col border-r border-slate-100 bg-white text-slate-950 shadow-[1px_0_0_rgba(15,23,42,0.02)] transition-all duration-300',
           actualWidth,
         )}
         onMouseEnter={() => isSidebarCollapsed && setHovered(true)}
@@ -101,7 +101,7 @@ function AdminLayoutContent() {
             'min-w-0 transition-opacity duration-200',
             collapsed && 'hidden',
           )}>
-            <p className="truncate text-sm font-semibold leading-none text-slate-950 dark:text-white">Admin Center</p>
+            <p className="truncate text-[15px] font-bold leading-none tracking-normal text-slate-950">Admin Center</p>
           </div>
           <button
             onClick={toggleSidebar}
@@ -124,7 +124,7 @@ function AdminLayoutContent() {
         {/* Nav items */}
         <nav className="flex-1 overflow-y-hidden px-2 pb-2 pt-2">
           <div className={cn(
-            'mb-1 px-2 text-xs font-medium uppercase leading-5 text-slate-400 dark:text-[#6f8d99]',
+            'mb-1 px-2 text-[9px] font-semibold uppercase leading-5 tracking-normal text-slate-400',
             collapsed && 'sr-only',
           )}>
             Main Menu
@@ -139,18 +139,18 @@ function AdminLayoutContent() {
                 key={item.path}
                 onClick={() => handleNavigate(item.path)}
                 className={cn(
-                  'group relative mb-1 flex h-9 w-full items-center gap-2.5 rounded-[3px] px-2 text-left text-sm font-medium leading-none transition-colors duration-150',
+                  'group relative mb-1 flex h-9 w-full items-center gap-2.5 rounded-[3px] px-2 text-left text-[11px] font-semibold leading-none transition-colors duration-150',
                   collapsed && 'justify-center px-0',
                   isActive
-                    ? 'bg-slate-100 text-slate-950 dark:bg-[#0f3f43] dark:text-white'
-                    : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950 dark:text-[#b8cbd4] dark:hover:bg-[#0c2530] dark:hover:text-white',
+                    ? 'bg-slate-100 text-slate-950'
+                    : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950',
                 )}
                 title={collapsed ? item.label : undefined}
               >
                 <item.icon
                   className={cn(
                     'h-4 w-4 shrink-0 transition-colors duration-150',
-                    isActive ? 'text-slate-800 dark:text-[#19b8a5]' : 'text-slate-400 group-hover:text-slate-600 dark:text-[#6f8d99] dark:group-hover:text-[#19b8a5]',
+                    isActive ? 'text-slate-800' : 'text-slate-400 group-hover:text-slate-600',
                   )}
                   strokeWidth={1.8}
                 />
@@ -179,16 +179,16 @@ function AdminLayoutContent() {
         </nav>
 
         {/* Bottom */}
-        <div className="mt-auto border-t border-slate-100 p-2 dark:border-[#17383d]">
+        <div className="mt-auto border-t border-slate-100 p-2">
           <button
             onClick={() => navigate('/')}
             className={cn(
-              'flex h-9 w-full items-center gap-2.5 rounded-[3px] px-2 text-sm font-medium leading-none text-slate-600 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-950 dark:text-[#b8cbd4] dark:hover:bg-[#0c2530] dark:hover:text-white',
+              'flex h-9 w-full items-center gap-2.5 rounded-[3px] px-2 text-[11px] font-semibold leading-none text-slate-600 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-950',
               collapsed && 'justify-center px-0',
             )}
             title={collapsed ? 'Back to site' : undefined}
           >
-            <LogOut className="h-4 w-4 shrink-0 text-slate-400 dark:text-[#6f8d99]" strokeWidth={1.8} />
+            <LogOut className="h-4 w-4 shrink-0 text-slate-400" strokeWidth={1.8} />
             <span className={cn(
               'truncate transition-opacity duration-200',
               collapsed && 'hidden',
