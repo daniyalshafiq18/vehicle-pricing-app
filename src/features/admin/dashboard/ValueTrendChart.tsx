@@ -26,7 +26,9 @@ export function ValueTrendChart({ data, className }: ValueTrendChartProps) {
   );
 
   const makeOptions = useMemo(() => {
-    if (!hierarchy) return [];
+    if (!hierarchy) {
+      return [];
+    }
     const makes = new Set(Object.values(hierarchy.makes).flat());
     return [...makes]
       .sort((a, b) => a.localeCompare(b))
@@ -34,7 +36,9 @@ export function ValueTrendChart({ data, className }: ValueTrendChartProps) {
   }, [hierarchy]);
 
   const modelOptions = useMemo(() => {
-    if (!hierarchy || !selectedMake) return [];
+    if (!hierarchy || !selectedMake) {
+      return [];
+    }
     const makeSuffix = `-${selectedMake.toLowerCase()}`;
     const models = new Set(
       Object.entries(hierarchy.models)
@@ -60,7 +64,7 @@ export function ValueTrendChart({ data, className }: ValueTrendChartProps) {
         title="Price by Model Year"
         subtitle="Average market value trend"
         icon={<Activity className="h-4 w-4" />}
-        accent="from-amber-500/60 to-orange-500/60"
+        accent="from-[#19b8a5] to-[#8fb6cc]"
         isEmpty
         emptyTitle="No value trend data available"
         className={className}
@@ -75,7 +79,7 @@ export function ValueTrendChart({ data, className }: ValueTrendChartProps) {
         ? 'Updating price trend...'
         : `${chartData.length} model years · ${selectedModel ?? selectedMake ?? 'all vehicles'}`}
       icon={<Activity className="h-4 w-4" />}
-      accent="from-amber-500/60 to-orange-500/60"
+      accent="from-[#19b8a5] to-[#8fb6cc]"
       className={className}
       headerAction={
         <div className="flex items-center gap-2">
@@ -88,8 +92,8 @@ export function ValueTrendChart({ data, className }: ValueTrendChartProps) {
             }}
             options={makeOptions}
             placement="bottom-end"
-            className="h-8 w-40 rounded-lg border-amber-200 bg-background px-2.5 text-xs font-medium hover:border-amber-400 dark:border-amber-800"
-            dropdownClassName="border-amber-200 dark:border-amber-800"
+            className="h-8 w-36 rounded-[8px] border-0 bg-[#f4f8fb] px-2.5 text-[11px] font-semibold text-[#071936] shadow-none hover:bg-[#eaf2f6] focus-visible:ring-[#19b8a5]/30 sm:w-40"
+            dropdownClassName="border-[#dce8ee] bg-white"
           />
           <CustomSelect
             placeholder="All models"
@@ -98,13 +102,13 @@ export function ValueTrendChart({ data, className }: ValueTrendChartProps) {
             options={modelOptions}
             disabled={!selectedMake}
             placement="bottom-end"
-            className="h-8 w-44 rounded-lg border-amber-200 bg-background px-2.5 text-xs font-medium hover:border-amber-400 dark:border-amber-800"
-            dropdownClassName="border-amber-200 dark:border-amber-800"
+            className="h-8 w-36 rounded-[8px] border-0 bg-[#f4f8fb] px-2.5 text-[11px] font-semibold text-[#071936] shadow-none hover:bg-[#eaf2f6] focus-visible:ring-[#19b8a5]/30 sm:w-44"
+            dropdownClassName="border-[#dce8ee] bg-white"
           />
         </div>
       }
     >
-      <div className="h-[320px]">
+      <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={chartData}
@@ -112,40 +116,44 @@ export function ValueTrendChart({ data, className }: ValueTrendChartProps) {
           >
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.03} />
+                <stop offset="0%" stopColor="#19b8a5" stopOpacity={0.28} />
+                <stop offset="100%" stopColor="#19b8a5" stopOpacity={0.03} />
               </linearGradient>
             </defs>
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="hsl(var(--border))"
+              stroke="#eaf1f5"
               vertical={false}
             />
             <XAxis
               dataKey="year"
-              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+              tick={{ fill: '#8aa0ad', fontSize: 11, fontWeight: 600 }}
               tickLine={false}
-              axisLine={{ stroke: 'hsl(var(--border))' }}
+              axisLine={false}
               tickFormatter={(y: number) => String(y).slice(2)}
             />
             <YAxis
-              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+              tick={{ fill: '#8aa0ad', fontSize: 11, fontWeight: 600 }}
               tickLine={false}
-              axisLine={{ stroke: 'hsl(var(--border))' }}
+              axisLine={false}
               tickFormatter={compactNumber}
               width={60}
             />
             <Tooltip
               content={({ active, payload }) => {
-                if (!active || !payload?.length) return null;
+                if (!active || !payload?.length) {
+                  return null;
+                }
                 const d = payload[0]?.payload as PriceByYear | undefined;
-                if (!d) return null;
+                if (!d) {
+                  return null;
+                }
                 return (
                   <ChartTooltip
                     active
                     label={String(d.year)}
                     rows={[
-                      { label: 'Average', value: formatCurrency(d.averagePrice), color: '#f59e0b' },
+                      { label: 'Average', value: formatCurrency(d.averagePrice), color: '#19b8a5' },
                       { label: 'Median', value: formatCurrency(d.medianPrice) },
                       { label: 'Min', value: formatCurrency(d.minimumPrice) },
                       { label: 'Max', value: formatCurrency(d.maximumPrice) },
@@ -158,14 +166,14 @@ export function ValueTrendChart({ data, className }: ValueTrendChartProps) {
             <Area
               type="monotone"
               dataKey="averagePrice"
-              stroke="#f59e0b"
+              stroke="#19b8a5"
               strokeWidth={2.5}
               fill={`url(#${gradientId})`}
               dot={false}
               activeDot={{
                 r: 4,
-                fill: '#f59e0b',
-                stroke: 'hsl(var(--background))',
+                fill: '#19b8a5',
+                stroke: '#ffffff',
                 strokeWidth: 2,
               }}
             />

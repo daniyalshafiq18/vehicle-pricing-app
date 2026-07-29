@@ -221,13 +221,13 @@ export function CustomSelect({
       transition={{ duration: 0.12, ease: 'easeOut' }}
       style={dropdownStyle}
       className={cn(
-        'overflow-hidden rounded-xl border bg-popover shadow-xl backdrop-blur-sm',
+        'overflow-hidden rounded-[12px] border border-[#d9e2e8] bg-white shadow-[0_12px_28px_rgba(7,25,54,0.14)] backdrop-blur-sm dark:border-[#31545a] dark:bg-[#0c2530]',
         dropdownClassName,
       )}
     >
       {/* Search */}
       {searchable && options.length > 8 && (
-        <div className="relative border-b border-border p-2">
+        <div className="relative border-b border-[#e5e7eb] p-2 dark:border-[#31545a]">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
           <input
             ref={searchInputRef}
@@ -235,7 +235,7 @@ export function CustomSelect({
             value={search}
             onChange={(e) => { setSearch(e.target.value); setFocusedIndex(-1); }}
             placeholder="Search..."
-            className="w-full rounded-lg border border-input bg-background py-1.5 pl-8 pr-3 text-xs outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+            className="w-full rounded-[8px] border border-[#d9e2e8] bg-white py-1.5 pl-8 pr-3 text-xs text-[#071936] outline-none transition-colors placeholder:text-[#b8c5cc] focus:border-[#19b8a5]/60 focus:ring-1 focus:ring-[#19b8a5]/20 dark:border-[#31545a] dark:bg-[#071936] dark:text-white dark:placeholder:text-[#6f8d99]"
           />
           {search && (
             <button
@@ -275,10 +275,10 @@ export function CustomSelect({
                 className={cn(
                   'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-all',
                   isSelected
-                    ? 'bg-primary/10 text-primary font-medium'
+                    ? 'bg-[#ecfbf8] text-[#08766c] font-medium dark:bg-[#0f3f43] dark:text-[#19b8a5]'
                     : isFocused
-                      ? 'bg-accent/70 text-foreground'
-                      : 'text-foreground/80 hover:bg-accent/50 hover:text-foreground',
+                      ? 'bg-[#dff7f4] text-[#08766c] dark:bg-[#0f3f43] dark:text-[#19b8a5]'
+                      : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]',
                 )}
               >
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-border transition-all">
@@ -286,7 +286,7 @@ export function CustomSelect({
                     <motion.span
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="h-2 w-2 rounded-sm bg-primary"
+                      className="h-2 w-2 rounded-sm bg-[#19b8a5]"
                     />
                   )}
                 </span>
@@ -299,7 +299,7 @@ export function CustomSelect({
 
       {/* Selected count footer */}
       {value && (
-        <div className="border-t border-border px-3 py-2">
+        <div className="border-t border-[#e5e7eb] px-3 py-2 dark:border-[#31545a]">
           <button
             type="button"
             onClick={() => { onChange?.(undefined); setOpen(false); }}
@@ -322,11 +322,11 @@ export function CustomSelect({
         disabled={disabled}
         onClick={() => setOpen(!open)}
         className={cn(
-          'flex h-10 w-full items-center justify-between gap-2 rounded-xl border bg-card px-3 py-2 text-sm shadow-sm transition-all',
-          'border-input hover:border-primary/40',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+          'flex h-10 w-full items-center justify-between gap-2 rounded-[10px] border border-[#d9e2e8] bg-white px-3 py-2 text-sm text-[#071936] shadow-sm transition-all dark:border-[#31545a] dark:bg-[#0c2530] dark:text-white',
+          'hover:border-[#19b8a5]/50 hover:bg-[#f8fcfc] dark:hover:bg-[#0f3f43]',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#19b8a5]/25 focus-visible:ring-offset-1',
           'disabled:cursor-not-allowed disabled:opacity-50',
-          open && 'border-primary/50 ring-1 ring-primary/20',
+          open && 'border-[#19b8a5]/60 ring-1 ring-[#19b8a5]/20',
           className,
         )}
       >

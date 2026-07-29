@@ -8,19 +8,8 @@ import { formatCurrency, compactNumber } from '@utils';
 import type { VehicleCountByMake } from '@types';
 import { BarChart3 } from 'lucide-react';
 
-// ─── Unified brand-aligned palette ───────────────────────
-const COLORS = [
-  '#6366f1', // indigo-500 (brand primary)
-  '#14b8a6', // teal-500
-  '#f59e0b', // amber-500 (brand accent)
-  '#8b5cf6', // violet-500
-  '#06b6d4', // cyan-500
-  '#f97316', // orange-500
-  '#a855f7', // purple-500
-  '#10b981', // emerald-500
-  '#0ea5e9', // sky-500
-  '#ec4899', // pink-500
-];
+// ─── Warm Amber monochromatic palette ───────────────────
+const COLORS = ['#19b8a5', '#8fb6cc', '#d8e7ef', '#0b7f78', '#b8d2de', '#eaf2f6'];
 
 interface TopMakesChartProps {
   data: VehicleCountByMake[];
@@ -31,7 +20,7 @@ export function TopMakesChart({ data, className }: TopMakesChartProps) {
   const uid = useId();
   const sorted = [...data]
     .sort((a, b) => b.count - a.count)
-    .slice(0, 10);
+    .slice(0, 5);
 
   if (!sorted.length) {
     return (
@@ -39,7 +28,7 @@ export function TopMakesChart({ data, className }: TopMakesChartProps) {
         title="Top Makes"
         subtitle="Manufacturers by vehicle count"
         icon={<BarChart3 className="h-4 w-4" />}
-        accent="from-indigo-500/60 to-violet-500/60"
+        accent="from-[#19b8a5] to-[#8fb6cc]"
         isEmpty
         emptyTitle="No make data available"
         className={className}
@@ -54,16 +43,16 @@ export function TopMakesChart({ data, className }: TopMakesChartProps) {
       title="Top Makes"
       subtitle={`${sorted.length} manufacturers · ${compactNumber(totalVehicles)} vehicles`}
       icon={<BarChart3 className="h-4 w-4" />}
-      accent="from-blue-500/60 to-violet-500/60"
+      accent="from-[#19b8a5] to-[#8fb6cc]"
       className={className}
     >
-      <div className="h-[320px]">
+      <div className="h-[260px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={sorted}
             layout="vertical"
-            margin={{ top: 4, right: 16, bottom: 4, left: 0 }}
-            barCategoryGap="25%"
+            margin={{ top: 4, right: 14, bottom: 4, left: 0 }}
+            barCategoryGap="28%"
             barGap={0}
           >
             <defs>
@@ -76,30 +65,34 @@ export function TopMakesChart({ data, className }: TopMakesChartProps) {
             </defs>
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="hsl(var(--border))"
+              stroke="#eaf1f5"
               horizontal={false}
             />
             <XAxis
               type="number"
-              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+              tick={{ fill: '#8aa0ad', fontSize: 11, fontWeight: 600 }}
               tickLine={false}
-              axisLine={{ stroke: 'hsl(var(--border))' }}
+              axisLine={false}
               tickFormatter={compactNumber}
             />
             <YAxis
               type="category"
               dataKey="make"
-              width={150}
-              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+              width={122}
+              tick={{ fill: '#647887', fontSize: 11, fontWeight: 600 }}
               tickLine={false}
               axisLine={false}
             />
             <Tooltip
-              cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
+              cursor={{ fill: '#eef5f8', opacity: 0.8 }}
               content={({ active, payload }) => {
-                if (!active || !payload?.length) return null;
+                if (!active || !payload?.length) {
+                  return null;
+                }
                 const d = payload[0]?.payload as VehicleCountByMake | undefined;
-                if (!d) return null;
+                if (!d) {
+                  return null;
+                }
                 const idx = sorted.indexOf(d);
                 return (
                   <ChartTooltip
@@ -116,8 +109,8 @@ export function TopMakesChart({ data, className }: TopMakesChartProps) {
             />
             <Bar
               dataKey="count"
-              radius={[0, 3, 3, 0]}
-              maxBarSize={24}
+              radius={[0, 7, 7, 0]}
+              maxBarSize={22}
             >
               {sorted.map((entry, i) => (
                 <Cell

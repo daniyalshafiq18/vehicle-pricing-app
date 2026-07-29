@@ -10,8 +10,8 @@ import {
   ClipboardList,
   SearchX,
   DollarSign,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
   LogOut,
   Search,
 } from 'lucide-react';
@@ -42,7 +42,7 @@ const pageTitles: Record<string, string> = {
 
 /** Shared notification badge style. */
 const badgeClass = (collapsed: boolean) => cn(
-  'ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-white',
+  'ml-auto flex h-4 min-w-[16px] items-center justify-center rounded-full bg-slate-900 px-1.5 text-[9px] font-semibold leading-none text-white',
   collapsed && 'hidden',
 );
 
@@ -59,7 +59,7 @@ function AdminLayoutContent() {
   const [hovered, setHovered] = useState(false);
 
   const collapsed = isSidebarCollapsed && !hovered;
-  const actualWidth = collapsed ? 'w-16' : 'w-64';
+  const actualWidth = collapsed ? 'w-14' : 'w-56';
 
   const currentPageTitle = pageTitles[location.pathname] ?? 'Admin';
 
@@ -76,31 +76,59 @@ function AdminLayoutContent() {
   );
 
   return (
-    <div className="flex h-screen overflow-hidden bg-muted/30">
+    <div className="flex h-screen overflow-hidden bg-[#e5e7eb] dark:bg-[#061821]">
       {/* Sidebar */}
       <aside
         className={cn(
-          'relative flex flex-col border-r bg-card transition-all duration-300 shrink-0',
+          'relative flex shrink-0 flex-col border-r border-slate-100 bg-white text-slate-950 shadow-[1px_0_0_rgba(15,23,42,0.02)] transition-all duration-300',
           actualWidth,
         )}
         onMouseEnter={() => isSidebarCollapsed && setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
         {/* Logo */}
-        <div className="flex h-16 items-center gap-3 border-b px-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-            <Car className="h-5 w-5 text-primary" />
+        <div className={cn(
+          'flex h-14 items-center gap-2.5 px-3',
+          collapsed && 'justify-center px-0',
+        )}>
+          <div className={cn(
+            'flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#0f8f7c] text-white shadow-sm transition-all duration-200',
+            collapsed && 'hidden',
+          )}>
+            <Car className="h-3.5 w-3.5" strokeWidth={2.5} />
           </div>
           <div className={cn(
             'min-w-0 transition-opacity duration-200',
             collapsed && 'hidden',
           )}>
-            <p className="truncate text-sm font-bold text-foreground">Admin Center</p>
+            <p className="truncate text-[15px] font-bold leading-none tracking-normal text-slate-950">Admin Center</p>
           </div>
+          <button
+            onClick={toggleSidebar}
+            className={cn(
+              'ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border border-[#d9e2e8] bg-white text-[#6f8d99] shadow-[0_1px_3px_rgba(7,25,54,0.08)] transition-colors hover:border-[#b7cbd5] hover:bg-[#ecfbf8] hover:text-[#08766c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#19b8a5]/30',
+              'dark:border-[#31545a] dark:bg-[#0c2530] dark:text-[#8fb6cc] dark:hover:border-[#19b8a5]/50 dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]',
+              collapsed && 'ml-0',
+            )}
+            title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {isSidebarCollapsed ? (
+              <PanelLeftOpen className="h-3 w-3" strokeWidth={2} />
+            ) : (
+              <PanelLeftClose className="h-3 w-3" strokeWidth={2} />
+            )}
+          </button>
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 space-y-1 overflow-y-hidden p-3">
+        <nav className="flex-1 overflow-y-hidden px-2 pb-2 pt-2">
+          <div className={cn(
+            'mb-1 px-2 text-[9px] font-semibold uppercase leading-5 tracking-normal text-slate-400',
+            collapsed && 'sr-only',
+          )}>
+            Main Menu
+          </div>
           {sidebarItems.map((item) => {
             const isActive =
               item.path === '/admin'
@@ -111,25 +139,23 @@ function AdminLayoutContent() {
                 key={item.path}
                 onClick={() => handleNavigate(item.path)}
                 className={cn(
-                  'group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                  'group relative mb-1 flex h-9 w-full items-center gap-2.5 rounded-[3px] px-2 text-left text-[11px] font-semibold leading-none transition-colors duration-150',
+                  collapsed && 'justify-center px-0',
                   isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                    ? 'bg-slate-100 text-slate-950'
+                    : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950',
                 )}
-                title={isSidebarCollapsed ? item.label : undefined}
+                title={collapsed ? item.label : undefined}
               >
-                {/* Active indicator bar */}
-                {isActive && (
-                  <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
-                )}
                 <item.icon
                   className={cn(
-                    'h-5 w-5 shrink-0 transition-transform duration-200',
-                    !isActive && 'hover:scale-110',
+                    'h-4 w-4 shrink-0 transition-colors duration-150',
+                    isActive ? 'text-slate-800' : 'text-slate-400 group-hover:text-slate-600',
                   )}
+                  strokeWidth={1.8}
                 />
                 <span className={cn(
-                  'text-foreground transition-opacity duration-200',
+                  'truncate transition-opacity duration-200',
                   collapsed && 'hidden',
                 )}>{item.label}</span>
                 {(item.label === 'Queries' && pendingCount > 0) && (
@@ -153,57 +179,39 @@ function AdminLayoutContent() {
         </nav>
 
         {/* Bottom */}
-        <div className="border-t p-3">
+        <div className="mt-auto border-t border-slate-100 p-2">
           <button
             onClick={() => navigate('/')}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent/50 hover:text-foreground"
-            title={isSidebarCollapsed ? 'Back to site' : undefined}
+            className={cn(
+              'flex h-9 w-full items-center gap-2.5 rounded-[3px] px-2 text-[11px] font-semibold leading-none text-slate-600 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-950',
+              collapsed && 'justify-center px-0',
+            )}
+            title={collapsed ? 'Back to site' : undefined}
           >
-            <LogOut className="h-5 w-5 shrink-0" />
+            <LogOut className="h-4 w-4 shrink-0 text-slate-400" strokeWidth={1.8} />
             <span className={cn(
-              'transition-opacity duration-200',
+              'truncate transition-opacity duration-200',
               collapsed && 'hidden',
             )}>Back to site</span>
           </button>
         </div>
-
-        {/* Collapse toggle */}
-        <button
-          onClick={toggleSidebar}
-          className="absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full border bg-background text-muted-foreground shadow-sm transition-colors hover:text-foreground"
-        >
-          {isSidebarCollapsed ? (
-            <ChevronRight className="h-3 w-3" />
-          ) : (
-            <ChevronLeft className="h-3 w-3" />
-          )}
-        </button>
       </aside>
 
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="flex h-16 shrink-0 items-center justify-between border-b bg-card px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-              <Car className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-base font-semibold text-foreground">{currentPageTitle}</h1>
-              <p className="text-xs text-muted-foreground/60">
-                Vehicle Pricing Intelligence Platform
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-[#d9e2e8] bg-white px-6 dark:border-[#17383d] dark:bg-[#071936]">
+          <div className="flex min-w-0 items-center">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aabb5]" />
               <input
                 type="text"
                 placeholder="Search..."
-                className="h-9 w-48 rounded-lg border bg-background/50 pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-primary/50 focus:bg-background"
+                className="h-10 w-[260px] rounded-[10px] border border-[#d9e2e8] bg-white pl-10 pr-3 text-sm text-[#071936] outline-none transition-colors placeholder:text-[#b8c5cc] hover:border-[#b7cbd5] focus:border-[#19b8a5]/60 focus:bg-white focus:ring-2 focus:ring-[#19b8a5]/15 dark:border-[#31545a] dark:bg-[#0c2530] dark:text-white dark:placeholder:text-[#6f8d99] dark:hover:border-[#19b8a5]/50 dark:focus:bg-[#0c2530] sm:w-[360px] lg:w-[500px]"
               />
             </div>
+          </div>
+          <div className="flex items-center gap-3">
             {/* Unified Notification Bell Dropdown */}
             <NotificationDropdown />
             <ThemeSwitcher />
@@ -211,7 +219,7 @@ function AdminLayoutContent() {
         </header>
 
         {/* Page content */}
-        <div className="flex-1 overflow-y-auto p-6 lg:p-8">
+        <div className="flex-1 overflow-y-auto bg-[#e5e7eb] p-6 lg:p-8 dark:bg-[#061821]">
           <Outlet />
         </div>
       </div>

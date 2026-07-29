@@ -8,10 +8,18 @@ import { formatCurrency, formatNumber } from '@utils';
 import type { VehicleCountByMake, PriceDistribution, PriceByYear } from '@types';
 import type { ScatterDataPoint, AgeDistribution } from '@types';
 
-// ─── Color Palette ─────────────────────────────────────
+// ─── Indigo & Amber palette ─────────────────────────────
 const COLORS = [
-  'hsl(var(--primary))', '#F59E0B', '#10B981', '#8B5CF6', '#EC4899',
-  '#06B6D4', '#F97316', '#14B8A6', '#A855F7', '#E11D48',
+  '#19b8a5',
+  '#8fb6cc',
+  '#d8e7ef',
+  '#0b7f78',
+  '#b8d2de',
+  '#eaf2f6',
+  '#08766c',
+  '#9ac8d9',
+  '#31545a',
+  '#dff7f4',
 ];
 const CHART_HEIGHT = 280;
 
@@ -70,7 +78,7 @@ export const TopMakesChart = memo(function TopMakesChart({ data, onBarClick, hei
         />
         <Bar
           dataKey="count"
-          fill="hsl(var(--primary))"
+          fill="#19b8a5"
           radius={[0, 4, 4, 0]}
           cursor="pointer"
           onClick={(entry: any) => onBarClick?.(entry.make)}
@@ -105,7 +113,7 @@ export const PriceDistributionChart = memo(function PriceDistributionChart({ dat
         />
         <Bar
           dataKey="count"
-          fill="hsl(var(--primary))"
+          fill="#19b8a5"
           radius={[4, 4, 0, 0]}
           cursor="pointer"
           onClick={(entry: any) => onBarClick?.(entry.range)}
@@ -133,8 +141,8 @@ export const ValueTrendChart = memo(function ValueTrendChart({ data, onDotClick,
       <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="valueTrendGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
-            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+            <stop offset="5%" stopColor="#19b8a5" stopOpacity={0.2} />
+            <stop offset="95%" stopColor="#19b8a5" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -147,7 +155,7 @@ export const ValueTrendChart = memo(function ValueTrendChart({ data, onDotClick,
         <Area
           type="monotone"
           dataKey="averagePrice"
-          stroke="hsl(var(--primary))"
+          stroke="#19b8a5"
           strokeWidth={2}
           fill="url(#valueTrendGrad)"
           activeDot={{ r: 6, cursor: 'pointer', onClick: (_: any, payload: any) => onDotClick?.(payload.payload.year) }}
@@ -256,7 +264,7 @@ export const PerformanceScatterChart = memo(function PerformanceScatterChart({ d
         />
         <Scatter
           data={sampled}
-          fill="hsl(var(--primary))"
+          fill="#19b8a5"
           opacity={0.5}
           cursor="pointer"
           onClick={(entry: any) => onDotClick?.(entry.vehicleId)}
@@ -291,7 +299,7 @@ export const BodyTypeBarChart = memo(function BodyTypeBarChart({
           contentStyle={tooltipStyle}
           formatter={(value: number, name: string) => [name === 'count' ? formatNumber(value) : `${value}%`, name === 'count' ? 'Count' : name]}
         />
-        <Bar dataKey="count" fill="#10B981" radius={[0, 4, 4, 0]} barSize={16} />
+        <Bar dataKey="count" fill="#19b8a5" radius={[0, 4, 4, 0]} barSize={16} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -315,8 +323,8 @@ export const AgeDistributionChart = memo(function AgeDistributionChart({ data, o
       <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="ageDistGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#06B6D4" stopOpacity={0.25} />
-            <stop offset="95%" stopColor="#06B6D4" stopOpacity={0} />
+            <stop offset="5%" stopColor="hsl(var(--accent))" stopOpacity={0.25} />
+            <stop offset="95%" stopColor="hsl(var(--accent))" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -329,7 +337,7 @@ export const AgeDistributionChart = memo(function AgeDistributionChart({ data, o
         <Area
           type="monotone"
           dataKey="count"
-          stroke="#06B6D4"
+          stroke="hsl(var(--accent))"
           strokeWidth={2}
           fill="url(#ageDistGrad)"
           activeDot={{ r: 5, cursor: 'pointer', onClick: (_: any, payload: any) => onDotClick?.(payload.payload.year) }}
@@ -374,9 +382,9 @@ export const VolatilityBoxChart = memo(function VolatilityBoxChart({
           labelFormatter={(label: string) => `Category: ${label}`}
         />
         {/* Grouped bars showing min, avg, max */}
-        <Bar dataKey="min" fill="#8B5CF6" opacity={0.7} radius={[0, 4, 4, 0]} barSize={8} name="Min Price" />
-        <Bar dataKey="median" fill="#F59E0B" radius={[0, 4, 4, 0]} barSize={8} name="Median Price" />
-        <Bar dataKey="max" fill="#EC4899" opacity={0.7} radius={[0, 4, 4, 0]} barSize={8} name="Max Price" />
+        <Bar dataKey="min" fill="#19b8a5" opacity={0.7} radius={[0, 4, 4, 0]} barSize={8} name="Min Price" />
+        <Bar dataKey="median" fill="#8fb6cc" radius={[0, 4, 4, 0]} barSize={8} name="Median Price" />
+        <Bar dataKey="max" fill="#0b7f78" opacity={0.7} radius={[0, 4, 4, 0]} barSize={8} name="Max Price" />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -408,7 +416,7 @@ export const TopModelsChart = memo(function TopModelsChart({ data, onBarClick, h
         />
         <Bar
           dataKey="count"
-          fill="#F59E0B"
+          fill="#19b8a5"
           radius={[0, 4, 4, 0]}
           barSize={16}
           cursor="pointer"

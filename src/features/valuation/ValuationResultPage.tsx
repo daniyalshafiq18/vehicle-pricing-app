@@ -73,10 +73,10 @@ export function ValuationResultPage() {
 
         {/* Price */}
         <div className="grid gap-6 md:grid-cols-3">
-          <Card className="border-primary/20 bg-primary/5">
+          <Card className="border-[#bfe9e2] bg-[#ecfbf8] dark:border-[#31545a] dark:bg-[#0f3f43]">
             <CardContent className="p-6 text-center">
               <p className="mb-1 text-sm text-muted-foreground">Average Price</p>
-              <p className="text-3xl font-bold text-primary">
+              <p className="text-3xl font-bold text-[#08766c] dark:text-[#19b8a5]">
                 {formatCurrency(pricing.averagePrice)}
               </p>
             </CardContent>
@@ -116,7 +116,7 @@ export function ValuationResultPage() {
                 { label: 'Category', value: vehicle.category },
                 { label: 'Seats', value: `${vehicle.seats}` },
               ].map((spec) => (
-                <div key={spec.label} className="rounded-lg bg-muted/50 p-3">
+                <div key={spec.label} className="rounded-lg bg-[#f4f8fb] p-3 transition-colors hover:bg-[#ecfbf8] dark:bg-[#071936] dark:hover:bg-[#0f3f43]">
                   <p className="text-xs text-muted-foreground">{spec.label}</p>
                   <p className="font-semibold">{spec.value}</p>
                 </div>
@@ -130,7 +130,7 @@ export function ValuationResultPage() {
           <Card>
             <CardContent className="p-6">
               <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-                <TrendingUp className="h-5 w-5 text-primary" />
+                <TrendingUp className="h-5 w-5 text-[#19b8a5]" />
                 Market Insights
               </h3>
               <div className="space-y-3">

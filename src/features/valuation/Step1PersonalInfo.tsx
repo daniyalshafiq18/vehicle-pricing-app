@@ -63,10 +63,10 @@ export function Step1PersonalInfo() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-2xl text-[#071936] dark:text-white">
       <div className="mb-10 text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Personal Information</h1>
-        <p className="mt-2 text-muted-foreground">
+        <h1 className="text-3xl font-bold tracking-tight text-[#071936] dark:text-white">Personal Information</h1>
+        <p className="mt-2 text-[#647887] dark:text-[#b8cbd4]">
           Enter your details to receive the complete valuation report.
         </p>
       </div>
@@ -115,17 +115,17 @@ export function Step1PersonalInfo() {
               {...register('email')}
             />
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label className="text-sm font-medium text-[#071936] dark:text-white">
                 Phone
                 <span className="ml-0.5 text-red-500">*</span>
               </label>
               <div className={cn(
-                'flex h-12 overflow-hidden rounded-xl border shadow-sm transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-ring',
+                'flex h-12 overflow-hidden rounded-xl border shadow-sm transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-[#19b8a5]/25',
                 errors.phone
                   ? 'border-destructive focus-within:ring-destructive'
                   : phoneTouched && !phoneValue
                     ? 'border-red-300 focus-within:ring-red-500'
-                    : 'border-input',
+                    : 'border-[#d9e2e8] focus-within:border-[#19b8a5]/60',
               )}>
                 <div className="flex shrink-0 items-center bg-muted/30 px-4 text-sm font-semibold text-foreground">
                   +971
@@ -134,7 +134,7 @@ export function Step1PersonalInfo() {
                   type="tel"
                   placeholder="50 123 4567"
                   required
-                  className="h-full w-full bg-transparent px-4 text-sm outline-none"
+                  className="h-full w-full bg-transparent px-4 text-sm text-[#071936] outline-none placeholder:text-[#8fa3ad] dark:text-white dark:placeholder:text-[#6f8d99]"
                   value={phoneSuffix}
                   onChange={(e) => {
                     const digits = e.target.value.replace(/\D/g, '');
@@ -164,12 +164,12 @@ export function Step1PersonalInfo() {
           </div>
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label className="text-sm font-medium text-[#071936] dark:text-white">
                 Country
                 <span className="ml-0.5 text-red-500">*</span>
               </label>
               <input type="hidden" value="United Arab Emirates" {...register('country')} />
-              <div className="flex h-12 items-center gap-2.5 rounded-xl border border-input bg-muted/30 px-4 text-sm text-muted-foreground">
+              <div className="flex h-12 items-center gap-2.5 rounded-xl border border-[#d9e2e8] bg-muted/30 px-4 text-sm text-muted-foreground dark:border-[#31545a]">
                 <span className="flex items-center text-lg leading-none">
                   <svg viewBox="0 0 24 16" className="h-4 w-6 rounded-sm shadow-sm">
                     <rect x="0" y="0" width="24" height="16" fill="#fff" />
@@ -182,7 +182,7 @@ export function Step1PersonalInfo() {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label className="text-sm font-medium text-[#071936] dark:text-white">
                 City
                 <span className="ml-0.5 text-red-500">*</span>
               </label>
@@ -192,12 +192,12 @@ export function Step1PersonalInfo() {
                   onClick={() => { setCityOpen(!cityOpen); setCityTouched(true); }}
                   onBlur={() => setCityTouched(true)}
                   className={cn(
-                    'flex h-12 w-full items-center rounded-xl border bg-background px-4 text-sm shadow-sm transition-all duration-200 hover:border-muted-foreground/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer',
+                    'flex h-12 w-full cursor-pointer items-center rounded-xl border bg-background px-4 text-sm text-[#071936] shadow-sm transition-all duration-200 hover:border-[#19b8a5]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#19b8a5]/25 dark:text-white',
                     errors.city
                       ? 'border-destructive focus-visible:ring-destructive'
                       : cityTouched && !selectedCity
                         ? 'border-red-300 focus-visible:ring-red-500'
-                        : 'border-input',
+                        : 'border-[#d9e2e8] dark:border-[#31545a]',
                   )}
                 >
                   {selectedCity ? (
@@ -214,7 +214,7 @@ export function Step1PersonalInfo() {
                 </button>
 
                 {cityOpen && (
-                  <div className="absolute left-0 right-0 top-full z-50 mt-1.5 overflow-hidden rounded-xl border border-border/50 bg-background shadow-xl shadow-black/5">
+                  <div className="absolute left-0 right-0 top-full z-50 mt-1.5 overflow-hidden rounded-xl border border-[#d9e2e8] bg-background shadow-xl shadow-black/5 dark:border-[#31545a]">
                     {cities.map((c) => {
                       const isSelected = selectedCity === c;
                       return (
@@ -228,14 +228,14 @@ export function Step1PersonalInfo() {
                           }}
                           className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
                             isSelected
-                              ? 'bg-primary/5 text-primary font-medium'
-                              : 'text-foreground hover:bg-muted/50'
+                              ? 'bg-[#ecfbf8] text-[#08766c] font-medium dark:bg-[#0f3f43] dark:text-[#19b8a5]'
+                              : 'text-foreground hover:bg-[#dff7f4] hover:text-[#08766c] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]'
                           }`}
                         >
-                          <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${isSelected ? 'bg-primary' : 'bg-transparent'}`} />
+                          <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${isSelected ? 'bg-[#19b8a5]' : 'bg-transparent'}`} />
                           {c}
                           {isSelected && (
-                            <span className="ml-auto text-xs text-primary">Selected</span>
+                            <span className="ml-auto text-xs text-[#08766c] dark:text-[#19b8a5]">Selected</span>
                           )}
                         </button>
                       );
@@ -259,13 +259,13 @@ export function Step1PersonalInfo() {
             <h2 className="text-sm font-semibold tracking-wider text-slate-800 dark:text-slate-200">Agreement</h2>
             <div className="h-px flex-1 bg-border/50" />
           </div>
-          <label className="flex cursor-pointer items-start gap-4 rounded-xl border border-border/40 bg-muted/10 p-5 transition-colors hover:bg-muted/20 has-[:checked]:border-primary/30 has-[:checked]:bg-primary/5">
+          <label className="flex cursor-pointer items-start gap-4 rounded-xl border border-[#d9e2e8] bg-muted/10 p-5 transition-colors hover:border-[#19b8a5]/35 hover:bg-[#ecfbf8]/60 has-[:checked]:border-[#19b8a5]/40 has-[:checked]:bg-[#ecfbf8] dark:border-[#31545a] dark:hover:bg-[#0f3f43] dark:has-[:checked]:bg-[#0f3f43]">
             <input
               type="checkbox"
-              className="mt-0.5 h-5 w-5 rounded border-input text-primary focus:ring-primary"
+              className="mt-0.5 h-5 w-5 rounded border-[#d9e2e8] text-[#19b8a5] focus:ring-[#19b8a5]"
               {...register('consent')}
             />
-            <div className="flex-1 text-sm leading-relaxed text-muted-foreground">
+            <div className="flex-1 text-sm leading-relaxed text-[#647887] dark:text-[#b8cbd4]">
               I consent to the processing of my personal data for the purpose of vehicle valuation and agree to the terms of service.
             </div>
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground/30" />

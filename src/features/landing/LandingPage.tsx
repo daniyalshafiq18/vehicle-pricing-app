@@ -72,8 +72,8 @@ export function LandingPage() {
       {/* ─── Hero Section ─────────────────────────── */}
       <section className="relative bg-grid-glow">
         {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-background" />
-        <div className="absolute left-1/2 top-0 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl animate-float" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#19b8a5]/8 via-transparent to-background" />
+        <div className="absolute left-1/2 top-0 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-[#19b8a5]/8 blur-3xl animate-float" />
 
         <div className="relative mx-auto w-full max-w-[1536px] min-[2560px]:max-w-[90%] px-4 py-20 md:py-32">
           <motion.div
@@ -82,8 +82,8 @@ export function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <span className="mb-6 inline-flex animate-bounce-gentle items-center gap-2 rounded-full border border-violet-800 bg-violet-700 px-4 py-1.5 text-sm font-semibold tracking-wide text-white shadow-md shadow-violet-500/20 dark:border-violet-500 dark:bg-violet-600 dark:text-white">
-              <Zap className="h-3.5 w-3.5 text-violet-100" />
+            <span className="mb-6 inline-flex animate-bounce-gentle items-center gap-2 rounded-full border border-[#bfe9e2] bg-[#19b8a5] px-4 py-1.5 text-sm font-semibold tracking-wide text-white shadow-md shadow-[rgba(25,184,165,0.22)] dark:border-[#31545a] dark:bg-[#19b8a5]">
+              <Zap className="h-3.5 w-3.5 text-[#ecfbf8]" />
               UAE Vehicle Pricing Intelligence
             </span>
 
@@ -100,7 +100,7 @@ export function LandingPage() {
             </p>
 
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <Button asChild variant="gradient" size="xl" className="group shadow-xl shadow-primary/20">
+              <Button asChild variant="gradient" size="xl" className="group shadow-xl shadow-[rgba(25,184,165,0.22)]">
                 <Link to="/valuation">
                   Start Valuation
                   <ArrowRight className="ml-2 h-5 w-5 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110" />
@@ -131,10 +131,10 @@ export function LandingPage() {
               <motion.div
                 key={stat.label}
                 variants={fadeUp}
-                className="interactive-card group border-slate-100 bg-white/90 p-6 dark:border-slate-800 dark:bg-slate-900/90"
+                className="interactive-card group border-[#d9e2e8] bg-white/90 p-6 dark:border-[#31545a] dark:bg-[#0c2530]/90"
               >
-                <stat.icon className="mb-3 h-8 w-8 text-primary transition-all duration-300 group-hover:scale-110 group-hover:text-accent" />
-                <p className="text-3xl font-bold text-slate-800 dark:text-white transition-colors duration-300 group-hover:text-primary">
+                <stat.icon className="mb-3 h-8 w-8 text-[#19b8a5] transition-all duration-300 group-hover:scale-110 group-hover:text-[#08766c] dark:group-hover:text-[#8fb6cc]" />
+                <p className="text-3xl font-bold text-slate-800 transition-colors duration-300 group-hover:text-[#08766c] dark:text-white dark:group-hover:text-[#19b8a5]">
                   {stat.value}
                 </p>
                 <p className="text-sm text-muted-foreground dark:text-slate-400">{stat.label}</p>
@@ -145,7 +145,7 @@ export function LandingPage() {
       </section>
 
       {/* ─── How It Works ────────────────────────── */}
-      <section className="border-t bg-[#FCF8F7] dark:bg-slate-950">
+      <section className="border-t border-[#d9e2e8] bg-[#f3f7f7] dark:border-[#31545a] dark:bg-[#061821]">
         <div className="mx-auto w-full max-w-[1536px] min-[2560px]:max-w-[90%] px-4 py-20">
           <motion.div className="text-center" {...fadeUp}>
             <h2 className="mb-2 text-3xl font-bold text-slate-900 dark:text-white md:text-4xl">
@@ -183,15 +183,15 @@ export function LandingPage() {
                 initial="initial"
                 whileInView="whileInView"
                 viewport={{ once: true }}
-                className="interactive-card group border-slate-100 bg-white/90 p-8 dark:border-slate-800 dark:bg-slate-900/90"
+                className="interactive-card group border-[#d9e2e8] bg-white/90 p-8 dark:border-[#31545a] dark:bg-[#0c2530]/90"
               >
                 <div className="mb-4 flex items-center gap-3">
-                  <span className="text-4xl font-bold text-primary/20 transition-all duration-300 group-hover:text-accent/40 group-hover:scale-110">
+                  <span className="text-4xl font-bold text-[#19b8a5]/25 transition-all duration-300 group-hover:scale-110 group-hover:text-[#19b8a5]/45">
                     {item.step}
                   </span>
-                  <item.icon className="h-6 w-6 text-primary transition-all duration-300 group-hover:text-accent group-hover:rotate-[-8deg]" />
+                  <item.icon className="h-6 w-6 text-[#19b8a5] transition-all duration-300 group-hover:rotate-[-8deg] group-hover:text-[#08766c] dark:group-hover:text-[#8fb6cc]" />
                 </div>
-                <h3 className="mb-2 text-xl font-semibold text-slate-800 dark:text-slate-100 group-hover:text-primary transition-colors duration-300">
+                <h3 className="mb-2 text-xl font-semibold text-slate-800 transition-colors duration-300 group-hover:text-[#08766c] dark:text-slate-100 dark:group-hover:text-[#19b8a5]">
                   {item.title}
                 </h3>
                 <p className="text-sm text-muted-foreground dark:text-slate-400">{item.desc}</p>
@@ -228,12 +228,12 @@ export function LandingPage() {
                 initial="initial"
                 whileInView="whileInView"
                 viewport={{ once: true }}
-                className="interactive-card group border-slate-100 bg-white/90 p-6 dark:border-slate-800 dark:bg-slate-900/90"
+                className="interactive-card group border-[#d9e2e8] bg-white/90 p-6 dark:border-[#31545a] dark:bg-[#0c2530]/90"
               >
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary transition-all duration-300 group-hover:bg-accent/20 group-hover:text-accent group-hover:scale-110 group-hover:rotate-3">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-[#ecfbf8] text-[#19b8a5] transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:bg-[#dff7f4] group-hover:text-[#08766c] dark:bg-[#0f3f43] dark:group-hover:text-[#8fb6cc]">
                   <feature.icon className="h-6 w-6 transition-transform duration-300 group-hover:scale-110" />
                 </div>
-                <h3 className="mb-2 text-lg font-semibold text-slate-800 dark:text-slate-100 transition-colors duration-300 group-hover:text-primary">{feature.title}</h3>
+                <h3 className="mb-2 text-lg font-semibold text-slate-800 transition-colors duration-300 group-hover:text-[#08766c] dark:text-slate-100 dark:group-hover:text-[#19b8a5]">{feature.title}</h3>
                 <p className="text-sm text-muted-foreground dark:text-slate-400">{feature.desc}</p>
               </motion.div>
             ))}
@@ -242,8 +242,8 @@ export function LandingPage() {
       </section>
 
       {/* ─── CTA ─────────────────────────────────── */}
-      <section className="relative border-t bg-[#FCF8F7] dark:bg-slate-950 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 animate-gradient-shift bg-[length:200%_100%]" />
+      <section className="relative overflow-hidden border-t border-[#d9e2e8] bg-[#f3f7f7] dark:border-[#31545a] dark:bg-[#061821]">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#19b8a5]/8 via-[#8fb6cc]/8 to-[#19b8a5]/8 animate-gradient-shift bg-[length:200%_100%]" />
         <div className="relative mx-auto w-full max-w-[1536px] min-[2560px]:max-w-[90%] px-4 py-20">
           <motion.div
             className="mx-auto max-w-3xl text-center"
@@ -256,7 +256,7 @@ export function LandingPage() {
             <p className="mb-8 text-lg text-muted-foreground dark:text-slate-300">
               Join thousands of users who trust us for accurate vehicle valuations.
             </p>
-            <Button asChild variant="gradient" size="xl" className="group shadow-xl shadow-primary/20">
+            <Button asChild variant="gradient" size="xl" className="group shadow-xl shadow-[rgba(25,184,165,0.22)]">
               <Link to="/valuation">
                 Start Your Valuation
                 <ArrowRight className="ml-2 h-5 w-5 transition-all duration-300 group-hover:translate-x-1 group-hover:scale-110" />

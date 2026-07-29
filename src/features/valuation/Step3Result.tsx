@@ -166,8 +166,8 @@ export function Step3Result() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center"
           >
-            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-accent/10">
-              <SearchX className="h-10 w-10 text-accent-700 dark:text-accent-600" />
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#ecfbf8] dark:bg-[#0f3f43]">
+              <SearchX className="h-10 w-10 text-[#19b8a5]" />
             </div>
             <h2 className="mb-2 text-lg font-bold tracking-tight">Vehicle Not Found</h2>
             <p className="mb-1 text-muted-foreground">
@@ -178,7 +178,7 @@ export function Step3Result() {
             </p>
 
             {/* Summary card */}
-            <Card className="mb-8 border-accent/20 bg-accent/5">
+            <Card className="mb-8 border-[#bfe9e2] bg-[#ecfbf8] dark:border-[#31545a] dark:bg-[#0f3f43]">
               <CardContent className="p-5">
                 <div className="grid grid-cols-2 gap-3 text-left">
                   {[
@@ -274,10 +274,10 @@ export function Step3Result() {
       </div>
 
       {/* Price Range */}
-      <Card className="border-primary/20 bg-primary/5">
+      <Card className="border-[#bfe9e2] bg-[#ecfbf8] dark:border-[#31545a] dark:bg-[#0f3f43]">
         <CardContent className="p-6 text-center">
           <p className="mb-1 text-sm text-muted-foreground">Market Price Range</p>
-          <p className="text-3xl font-bold text-primary">
+          <p className="text-3xl font-bold text-[#08766c] dark:text-[#19b8a5]">
             {formatCurrency(pricing.minimumPrice)} — {formatCurrency(pricing.maximumPrice)}
           </p>
         </CardContent>
@@ -287,7 +287,7 @@ export function Step3Result() {
       <Card>
         <CardContent className="p-6">
           <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-            <Car className="h-5 w-5 text-primary" />
+            <Car className="h-5 w-5 text-[#19b8a5]" />
             Vehicle Specifications
           </h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
@@ -307,7 +307,7 @@ export function Step3Result() {
               return (
                 <div
                   key={spec.label}
-                  className="rounded-xl bg-muted/40 p-4 transition-colors hover:bg-muted/60"
+                  className="rounded-xl bg-[#f4f8fb] p-4 transition-colors hover:bg-[#ecfbf8] dark:bg-[#071936] dark:hover:bg-[#0f3f43]"
                 >
                   <div className="mb-2 flex items-center gap-2 text-muted-foreground">
                     <Icon className="h-4 w-4" />
@@ -326,7 +326,7 @@ export function Step3Result() {
         <Card>
           <CardContent className="p-6">
             <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-              <TrendingUp className="h-5 w-5 text-primary" />
+              <TrendingUp className="h-5 w-5 text-[#19b8a5]" />
               Market Insights
             </h3>
             <div className="space-y-3">
@@ -341,7 +341,7 @@ export function Step3Result() {
                         ? 'bg-success/10 text-success'
                         : insight.severity === 'negative'
                           ? 'bg-destructive/10 text-destructive'
-                          : 'bg-primary/10 text-primary'
+                          : 'bg-[#ecfbf8] text-[#08766c] dark:bg-[#0f3f43] dark:text-[#19b8a5]'
                     }`}
                   >
                     {insight.severity === 'positive' ? (

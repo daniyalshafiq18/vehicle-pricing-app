@@ -108,10 +108,10 @@ export function VehicleSelect({
           onClick={() => !disabled && setOpen(!open)}
           className={cn(
             'flex h-12 w-full items-center gap-2 rounded-xl border px-3 text-sm shadow-sm transition-all duration-200',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#19b8a5]/25',
             disabled
-              ? 'border-input/50 bg-muted/20 text-muted-foreground/50 cursor-not-allowed'
-              : 'border-input bg-background hover:border-muted-foreground/30 cursor-pointer',
+              ? 'cursor-not-allowed border-[#d9e2e8]/50 bg-muted/20 text-muted-foreground/50 dark:border-[#31545a]/50'
+              : 'cursor-pointer border-[#d9e2e8] bg-background hover:border-[#19b8a5]/50 dark:border-[#31545a]',
           )}
         >
           {Icon && (
@@ -141,7 +141,7 @@ export function VehicleSelect({
                 e.stopPropagation();
                 onChange('');
               }}
-              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground/40 transition-colors hover:bg-muted/60 hover:text-muted-foreground"
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground/40 transition-colors hover:bg-[#ecfbf8] hover:text-[#08766c] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -159,13 +159,13 @@ export function VehicleSelect({
         {open && !disabled && (
           <div
             className={cn(
-              'absolute left-0 z-50 min-w-max rounded-xl border border-border/50 bg-background shadow-xl shadow-black/5',
+              'absolute left-0 z-50 min-w-max rounded-xl border border-[#d9e2e8] bg-background shadow-xl shadow-black/5 dark:border-[#31545a]',
               menuUp ? 'bottom-full mb-1.5' : 'top-full mt-1.5',
             )}
           >
             {/* Search input */}
             {searchable && (
-              <div className="relative border-b border-border/40">
+              <div className="relative border-b border-[#e5e7eb] dark:border-[#31545a]">
                 <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
                 <input
                   ref={searchInputRef}
@@ -174,7 +174,7 @@ export function VehicleSelect({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
                   placeholder="Type to search..."
-                  className="w-full border-0 bg-transparent py-3 pl-10 pr-9 text-sm outline-none placeholder:text-muted-foreground/40"
+                  className="w-full border-0 bg-transparent py-3 pl-10 pr-9 text-sm outline-none placeholder:text-muted-foreground/40 focus:text-[#071936] dark:focus:text-white"
                 />
                 {searchQuery && (
                   <button
@@ -198,7 +198,7 @@ export function VehicleSelect({
                     onChange('');
                     setOpen(false);
                   }}
-                  className="flex w-full items-center gap-3 border-b border-border/30 px-4 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/50"
+                  className="flex w-full items-center gap-3 border-b border-[#e5e7eb] px-4 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-[#ecfbf8] hover:text-[#08766c] dark:border-[#31545a] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]"
                 >
                   <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-muted-foreground/20">
                     <X className="h-3 w-3" />
@@ -226,25 +226,25 @@ export function VehicleSelect({
                       className={cn(
                         'flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors',
                         selected
-                          ? 'bg-primary/5 text-primary font-medium'
-                          : 'text-foreground hover:bg-muted/50',
+                          ? 'bg-[#ecfbf8] text-[#08766c] font-medium dark:bg-[#0f3f43] dark:text-[#19b8a5]'
+                          : 'text-foreground hover:bg-[#dff7f4] hover:text-[#08766c] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]',
                       )}
                     >
                       <div
                         className={cn(
                           'h-1.5 w-1.5 shrink-0 rounded-full',
-                          selected ? 'bg-primary' : 'bg-transparent',
+                          selected ? 'bg-[#19b8a5]' : 'bg-transparent',
                         )}
                       />
                       <span className="flex-1 truncate">{opt.label}</span>
                       {selected && (
-                        <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                        <Check className="h-3.5 w-3.5 shrink-0 text-[#19b8a5]" />
                       )}
                     </button>
                   );
                 })
               ) : searchQuery ? (
-                <div className="border-b border-border/40 px-4 py-6 text-center text-sm text-muted-foreground/60">
+                <div className="border-b border-[#e5e7eb] px-4 py-6 text-center text-sm text-muted-foreground/60 dark:border-[#31545a]">
                   No results found for "{searchQuery}"
                 </div>
               ) : (
@@ -263,10 +263,10 @@ export function VehicleSelect({
                       onChange(searchQuery);
                       setOpen(false);
                     }}
-                    className="flex w-full items-center gap-3 border-t border-primary/10 bg-primary/[0.03] px-4 py-3 text-left text-sm font-medium text-primary transition-colors hover:bg-primary/5"
+                    className="flex w-full items-center gap-3 border-t border-[#bfe9e2] bg-[#ecfbf8]/60 px-4 py-3 text-left text-sm font-medium text-[#08766c] transition-colors hover:bg-[#dff7f4] dark:border-[#31545a] dark:bg-[#0f3f43] dark:text-[#19b8a5]"
                   >
-                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/5">
-                      <span className="text-[10px] font-bold text-primary">+</span>
+                    <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[#19b8a5]/30 bg-[#ecfbf8] dark:bg-[#0f3f43]">
+                      <span className="text-[10px] font-bold text-[#19b8a5]">+</span>
                     </div>
                     <span>
                       Use "<span className="font-semibold">{searchQuery}</span>"

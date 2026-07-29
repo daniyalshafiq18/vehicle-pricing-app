@@ -33,26 +33,26 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
       size: 40,
       enableColumnFilter: false,
       cell: (info) => (
-        <span className="font-mono text-xs text-muted-foreground">{info.getValue()}</span>
+        <span className="font-mono text-[11px] font-semibold text-[#8aa0ad]">{info.getValue()}</span>
       ),
     }),
     columnHelper.accessor('year', {
       header: 'Year',
       size: 60,
       cell: (info) => (
-        <span className="font-medium text-foreground">{info.getValue()}</span>
+        <span className="font-semibold text-[#071936]">{info.getValue()}</span>
       ),
     }),
     columnHelper.accessor('make', {
       header: 'Make',
       cell: (info) => (
-        <span className="font-medium text-foreground">{info.getValue()}</span>
+        <span className="font-semibold text-[#071936]">{info.getValue()}</span>
       ),
     }),
     columnHelper.accessor('model', {
       header: 'Model',
       cell: (info) => (
-        <span className="text-foreground">{info.getValue()}</span>
+        <span className="text-[#071936]">{info.getValue()}</span>
       ),
     }),
     columnHelper.accessor('spec', {
@@ -65,14 +65,14 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
       header: 'Min Price',
       size: 100,
       cell: (info) => (
-        <span className="font-mono text-xs text-muted-foreground">{formatCurrency(info.getValue() || 0)}</span>
+        <span className="font-mono text-[11px] font-semibold text-[#647887]">{formatCurrency(info.getValue() || 0)}</span>
       ),
     }),
     columnHelper.accessor('maxPrice', {
       header: 'Max Price',
       size: 100,
       cell: (info) => (
-        <span className="font-mono text-xs text-muted-foreground">{formatCurrency(info.getValue() || 0)}</span>
+        <span className="font-mono text-[11px] font-semibold text-[#647887]">{formatCurrency(info.getValue() || 0)}</span>
       ),
     }),
   ], []);
@@ -125,29 +125,29 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8aa0ad]" />
           <input
             type="text"
             placeholder="Search vehicles..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="w-full rounded-lg border bg-card py-2 pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary/50 transition-colors"
+            className="w-full rounded-[8px] border-0 bg-[#f4f8fb] py-2 pl-9 pr-3 text-[11px] font-medium text-[#071936] outline-none transition-colors placeholder:text-[#9aabb5] focus:bg-[#edf5f7] focus:ring-2 focus:ring-[#19b8a5]/25"
           />
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-[10px] font-semibold text-[#8aa0ad]">
             {data.length} vehicles
           </span>
           <button
             onClick={exportCSV}
-            className="inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-[8px] bg-[#f4f8fb] px-3 py-1.5 text-[10px] font-bold text-[#647887] transition-colors hover:bg-[#ecfbf8] hover:text-[#08766c]"
           >
             <Download className="h-3 w-3" />
             CSV
           </button>
           <button
             onClick={exportTSV}
-            className="inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-[8px] bg-[#f4f8fb] px-3 py-1.5 text-[10px] font-bold text-[#647887] transition-colors hover:bg-[#ecfbf8] hover:text-[#08766c]"
           >
             <FileSpreadsheet className="h-3 w-3" />
             TSV
@@ -156,18 +156,18 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border">
+      <div className="overflow-x-auto rounded-[10px] bg-white">
         <table className="w-full">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="border-b bg-muted/30">
+              <tr key={headerGroup.id} className="bg-[#f6f9fb]">
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                    className="px-3 py-2.5 text-left text-[10px] font-bold uppercase tracking-normal text-[#8aa0ad]"
                   >
                     <div
-                      className="flex items-center gap-1 cursor-pointer select-none"
+                      className="flex cursor-pointer select-none items-center gap-1"
                       onClick={header.column.getToggleSortingHandler()}
                     >
                       {flexRender(header.column.columnDef.header, header.getContext())}
@@ -185,11 +185,11 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
             {table.getRowModel().rows.map((row) => (
               <tr
                 key={row.id}
-                className="border-b border-border/50 transition-colors hover:bg-muted/30 cursor-pointer"
+                className="cursor-pointer transition-colors hover:bg-[#f3faf9]"
                 onClick={() => onVehicleSelect(row.original.vehicleId)}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-3 py-2.5 text-xs">
+                  <td key={cell.id} className="px-3 py-2.5 text-[12px]">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </td>
                 ))}
@@ -197,7 +197,7 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
             ))}
             {table.getRowModel().rows.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-3 py-12 text-center text-sm text-muted-foreground">
+                <td colSpan={7} className="px-3 py-12 text-center text-sm text-[#8aa0ad]">
                   No vehicles match your search
                 </td>
               </tr>
@@ -208,14 +208,14 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
 
       {/* Pagination */}
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-muted-foreground">
+        <span className="text-[10px] font-semibold text-[#8aa0ad]">
           Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
         </span>
         <div className="flex items-center gap-2">
           <button
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
-            className="inline-flex items-center gap-1 rounded-lg border bg-card px-2.5 py-1.5 text-[10px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+            className="inline-flex items-center gap-1 rounded-[8px] bg-[#f4f8fb] px-2.5 py-1.5 text-[10px] font-bold text-[#647887] transition-colors hover:bg-[#ecfbf8] hover:text-[#08766c] disabled:opacity-30"
           >
             <ChevronLeft className="h-3 w-3" />
             Prev
@@ -223,7 +223,7 @@ export function PremiumLeaderboard({ data, onVehicleSelect }: PremiumLeaderboard
           <button
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
-            className="inline-flex items-center gap-1 rounded-lg border bg-card px-2.5 py-1.5 text-[10px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+            className="inline-flex items-center gap-1 rounded-[8px] bg-[#f4f8fb] px-2.5 py-1.5 text-[10px] font-bold text-[#647887] transition-colors hover:bg-[#ecfbf8] hover:text-[#08766c] disabled:opacity-30"
           >
             Next
             <ChevronRight className="h-3 w-3" />
