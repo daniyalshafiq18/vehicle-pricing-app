@@ -141,7 +141,7 @@ export function NotificationDropdown(_props: NotificationDropdownProps) {
 
         {/* Numeric pending count */}
         {totalPending > 0 && (
-          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-[20px] items-center justify-center rounded-full border-2 border-white bg-[#19b8a5] px-1 text-[10px] font-bold leading-none text-white shadow-sm dark:border-[#071936]">
+          <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-[20px] items-center justify-center rounded-full border-2 border-white bg-[#19b8a5] px-1 text-[10px] font-medium leading-none text-white shadow-sm dark:border-[#071936]">
             {totalPending > 99 ? '99+' : totalPending}
           </span>
         )}
@@ -164,7 +164,7 @@ export function NotificationDropdown(_props: NotificationDropdownProps) {
             <div className="flex items-center justify-between border-b border-[#e5e7eb] px-4 py-3 dark:border-[#31545a]">
               <span className="text-sm font-semibold text-[#071936] dark:text-white">Notifications</span>
               {totalPending > 0 && (
-                <span className="rounded-full bg-[#f3f4f6] px-2 py-0.5 text-[10px] font-semibold text-[#8aa0ad] dark:bg-[#17383d] dark:text-[#8fb6cc]">
+                <span className="rounded-full bg-[#f3f4f6] px-2 py-0.5 text-[10px] font-medium text-[#8aa0ad] dark:bg-[#17383d] dark:text-[#8fb6cc]">
                   {totalPending} pending
                 </span>
               )}
@@ -209,7 +209,7 @@ export function NotificationDropdown(_props: NotificationDropdownProps) {
                       {section.count > 0 && (
                         <span
                           className={cn(
-                            'flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-[#19b8a5] px-1.5 text-[10px] font-bold text-white',
+                            'flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-[#19b8a5] px-1.5 text-[10px] font-medium text-white',
                           )}
                         >
                           {section.count > 99 ? '99+' : section.count}

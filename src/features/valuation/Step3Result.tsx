@@ -136,7 +136,7 @@ export function Step3Result() {
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-success/10">
               <Heart className="h-10 w-10 text-success" />
             </div>
-            <h2 className="mb-2 text-lg font-bold tracking-tight">Request Submitted!</h2>
+            <h2 className="mb-2 text-lg font-semibold tracking-tight">Request Submitted!</h2>
             <p className="mb-6 text-muted-foreground">
               We've received your request for the{' '}
               <span className="font-semibold text-foreground">
@@ -169,7 +169,7 @@ export function Step3Result() {
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#ecfbf8] dark:bg-[#0f3f43]">
               <SearchX className="h-10 w-10 text-[#19b8a5]" />
             </div>
-            <h2 className="mb-2 text-lg font-bold tracking-tight">Vehicle Not Found</h2>
+            <h2 className="mb-2 text-lg font-semibold tracking-tight">Vehicle Not Found</h2>
             <p className="mb-1 text-muted-foreground">
               We couldn't find this vehicle in our valuation database yet.
             </p>
@@ -188,7 +188,7 @@ export function Step3Result() {
                     { label: 'Spec', value: vehicleSelection.spec },
                   ].filter((item) => item.value).map((item) => (
                     <div key={item.label} className="rounded-lg bg-background/60 px-3 py-2">
-                      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                         {item.label}
                       </p>
                       <p className="text-sm font-semibold text-foreground">{String(item.value)}</p>
@@ -266,7 +266,7 @@ export function Step3Result() {
       {/* Header */}
       <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h2 className="text-lg font-bold">
+          <h2 className="text-lg font-semibold">
             {vehicle.year} {vehicle.make} {vehicle.model}
           </h2>
           <p className="text-muted-foreground">{vehicle.spec}</p>
@@ -277,7 +277,7 @@ export function Step3Result() {
       <Card className="border-[#bfe9e2] bg-[#ecfbf8] dark:border-[#31545a] dark:bg-[#0f3f43]">
         <CardContent className="p-6 text-center">
           <p className="mb-1 text-sm text-muted-foreground">Market Price Range</p>
-          <p className="text-3xl font-bold text-[#08766c] dark:text-[#19b8a5]">
+          <p className="text-3xl font-semibold text-[#08766c] dark:text-[#19b8a5]">
             {formatCurrency(pricing.minimumPrice)} — {formatCurrency(pricing.maximumPrice)}
           </p>
         </CardContent>

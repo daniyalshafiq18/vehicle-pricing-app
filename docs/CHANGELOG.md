@@ -29,6 +29,27 @@
   - `lookupDoorsValue()` / `lookupSeatsValue()` — look up DOORS/SEATS option set values.
   - After a successful scrape, all mapped spec field values are persisted alongside pricing data.
 
+### Typography System
+- Standardized the app on Inter as the single enterprise UI font, removed the mixed Plus Jakarta Sans/Montserrat/Roboto font stack, and added base typography inheritance for the full application.
+- Normalized typography weights and sizes across shared UI primitives, public layout, valuation wizard, admin sidebar/header, dashboard cards/charts, tables, modals, and dense admin pages.
+- Replaced UI monospace usage in dashboard values with Inter plus `tabular-nums`, preserving aligned numeric data without mixing font families.
+- Updated the design/context documentation and memory conventions to reflect the new typography system.
+
+### Power Pages Asset Cleanup
+- Removed stale hashed Power Pages web-file assets, including the failing `analyticsRepository-Bim_5Jb3.js`, so PAC uploads only the current Vite build assets.
+- Expanded the portal asset cleanup matcher to include legacy lowercase chunks plus chart/table chunks, preventing future stale generated web files from surviving cleanup.
+- Fixed the SPA shell asset updater so it regenerates the full Vite asset block, removes stale module scripts, and keeps current vendor preload links available under `/assets`.
+- Synced current generated web-file and annotation records into the PAC base manifest and marked stale generated records deleted, fixing upload failures such as `vendor-charts-BIOnAA2Y.js`.
+- Rotated the `vendor-charts-BIOnAA2Y.js` Power Pages webfile and annotation IDs after PAC continued targeting the corrupted content record, while marking the old failing IDs deleted in both manifests.
+- Made the portal template updater recover from an empty `{}` PAC manifest by recreating required manifest sections and ensuring exact web-file directories exist for every current Vite asset.
+- Changed regenerated PAC manifest sections with no records to use explicit empty lists, preventing PAC 2.8.1 from crashing with `ArgumentNullException` during compiled artifact cleanup.
+- Renamed the Recharts vendor chunk from `vendor-charts-*` to `vendor-recharts-*`, cleaned stale generated web-file folders, and made manifest cleanup retire all duplicate stale record-id occurrences.
+
+### Admin UI
+- Aligned sidebar notification count badges with the teal notification dropdown badge color.
+- Fixed admin dark mode across the dashboard shell by darkening the sidebar, dashboard cards, chart cards, leaderboard table, vehicle table surfaces, list-page search/tabs, status summaries, and vehicle intelligence modal.
+- Unified Vehicles, Queries, Missing Vehicles, and Price Suggestions grid headers with muted blue-gray natural-case labels, reordered the Vehicles toolbar to search/export/icon toggle, and aligned the admin table/card toggles to icon-only controls.
+
 ## 2026-07-28
 
 ### Manifest Rebuild for Current Build & SPA Shell Fix

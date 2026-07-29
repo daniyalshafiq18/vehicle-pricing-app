@@ -60,7 +60,7 @@ export function ValuationResultPage() {
         {/* Header */}
         <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h1 className="text-3xl font-bold">
+            <h1 className="text-3xl font-semibold">
               {vehicle.year} {vehicle.make} {vehicle.model}
             </h1>
             <p className="text-muted-foreground">{vehicle.spec}</p>
@@ -76,7 +76,7 @@ export function ValuationResultPage() {
           <Card className="border-[#bfe9e2] bg-[#ecfbf8] dark:border-[#31545a] dark:bg-[#0f3f43]">
             <CardContent className="p-6 text-center">
               <p className="mb-1 text-sm text-muted-foreground">Average Price</p>
-              <p className="text-3xl font-bold text-[#08766c] dark:text-[#19b8a5]">
+              <p className="text-3xl font-semibold text-[#08766c] dark:text-[#19b8a5]">
                 {formatCurrency(pricing.averagePrice)}
               </p>
             </CardContent>

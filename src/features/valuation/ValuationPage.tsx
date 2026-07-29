@@ -41,7 +41,7 @@ export function ValuationPage() {
           <div className="mx-auto max-w-5xl">
             {/* Page header */}
             <div className="mb-8 text-center">
-              <h1 className="mb-2 text-3xl font-bold text-[#071936] dark:text-white md:text-4xl">Vehicle Valuation</h1>
+              <h1 className="mb-2 text-2xl font-semibold text-[#071936] dark:text-white sm:text-3xl">Vehicle Valuation</h1>
               <p className="text-[#647887] dark:text-[#b8cbd4]">
                 Get an accurate market valuation for any vehicle in the UAE
               </p>

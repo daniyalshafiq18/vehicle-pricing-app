@@ -100,7 +100,7 @@ export function LoadingScreen({ message = 'Loading...', className, progress }: L
 
         {/* Brand title with tagline */}
         <div className="space-y-1 text-center">
-          <p className="text-lg font-bold tracking-tight text-foreground">
+          <p className="text-lg font-semibold text-foreground">
             Vehicle Pricing Intelligence Platform
           </p>
           <p className="text-xs tracking-widest text-muted-foreground/60 uppercase">

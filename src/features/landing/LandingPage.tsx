@@ -134,7 +134,7 @@ export function LandingPage() {
                 className="interactive-card group border-[#d9e2e8] bg-white/90 p-6 dark:border-[#31545a] dark:bg-[#0c2530]/90"
               >
                 <stat.icon className="mb-3 h-8 w-8 text-[#19b8a5] transition-all duration-300 group-hover:scale-110 group-hover:text-[#08766c] dark:group-hover:text-[#8fb6cc]" />
-                <p className="text-3xl font-bold text-slate-800 transition-colors duration-300 group-hover:text-[#08766c] dark:text-white dark:group-hover:text-[#19b8a5]">
+                <p className="text-3xl font-semibold text-slate-800 transition-colors duration-300 group-hover:text-[#08766c] dark:text-white dark:group-hover:text-[#19b8a5] tabular-nums">
                   {stat.value}
                 </p>
                 <p className="text-sm text-muted-foreground dark:text-slate-400">{stat.label}</p>
@@ -148,7 +148,7 @@ export function LandingPage() {
       <section className="border-t border-[#d9e2e8] bg-[#f3f7f7] dark:border-[#31545a] dark:bg-[#061821]">
         <div className="mx-auto w-full max-w-[1536px] min-[2560px]:max-w-[90%] px-4 py-20">
           <motion.div className="text-center" {...fadeUp}>
-            <h2 className="mb-2 text-3xl font-bold text-slate-900 dark:text-white md:text-4xl">
+            <h2 className="mb-2 text-3xl font-semibold text-slate-900 dark:text-white md:text-4xl">
               How It Works
             </h2>
             <p className="mx-auto mb-12 max-w-xl text-muted-foreground dark:text-slate-300">
@@ -186,7 +186,7 @@ export function LandingPage() {
                 className="interactive-card group border-[#d9e2e8] bg-white/90 p-8 dark:border-[#31545a] dark:bg-[#0c2530]/90"
               >
                 <div className="mb-4 flex items-center gap-3">
-                  <span className="text-4xl font-bold text-[#19b8a5]/25 transition-all duration-300 group-hover:scale-110 group-hover:text-[#19b8a5]/45">
+                  <span className="text-4xl font-semibold text-[#19b8a5]/25 transition-all duration-300 group-hover:scale-110 group-hover:text-[#19b8a5]/45">
                     {item.step}
                   </span>
                   <item.icon className="h-6 w-6 text-[#19b8a5] transition-all duration-300 group-hover:rotate-[-8deg] group-hover:text-[#08766c] dark:group-hover:text-[#8fb6cc]" />
@@ -205,7 +205,7 @@ export function LandingPage() {
       <section className="w-full">
         <div className="mx-auto w-full max-w-[1536px] min-[2560px]:max-w-[90%] px-4 py-20">
           <motion.div className="text-center" {...fadeUp}>
-            <h2 className="mb-2 text-3xl font-bold text-slate-900 dark:text-white md:text-4xl">
+            <h2 className="mb-2 text-3xl font-semibold text-slate-900 dark:text-white md:text-4xl">
               Premium Features
             </h2>
             <p className="mx-auto mb-12 max-w-xl text-muted-foreground dark:text-slate-300">
@@ -249,7 +249,7 @@ export function LandingPage() {
             className="mx-auto max-w-3xl text-center"
             {...fadeUp}
           >
-            <h2 className="mb-4 text-3xl font-bold text-slate-900 dark:text-white md:text-4xl">
+            <h2 className="mb-4 text-3xl font-semibold text-slate-900 dark:text-white md:text-4xl">
               Ready to Discover Your Vehicle's{' '}
               <span className="shimmer-text">True Value</span>?
             </h2>

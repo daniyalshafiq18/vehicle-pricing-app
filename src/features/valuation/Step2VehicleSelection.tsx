@@ -158,7 +158,7 @@ export function Step2VehicleSelection() {
 
       <div className={cn(isLoading && 'pointer-events-none select-none', 'transition-opacity duration-300', isLoading && 'opacity-40')}>
         <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-[#071936] dark:text-white">
+          <h1 className="text-2xl font-semibold text-[#071936] dark:text-white sm:text-3xl">
             Vehicle Selection
           </h1>
           <p className="mt-2 text-[#647887] dark:text-[#b8cbd4]">

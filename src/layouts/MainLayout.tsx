@@ -32,7 +32,7 @@ export function MainLayout() {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-[#d9e2e8] bg-white/70 backdrop-blur-md dark:border-[#31545a] dark:bg-[#071936]/80 before:absolute before:inset-x-0 before:bottom-0 before:h-[1px] before:bg-gradient-to-r before:from-transparent before:via-[#19b8a5]/50 before:to-transparent before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
         <div className="w-full max-w-[1536px] min-[2560px]:max-w-[90%] mx-auto flex h-16 items-center justify-between px-4">
-          <Link to="/" className="group flex items-center gap-2 text-xl font-bold">
+          <Link to="/" className="group flex items-center gap-2 text-xl font-semibold">
             <Car className="h-6 w-6 text-[#19b8a5] transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6" />
             <span className="text-sm font-semibold text-[#08766c] transition-colors duration-200 group-hover:text-[#19b8a5] dark:text-[#19b8a5] sm:text-base">
               Vehicle Pricing Intelligence Platform
@@ -128,7 +128,7 @@ export function MainLayout() {
 
             {/* Quick Links */}
             <div className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Quick Links
               </p>
               <div className="flex flex-col gap-2">
@@ -146,7 +146,7 @@ export function MainLayout() {
 
             {/* Legal column */}
             <div className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Legal
               </p>
               <p className="text-xs text-muted-foreground">
