@@ -1,7 +1,49 @@
 
 # Changelog
 
+## 2026-07-29
+
+### Git Workflow — publish script & .gitignore
+- **Added `publish.ps1`**: Single PowerShell script that runs build → download portal state → upload to Power Pages.
+- **Added `npm run publish`**: Calls `publish.ps1` — one command for the full deploy cycle.
+- **Updated `.gitignore`**: Ignored `web-files/`, `manifest.yml`, and `org*.yml` — these auto-generated files caused merge conflicts when "accept both" was selected, leading to duplicate RecordIds and `PortalFileContentUploadFailed` errors.
+- **After any merge**: Instead of manually fixing conflicts, just run `npm run publish`.
+
+### Flow 3 Deep Scrape — Frontend Integration
+
+### Flow 3 Deep Scrape — Power Automate Test & Doc Update
+- **Tested deep scrape** from search results page: 4/10 fields extracted (Body Type, Fuel Type, Transmission, Mileage). Drive Type, Cylinders, Engine Size, Doors, Seats not available in search page JSON-LD.
+- **Updated design doc** — Rewrote §9b for Option B (second HTTP request to listing detail page). Added `DetailResponseBody` variable, `Extract First Listing URL` Compose, `Listing URL Found?` Condition, `HTTP Detail Page` action, and re-pointed all 10 spec extraction steps to use `variables('DetailResponseBody')`.
+- **Fixed heading expression** — Changed split delimiter from `'heading-h2-content'` to `'heading-h2-content">'` to strip the stray `">` prefix.
+- **Added Test 4 entry** documenting the 2026-07-29 partial test results with a field-by-field analysis table.
+- **Extended `Flow3ScrapeResult` interface** in `yallaMotorHttpScraper.ts`: Added `bodyType`, `fuelType`, `transmission`, `driveType`, `cylinders`, `engineSize`, `doors`, `seats`, `mileage`, and `regionalSpecs` fields. The `scrapeViaFlow3()` function now parses these from the Flow 3 JSON response.
+- **Added `asString()` helper**: Safely extracts string values from unknown Flow 3 response fields.
+- **Extended `MissingVehicleRequest` type**: Added `engineSize`, `doors`, `seats`, and `category` fields.
+- **Updated `MISSING_VEHICLE_REQUEST_FIELDS` config**: Added `ENGINE_SIZE`, `DOORS`, `SEATS`, and `CATEGORY` field mappings.
+- **Extended `updateMissingVehicleScrapeResult()`** through all layers (API → DataSource → IDataSource → Repository): Now accepts optional spec fields (`bodyTypeValue`, `fuelTypeValue`, `transmissionValue`, `driveTypeValue`, `cylindersValue`, `engineSizeValue`, `doorsValue`, `seatsValue`, `categoryValue`) and writes them to the MVR record in Dataverse.
+- **Updated `fetchMissingVehicleRequests()` and `fetchMissingVehicleRequestById()`**: Include new spec fields in `$select` queries.
+- **Added mapping logic in `useTriggerScrape.ts`**: 
+  - `mapDriveType()` — converts schema.org drive URLs (e.g., `RearWheelDriveConfiguration`) to short labels (`RWD`).
+  - `mapCategory()` — parses listing descriptions for regional-spec keywords (`GCC Specs`, etc.) → Dataverse category values.
+  - `mapFuelType()` — normalises `Petrol`/`Diesel` → `Petrol/Diesel`.
+  - `lookupDoorsValue()` / `lookupSeatsValue()` — look up DOORS/SEATS option set values.
+  - After a successful scrape, all mapped spec field values are persisted alongside pricing data.
+
 ## 2026-07-28
+
+### Manifest Rebuild for Current Build & SPA Shell Fix
+- **Root cause of blank screen**: The SPA Shell web template (`SPA-Shell.webtemplate.source.html`) had hard-coded `<script>` references to `index-CmbBBwOb.js`, `index-B3MGuNjE.js`, and `index-BxUExJa3.js` — two of which don't exist in the current build and one that's a code-split chunk, not the entry point.
+- **Updated SPA Shell**: Replaced stale script refs with the correct entry point (`index-K_KmhXy2.js`) and its modulepreloads (`vendor-C5Q43FSy.js`, `vendor-query-dtloYRUI.js`, `vendor-animation-B9wsIYe3.js`).
+- **Rebuilt manifest**: Added all 12 current build files (from `dist/assets/`) as `IsDeleted: false` entries with proper RecordIds from their `.webfile.yml` files.
+- **Marked old build files deleted**: 9 old entries (`analyticsRepository-*.js`, `index-*.js.map`, `vendor-animation-D39qNG4p.js`, `style-CVBBNNQb.css`) changed to `IsDeleted: true`.
+- **Added missing `index.html`**: The `index.html` webfile itself was absent from the manifest — added it.
+
+### Power Pages Deployment Fix — Duplicate Manifest Entries
+- Removed 9 duplicate `IsDeleted: true` stub entries from `manifest.yml` that had RecordIds also appearing as `IsDeleted: false` with real filenames — these were causing `PortalFileContentUploadFailed` errors during deployment.
+- Each duplicate was a GUID-as-DisplayName `IsDeleted: true` entry conflicting with the proper filename entry later in the file; Power Pages processed the stub first, tripping the upload conflict.
+
+### Flow 3 — Extract Mileage trim() Syntax Fix
+- Fixed `trim(first(...), '')` → `trim(first(...))` in Extract Mileage expression — the `trim()` function in Power Automate only accepts one parameter.
 
 ### User-Facing Teal Color Alignment
 - Retinted the public loader, landing page badge/hover/card/CTA colors, public header/footer hover states, valuation wizard progress indicator, Step 1 form borders/focus rings/city dropdown/consent card, vehicle-selection dropdown hover/selected states, and valuation result cards to match the dashboard teal palette.
@@ -22,6 +64,7 @@
 - Fixed Top Models chart labels so make names are not duplicated when the model already includes the make, and widened/shifted the Y-axis label area for cleaner left alignment.
 - Reduced the Top Models chart label gutter so the horizontal bars start further left with less empty space.
 - Removed the admin header page icon/title block so the search field sits further left, removed the Weekly Stats circular car icon, and strengthened the Overall Performance Dashboard title weight.
+
 ### Power Automate — Flow 3 Deep Scrape for Vehicle Specs
 - **Deep scrape designed** for Flow 3 (`MVR - On-Demand Scraper`): extracts complete vehicle specs from first listing's detail page via JSON-LD
 - **New Flow 3 steps (inside Try/heading-found branch):**

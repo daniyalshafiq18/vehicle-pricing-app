@@ -4,6 +4,13 @@
  */
 const FLOW_3_URL = 'https://15c7cf15bfa4e984a64eef99a12de7.cd.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/17/workflows/78d508a5400a40b18f89343b6cf2f4c5/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=i4Ywt7OqT_X0TYi3VxPhGXZPl1cFmdwrNU_F46bUSjQ';
 
+/** Safely extract a string value from an unknown response field. */
+function asString(val: unknown): string | undefined {
+  if (typeof val === 'string' && val.length > 0) return val;
+  if (typeof val === 'number' && !isNaN(val)) return String(val);
+  return undefined;
+}
+
 export interface Flow3ScrapeResult {
   success: true;
   make: string;
@@ -17,6 +24,17 @@ export interface Flow3ScrapeResult {
   sourceUrl: string;
   /** true when YallaMotor was unreachable — show friendly message instead of live data */
   _unavailable?: boolean;
+  // ─── Deep scrape spec fields (extracted from listing detail page JSON-LD) ───
+  bodyType?: string;
+  fuelType?: string;
+  transmission?: string;
+  driveType?: string;
+  cylinders?: string;
+  engineSize?: string;
+  doors?: string;
+  seats?: string;
+  mileage?: string;
+  regionalSpecs?: string;
 }
 
 export interface Flow3ErrorResult {
@@ -76,6 +94,18 @@ export async function scrapeViaFlow3(params: {
     const minPrice = Number(result['Min Price'] ?? result['Min price'] ?? result['minPrice'] ?? 0);
     const maxPrice = Number(result['Max Price'] ?? result['Max price'] ?? result['maxPrice'] ?? 0);
 
+    // Parse deep scrape spec fields from the Flow 3 response
+    const bodyType = asString(result['bodyType']);
+    const fuelType = asString(result['fuelType']);
+    const transmission = asString(result['transmission']);
+    const driveType = asString(result['driveType']);
+    const cylinders = asString(result['cylinders']);
+    const engineSize = asString(result['engineSize']);
+    const doors = asString(result['doors']);
+    const seats = asString(result['seats']);
+    const mileage = asString(result['mileage']);
+    const regionalSpecs = asString(result['regionalSpecs']);
+
     // Count = -1 means the Catch scope fired — YallaMotor was not accessible
     if (count < 0) {
       return {
@@ -114,6 +144,17 @@ export async function scrapeViaFlow3(params: {
       maxPrice,
       heading: `${count} listings · AED ${minPrice.toLocaleString()} – ${maxPrice.toLocaleString()} · ${params.year}–${params.year}`,
       sourceUrl,
+      // Spec fields — only include when the flow returned them (non-empty)
+      ...(bodyType && { bodyType }),
+      ...(fuelType && { fuelType }),
+      ...(transmission && { transmission }),
+      ...(driveType && { driveType }),
+      ...(cylinders && { cylinders }),
+      ...(engineSize && { engineSize }),
+      ...(doors && { doors }),
+      ...(seats && { seats }),
+      ...(mileage && { mileage }),
+      ...(regionalSpecs && { regionalSpecs }),
     } satisfies Flow3ScrapeResult;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'An unexpected error occurred';

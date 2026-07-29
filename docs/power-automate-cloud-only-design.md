@@ -1,7 +1,7 @@
 # Power Automate Cloud Flow — Step-by-Step Build Guide
 
-> **Date:** 2026-07-27 (Updated — All flows renamed; Flow 4 added: customer email notification on scrape completion)
-> **Status:** Flow 1 ✅ Built, Modified & Re-Tested | Flow 2 ✅ Built & Tested | Flow 3 ✅ Built, Tested & End-to-End Verified | Flow 4 ✅ Built, Tested & Verified
+> **Date:** 2026-07-29 (Updated — Flow 3 deep scrape: partial test from search page, pending detail-page extraction)
+> **Status:** Flow 1 ✅ | Flow 2 ✅ | Flow 3 ✅ (deep scrape partial test) | Flow 4 ✅
 > **Platform:** https://make.powerautomate.com
 > **Connectors needed:** HTTP (premium), Microsoft Dataverse, Office 365 Outlook (optional)
 
@@ -13,7 +13,7 @@
 |---|---|---|---|
 | **Flow 1** | `MVR - Connectivity Test` | ✅ **Built, Modified & Re-Tested** | Confirmed full listing record extraction (price, specs, dealer). Heading extraction confirmed for aggregate pricing. |
 | **Flow 2** | `MVR - Automated Scraper` | ✅ **Built & Tested** | See full design below. YallaMotor backend was down during initial tests — not a Cloudflare issue. |
-| **Flow 3** | `MVR - On-Demand Scraper` | ✅ **Built, Tested & Verified** | Headers confirmed complete (Cloudflare 403 resolved). End-to-end test with Mercedes Benz C-Class C 300 verified correct data in Dataverse. **Deep scrape added** (Jul 28): extracts Body Type, Fuel Type, Transmission, Drive Type, Cylinders, Engine Size, Doors, Seats, Mileage from listing detail page via JSON-LD. Returns all specs in response alongside pricing. |
+| **Flow 3** | `MVR - On-Demand Scraper` | ✅ **Built, Tested & Verified** | Headers with `sec-ch-ua*` confirmed working (Cloudflare 403 resolved). **Deep scrape partial test** (Jul 29): Body Type, Fuel Type, Transmission, Mileage extracted from search page JSON-LD. Drive Type, Cylinders, Engine Size, Doors, Seats not available in search page — need **second HTTP to detail page** (Option B — see §9b below). |
 | **Flow 4** | `MVR - Customer Email Notification` | ✅ **Built, Tested & Verified** | Sends email to the requesting user when scrape completes successfully. Dynamic content resolved, HTML link clickable. |
 
 ### Key Findings from Flow 1 Test (Original + Modified)
@@ -1074,8 +1074,9 @@ Where slugs are:
 31. Name: `Extract Heading`
 32. Input: click **Expression**:
     ```
-    if(contains(variables('ResponseBody'), 'heading-h2-content'), trim(first(split(first(skip(split(variables('ResponseBody'), 'heading-h2-content'), 1)), '</div>'))), 'No heading found')
+    if(contains(variables('ResponseBody'), 'heading-h2-content'), trim(first(split(first(skip(split(variables('ResponseBody'), 'heading-h2-content">'), 1)), '</div>'))), 'No heading found')
     ```
+    > ⚠️ Uses `heading-h2-content">` as the split delimiter (includes the closing `">`) to avoid the `">` prefix appearing in the extracted heading value.
 
 ### Step 9a (inside Try, If no — accessible): Is Heading Available (Nested Condition)
 
@@ -1106,131 +1107,155 @@ Where slugs are:
     40. **Compose** — Name: `Build Response JSON`
         Input: use the **Expression** tab and wrap with `@{...}`:
         ```
-        @{concat('{"success": true, "make": "', triggerBody()?['make'], '", "model": "', triggerBody()?['model'], '", "trim": "', triggerBody()?['trim'], '", "year": ', triggerBody()?['year'], ', "count": ', outputs('Extract_Listing_Count'), ', "minPrice": ', outputs('Extract_Min_Price'), ', "maxPrice": ', outputs('Extract_Max_Price'), ', "heading": "', outputs('Extract_Heading'), '", "sourceUrl": "', outputs('Build_Search_URL'), '"}')}
+        concat('{"success": true, "make": "', triggerBody()?['make'], '", "model": "', triggerBody()?['model'], '", "trim": "', triggerBody()?['trim'], '", "year": ', triggerBody()?['year'], ', "count": ', outputs('Extract_Listing_Count'), ', "minPrice": ', outputs('Extract_Min_Price'), ', "maxPrice": ', outputs('Extract_Max_Price'), ', "heading": "', outputs('Extract_Heading'), '", "sourceUrl": "', outputs('Build_Search_URL'), '"}')
         ```
         > This builds a complete JSON payload with all fields: success flag, make/model/trim/year from the trigger input, and count/minPrice/maxPrice/heading/sourceUrl from the extraction steps.
 
-    **9b — Deep Scrape: Extract Vehicle Specs from First Listing**
+    **9b — Deep Scrape: Extract Vehicle Specs from First Listing (Option B — Detail Page)**
 
-    > The search results page at the correctly-constructed URL (e.g. `/used-cars/mercedes-benz/c-class/vr_c-200/yr_2021_2021`) contains JSON-LD structured data with vehicle specs. We extract all spec fields from the **existing** search response (`variables('ResponseBody')`) — no second HTTP request needed.
->
-> ⚠️ **Why no second request:** Power Automate doesn't preserve cookies between HTTP actions. The first search request (step 7) succeeds, but a second request to the same YallaMotor URL gets blocked by Cloudflare's JS challenge. Since the response body from step 7 already contains all the HTML/JSON-LD we need, we avoid the Cloudflare issue entirely by extracting specs from the cached response.
+    > ⚠️ **Why a second HTTP request is needed:** On 2026-07-29, extracting from the search page only returned 4 of 10 fields (Body Type, Fuel Type, Transmission, Mileage). Drive Type, Cylinders, Engine Size, Doors, Seats are only present on the individual **listing detail page** JSON-LD. The `sec-ch-ua*` headers now prevent Cloudflare JS challenges, making a second HTTP request feasible.
 
-    **9b(i) — [REMOVED] — No second HTTP request needed**
+    **9b(i) — Initialize Variable — DetailResponseBody**
 
-    > The spec extraction steps below reference `variables('ResponseBody')` — the same response body already fetched and stored by step 7 (HTTP Search). No additional HTTP action is created.
+    Before the Try scope, add a new variable:
 
-    **9b(ii) — Extract Body Type:**
+    41. Click **+ New step** → **Initialize variable**
+        - Name: `DetailResponseBody`
+        - Type: **String**
+        - Value: (leave empty)
 
-    44. Click **Add an action** → **Compose**
-    45. Name: `Extract Body Type`
-    46. Input: click **Expression** → paste:
+    **9b(ii) — Extract First Listing URL from Search Results**
+
+    42. Click **Add an action** (inside If yes, heading found) → **Compose**
+    43. Name: `Extract First Listing URL`
+    44. Input: click **Expression**:
         ```
-        if(contains(variables('ResponseBody'), '"bodyType":"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"bodyType":"'), 1)), '"'))), '')
+        if(contains(variables('ResponseBody'), '"url":"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"url":"'), 1)), '"'))), '')
         ```
-        > Extracts from JSON-LD: `"bodyType":"Sedan"` → `Sedan`
+        > Extracts the first `"url":"...` from JSON-LD on the search page — this is the detail page URL.
 
-    **9b(iii) — Extract Fuel Type:**
+    **9b(iii) — Condition: Listing URL Found?**
 
-    50. Click **Add an action** → **Compose**
-    51. Name: `Extract Fuel Type`
-    52. Input: click **Expression** → paste:
-        ```
-        if(contains(variables('ResponseBody'), '"fuelType":"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"fuelType":"'), 1)), '"'))), '')
-        ```
-        > Extracts from JSON-LD: `"fuelType":"Petrol"` → `Petrol`
+    45. Click **Add an action** → **Condition**
+    46. Name: `Listing URL Found?`
+    47. Condition:
+        - `outputs('Extract_First_Listing_URL')` **is not equal to** `` (empty)
 
-    **9b(iv) — Extract Transmission:**
+        **If yes (URL found) — Second HTTP to Detail Page:**
+
+        48. Click **Add an action** → **HTTP** (inside If yes)
+        49. Name: `HTTP Detail Page`
+        50. Configure:
+            - Method: **GET**
+            - URI: click → **Expression**: `outputs('Extract_First_Listing_URL')`
+            - Headers: **same full header set** as Step 4 (include `sec-ch-ua*`)
+
+        51. Click **Add an action** → **Set variable**
+        52. Name: `Set DetailResponseBody`
+            - Name: `DetailResponseBody`
+            - Value: click → **Expression**: `body('HTTP_Detail_Page')`
+
+        **If no (URL empty):** leave `DetailResponseBody` as the initial empty string.
+
+    **9b(iv) — Extract Spec Fields from Detail Page:**
+
+    > All extraction steps reference `variables('DetailResponseBody')` — the cached detail page HTML. If the second request failed or was skipped, all spec fields will be empty.
+
+    **9b(iv-a) — Extract Body Type:**
 
     53. Click **Add an action** → **Compose**
-    54. Name: `Extract Transmission`
-    55. Input: click **Expression** → paste:
+    54. Name: `Extract Body Type`
+    55. Input: click **Expression**:
         ```
-        if(contains(variables('ResponseBody'), '"vehicleTransmission":"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"vehicleTransmission":"'), 1)), '"'))), '')
+        if(contains(variables('DetailResponseBody'), '"bodyType":"'), trim(first(split(first(skip(split(variables('DetailResponseBody'), '"bodyType":"'), 1)), '"'))), '')
         ```
-        > Extracts from JSON-LD: `"vehicleTransmission":"Automatic"` → `Automatic`
 
-    **9b(v) — Extract Drive Type:**
+    **9b(iv-b) — Extract Fuel Type:**
 
     56. Click **Add an action** → **Compose**
-    57. Name: `Extract Drive Type`
-    58. Input: click **Expression** → paste:
+    57. Name: `Extract Fuel Type`
+    58. Input: click **Expression**:
         ```
-        if(contains(variables('ResponseBody'), '"driveWheelConfiguration":"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"driveWheelConfiguration":"'), 1)), '"'))), '')
+        if(contains(variables('DetailResponseBody'), '"fuelType":"'), trim(first(split(first(skip(split(variables('DetailResponseBody'), '"fuelType":"'), 1)), '"'))), '')
+        ```
+
+    **9b(iv-c) — Extract Transmission:**
+
+    59. Click **Add an action** → **Compose**
+    60. Name: `Extract Transmission`
+    61. Input: click **Expression**:
+        ```
+        if(contains(variables('DetailResponseBody'), '"vehicleTransmission":"'), trim(first(split(first(skip(split(variables('DetailResponseBody'), '"vehicleTransmission":"'), 1)), '"'))), '')
+        ```
+
+    **9b(iv-d) — Extract Drive Type:**
+
+    62. Click **Add an action** → **Compose**
+    63. Name: `Extract Drive Type`
+    64. Input: click **Expression**:
+        ```
+        if(contains(variables('DetailResponseBody'), '"driveWheelConfiguration":"'), trim(first(split(first(skip(split(variables('DetailResponseBody'), '"driveWheelConfiguration":"'), 1)), '"'))), '')
         ```
         > Extracts: `"driveWheelConfiguration":"https://schema.org/RearWheelDriveConfiguration"` → `https://schema.org/RearWheelDriveConfiguration`
         >
         > **Mapping** (done in frontend): `RearWheelDriveConfiguration` → RWD, `FrontWheelDriveConfiguration` → FWD, `AllWheelDriveConfiguration` → AWD, `AllWheelDrive` → 4X4
 
-    **9b(vi) — Extract Cylinders:**
-
-    59. Click **Add an action** → **Compose**
-    60. Name: `Extract Cylinders`
-    61. Input: click **Expression** → paste:
-        ```
-        if(contains(variables('ResponseBody'), '"cylinders":"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"cylinders":"'), 1)), '"'))), '')
-        ```
-        > Extracts from carData: `"cylinders":"4"` → `4`. Values: `3`, `4`, `5`, `6`, `8`, `10`, `12`
-        >
-        > ⚠️ The first cylinder value found in the page may not be for our specific listing (could be from related cars section). Test with a real detail page to confirm the first match is correct.
-
-    **9b(vii) — Extract Engine Size (CC):**
-
-    62. Click **Add an action** → **Compose**
-    63. Name: `Extract Engine Size`
-    64. Input: click **Expression** → paste:
-        ```
-        if(contains(variables('ResponseBody'), '"engine_cc":"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"engine_cc":"'), 1)), '"'))), '')
-        ```
-        > Extracts from carData: `"engine_cc":"2000"` → `2000` (meaning 2.0L). Stored as decimal in Dataverse `vpi_enginesize`.
-
-    **9b(viii) — Extract Doors:**
+    **9b(iv-e) — Extract Cylinders:**
 
     65. Click **Add an action** → **Compose**
-    66. Name: `Extract Doors`
-    67. Input: click **Expression** → paste:
+    66. Name: `Extract Cylinders`
+    67. Input: click **Expression**:
         ```
-        if(contains(variables('ResponseBody'), '"numberOfDoors"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"numberOfDoors":{"@type":"QuantitativeValue","value":'), 1)), ',')), ''), '')
+        if(contains(variables('DetailResponseBody'), '"cylinders":"'), trim(first(split(first(skip(split(variables('DetailResponseBody'), '"cylinders":"'), 1)), '"'))), '')
         ```
-        > Extracts from JSON-LD: `"numberOfDoors":{"@type":"QuantitativeValue","value":4,"unitCode":"C62"}` → `4`
-        >
-        > Dataverse values: `2`=2, `3`=3, `4`=4, `5`=5 (see Doors option set)
 
-    **9b(ix) — Extract Seats:**
+    **9b(iv-f) — Extract Engine Size (CC):**
 
     68. Click **Add an action** → **Compose**
-    69. Name: `Extract Seats`
-    70. Input: click **Expression** → paste:
+    69. Name: `Extract Engine Size`
+    70. Input: click **Expression**:
         ```
-        if(contains(variables('ResponseBody'), '"vehicleSeatingCapacity"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"vehicleSeatingCapacity":{"@type":"QuantitativeValue","value":'), 1)), ',')), ''), '')
+        if(contains(variables('DetailResponseBody'), '"engine_cc":"'), trim(first(split(first(skip(split(variables('DetailResponseBody'), '"engine_cc":"'), 1)), '"'))), '')
         ```
-        > Extracts from JSON-LD: `"vehicleSeatingCapacity":{"@type":"QuantitativeValue","value":5,"unitCode":"C62"}` → `5`
-        >
-        > Dataverse values: `5`=4, `7`=6, etc. (see Seats option set — frontend maps this)
 
-    **9b(x) — Extract Mileage:**
+    **9b(iv-g) — Extract Doors:**
 
     71. Click **Add an action** → **Compose**
-    72. Name: `Extract Mileage`
-    73. Input: click **Expression** → paste:
+    72. Name: `Extract Doors`
+    73. Input: click **Expression**:
         ```
-        if(contains(variables('ResponseBody'), '"mileageFromOdometer"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"mileageFromOdometer":{"@type":"QuantitativeValue","value":'), 1)), ',')), ''), '')
+        if(contains(variables('DetailResponseBody'), '"numberOfDoors"'), trim(first(split(first(skip(split(variables('DetailResponseBody'), '"numberOfDoors":{"@type":"QuantitativeValue","value":'), 1)), ',')), ''), '')
         ```
-        > Extracts from JSON-LD: `"mileageFromOdometer":{"@type":"QuantitativeValue","value":1250,"unitCode":"KMT"}` → `1250`
-        >
-        > This is the odometer reading of this specific listing (not the vehicle model's typical mileage). Useful reference data but may vary between listings.
 
-    **9b(xi) — Extract Regional Specs / Category:**
+    **9b(iv-h) — Extract Seats:**
 
     74. Click **Add an action** → **Compose**
-    75. Name: `Extract Regional Specs`
-    76. Input: click **Expression** → paste:
+    75. Name: `Extract Seats`
+    76. Input: click **Expression**:
         ```
-        if(contains(variables('ResponseBody'), '"description"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"description":"'), 1)), '"'))), '')
+        if(contains(variables('DetailResponseBody'), '"vehicleSeatingCapacity"'), trim(first(split(first(skip(split(variables('DetailResponseBody'), '"vehicleSeatingCapacity":{"@type":"QuantitativeValue","value":'), 1)), ',')), ''), '')
         ```
-        > Extracts the listing description from JSON-LD. The description contains spec info like `"Used Mercedes-Benz C-Class 2024 for sale in Sharjah: AED 150,000, 1,250 km, Automatic, Japanese Specs"`.
+
+    **9b(iv-i) — Extract Mileage:**
+
+    77. Click **Add an action** → **Compose**
+    78. Name: `Extract Mileage`
+    79. Input: click **Expression**:
+        ```
+        if(contains(variables('DetailResponseBody'), '"mileageFromOdometer"'), trim(first(split(first(skip(split(variables('DetailResponseBody'), '"mileageFromOdometer":{"@type":"QuantitativeValue","value":'), 1)), ','))), '')
+        ```
+
+    **9b(iv-j) — Extract Regional Specs / Category:**
+
+    80. Click **Add an action** → **Compose**
+    81. Name: `Extract Regional Specs`
+    82. Input: click **Expression**:
+        ```
+        if(contains(variables('DetailResponseBody'), '"description"'), trim(first(split(first(skip(split(variables('DetailResponseBody'), '"description":"'), 1)), '"'))), '')
+        ```
+        > The detail page description contains spec info like `"Used Mercedes-Benz C-Class 2024 for sale in Sharjah: AED 150,000, 1,250 km, Automatic, Japanese Specs"`.
         >
-        > The frontend will parse this description for regional spec keywords and map to `vpi_category` values:
+        > **Frontend mapping for regional spec → `vpi_category`:**
 
         | Keyword in description | vpi_category value |
         |---|---|
@@ -1238,15 +1263,14 @@ Where slugs are:
         | `Not Sure` or `Other Specs` | Other/Standard (3) |
         | Anything else (Saudi, European, Japanese, American, Canadian, Australian, Korean, Chinese Specs) | Non-GCC (2) |
 
-    **9b(xii) — Update Build Response JSON with Specs:**
+    **9b(v) — Build Response JSON with Specs:**
 
-    74. Click **Add an action** → **Compose**
-    75. Name: `Build Response JSON with Specs`
-    76. Input — use `@{...}` **Expression** tab (NOT bare text):
+    83. Click **Add an action** → **Compose**
+    84. Name: `Build Response JSON with Specs`
+    85. Input — use `@{...}` **Expression** tab (NOT bare text):
         ```
         @{concat('{"success": true, "make": "', triggerBody()?['make'], '", "model": "', triggerBody()?['model'], '", "trim": "', triggerBody()?['trim'], '", "year": ', triggerBody()?['year'], ', "count": ', outputs('Extract_Listing_Count'), ', "minPrice": ', outputs('Extract_Min_Price'), ', "maxPrice": ', outputs('Extract_Max_Price'), ', "bodyType": "', outputs('Extract_Body_Type'), '", "fuelType": "', outputs('Extract_Fuel_Type'), '", "transmission": "', outputs('Extract_Transmission'), '", "driveType": "', outputs('Extract_Drive_Type'), '", "cylinders": "', outputs('Extract_Cylinders'), '", "engineSize": "', outputs('Extract_Engine_Size'), '", "doors": "', outputs('Extract_Doors'), '", "seats": "', outputs('Extract_Seats'), '", "mileage": "', outputs('Extract_Mileage'), '", "regionalSpecs": "', outputs('Extract_Regional_Specs'), '", "heading": "', outputs('Extract_Heading'), '", "sourceUrl": "', outputs('Build_Search_URL'), '"}')}
         ```
-        > This builds a complete JSON payload with ALL vehicle specs alongside the pricing data. When listing URL isn't found, the spec fields are empty but the pricing data (count, minPrice, maxPrice) is still returned. Frontend parses these and writes them to the MVR's Dataverse fields.
 
     **9a(ii) — If no (heading not found):** (leave empty)
 
@@ -1448,6 +1472,37 @@ AED 127,000 — AED 275,000
 6 listings found · 2024 Mercedes Benz C-Class
 6 listings · AED 127,000 – 275,000 · 2024–2024
 ```
+
+**Test 4 (2026-07-29) ⚠️ — Deep scrape partial test (from search page, before Option B):**
+
+Request:
+```json
+{"make": "Mercedes Benz", "model": "C-Class", "trim": "C 200", "year": 2021}
+```
+Response (from `Build Response JSON with Specs`):
+```json
+{"success": true, "make": "Mercedes Benz", "model": "C-Class", "trim": "C-200", "year": 2021, "count": 7, "minPrice": 95000, "maxPrice": 145000, "bodyType": "Sedan", "fuelType": "Petrol", "transmission": "Automatic", "driveType": "", "cylinders": "", "engineSize": "", "doors": "", "seats": "", "mileage": "80000", "regionalSpecs": "7 listings · AED 95,000 – 145,000 · 2021–2021 · updated 29 July 2026", "heading": "">7 listings · AED 95,000 – 145,000 · 2021–2021 · updated 29 July 2026", "sourceUrl": "https://uae.yallamotor.com/used-cars/mercedes-benz/c-class/vr_c-200/yr_2021_2021"}
+```
+
+**Results analysis:**
+
+| Field | Value | Status |
+|---|---|---|
+| bodyType | `Sedan` | ✅ Correct |
+| fuelType | `Petrol` | ✅ Correct |
+| transmission | `Automatic` | ✅ Correct |
+| mileage | `80000` | ✅ Correct |
+| driveType | (empty) | ❌ Not in search page JSON-LD |
+| cylinders | (empty) | ❌ Not in search page JSON-LD |
+| engineSize | (empty) | ❌ Not in search page JSON-LD |
+| doors | (empty) | ❌ Not in search page JSON-LD |
+| seats | (empty) | ❌ Not in search page JSON-LD |
+| regionalSpecs | (heading text) | ❌ `"description":"` matched wrong element |
+| heading | `">7 listings...` | ⚠️ `">` prefix — fix applied |
+
+**Fixes applied to doc:**
+1. **Heading** — changed split delimiter to `heading-h2-content">`
+2. **Option B** — second HTTP to detail page for the 5 missing spec fields (see §9b)
 
 ### ✅ Resolved Issue: Count Shows 0
 

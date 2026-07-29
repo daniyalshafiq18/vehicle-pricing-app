@@ -111,6 +111,11 @@ export const MISSING_VEHICLE_REQUEST_FIELDS = {
   MIN_MILEAGE: 'vpi_minmilage',
   MAX_MILEAGE: 'vpi_maxmilage',
   CREATED_ON: 'createdon',
+  // Spec fields (user-submitted or deep-scraped)
+  ENGINE_SIZE: 'vpi_enginesize',
+  DOORS: 'vpi_doors',
+  SEATS: 'vpi_seats',
+  CATEGORY: 'vpi_category',
   // Scrape result fields
   SCRAPE_STATUS: 'vpi_scrapestatus',
   SCRAPED_LISTINGS: 'vpi_scraped_listings',

@@ -9,6 +9,10 @@ export interface MissingVehicleRequest {
   fuelType?: string;
   transmissionType?: string;
   driveType?: string;
+  engineSize?: number;
+  doors?: string;
+  seats?: string;
+  category?: string;
   status?: string;
   statusValue?: number;
   minPrice?: number;
@@ -18,7 +22,7 @@ export interface MissingVehicleRequest {
   createdOn?: Date;
   contactName?: string;
   contactEmail?: string;
-  // Scrape result fields (populated by Power Automate Flow 2)
+  // Scrape result fields (populated by Power Automate Flow 2/3)
   scrapeStatus?: string;
   scrapeStatusValue?: number;
   scrapedListings?: string;

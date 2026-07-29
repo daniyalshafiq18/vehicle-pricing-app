@@ -89,6 +89,15 @@ export interface IDataSource {
     scrapedListings: string;
     scrapedSources: string;
     scrapeStatusValue: number;
+    bodyTypeValue?: number;
+    fuelTypeValue?: number;
+    transmissionValue?: number;
+    driveTypeValue?: number;
+    cylindersValue?: number;
+    engineSizeValue?: number;
+    doorsValue?: number;
+    seatsValue?: number;
+    categoryValue?: number;
   }): Promise<void>;
   approveAndCreateVehicle(mvr: MissingVehicleRequest): Promise<void>;
 

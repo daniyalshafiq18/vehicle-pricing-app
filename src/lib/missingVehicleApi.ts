@@ -48,6 +48,9 @@ async function findContactIdByEmail(email: string): Promise<string | null> {
 
 function parseRawRecord(raw: Record<string, unknown>): MissingVehicleRequest {
   const bodyTypeKey = `${MISSING_VEHICLE_REQUEST_FIELDS.BODY_TYPE}@OData.Community.Display.V1.FormattedValue`;
+  const categoryKey = `${MISSING_VEHICLE_REQUEST_FIELDS.CATEGORY}@OData.Community.Display.V1.FormattedValue`;
+  const doorsKey = `${MISSING_VEHICLE_REQUEST_FIELDS.DOORS}@OData.Community.Display.V1.FormattedValue`;
+  const seatsKey = `${MISSING_VEHICLE_REQUEST_FIELDS.SEATS}@OData.Community.Display.V1.FormattedValue`;
 
   // Extract expanded contact data if available
   const contactRaw = raw[MISSING_VEHICLE_REQUEST_FIELDS.CONTACT_LOOKUP] as Record<string, unknown> | undefined;
@@ -63,6 +66,10 @@ function parseRawRecord(raw: Record<string, unknown>): MissingVehicleRequest {
     fuelType: missingVehicleFuelTypeLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.FUEL_TYPE]),
     transmissionType: missingVehicleTransmissionTypeLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.TRANSMISSION_TYPE]),
     driveType: missingVehicleDriveTypeLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.DRIVE_TYPE]),
+    engineSize: raw[MISSING_VEHICLE_REQUEST_FIELDS.ENGINE_SIZE] as number | undefined,
+    doors: (raw[doorsKey] as string) ?? undefined,
+    seats: (raw[seatsKey] as string) ?? undefined,
+    category: (raw[categoryKey] as string) ?? undefined,
     status: missingVehicleStatusLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.STATUS]),
     minPrice: raw[MISSING_VEHICLE_REQUEST_FIELDS.MIN_PRICE] as number | undefined,
     maxPrice: raw[MISSING_VEHICLE_REQUEST_FIELDS.MAX_PRICE] as number | undefined,
@@ -243,6 +250,10 @@ export async function fetchMissingVehicleRequests(): Promise<MissingVehicleReque
     MISSING_VEHICLE_REQUEST_FIELDS.FUEL_TYPE,
     MISSING_VEHICLE_REQUEST_FIELDS.TRANSMISSION_TYPE,
     MISSING_VEHICLE_REQUEST_FIELDS.DRIVE_TYPE,
+    MISSING_VEHICLE_REQUEST_FIELDS.ENGINE_SIZE,
+    MISSING_VEHICLE_REQUEST_FIELDS.DOORS,
+    MISSING_VEHICLE_REQUEST_FIELDS.SEATS,
+    MISSING_VEHICLE_REQUEST_FIELDS.CATEGORY,
     MISSING_VEHICLE_REQUEST_FIELDS.STATUS,
     MISSING_VEHICLE_REQUEST_FIELDS.MIN_PRICE,
     MISSING_VEHICLE_REQUEST_FIELDS.MAX_PRICE,
@@ -282,6 +293,10 @@ export async function fetchMissingVehicleRequestById(id: string): Promise<Missin
     MISSING_VEHICLE_REQUEST_FIELDS.FUEL_TYPE,
     MISSING_VEHICLE_REQUEST_FIELDS.TRANSMISSION_TYPE,
     MISSING_VEHICLE_REQUEST_FIELDS.DRIVE_TYPE,
+    MISSING_VEHICLE_REQUEST_FIELDS.ENGINE_SIZE,
+    MISSING_VEHICLE_REQUEST_FIELDS.DOORS,
+    MISSING_VEHICLE_REQUEST_FIELDS.SEATS,
+    MISSING_VEHICLE_REQUEST_FIELDS.CATEGORY,
     MISSING_VEHICLE_REQUEST_FIELDS.STATUS,
     MISSING_VEHICLE_REQUEST_FIELDS.MIN_PRICE,
     MISSING_VEHICLE_REQUEST_FIELDS.MAX_PRICE,
@@ -364,7 +379,8 @@ export async function updateMissingVehicleRequest(
 
 /**
  * Update the scrape results on an existing missing vehicle request (PATCH).
- * Called by admin after triggering a Flow 3 scrape.
+ * Called by the hook after triggering a Flow 3 scrape.
+ * Accepts optional deep-scrape spec fields from the listing detail page.
  */
 export async function updateMissingVehicleScrapeResult(
   id: string,
@@ -374,6 +390,16 @@ export async function updateMissingVehicleScrapeResult(
     scrapedListings: string;
     scrapedSources: string;
     scrapeStatusValue: number;
+    // Optional deep-scrape spec fields (pre-mapped to Dataverse values)
+    bodyTypeValue?: number;
+    fuelTypeValue?: number;
+    transmissionValue?: number;
+    driveTypeValue?: number;
+    cylindersValue?: number;
+    engineSizeValue?: number;
+    doorsValue?: number;
+    seatsValue?: number;
+    categoryValue?: number;
   },
 ): Promise<void> {
   const baseUrl = `${API_BASE}/${ENTITIES.MISSING_VEHICLE_REQUEST}`;
@@ -385,6 +411,17 @@ export async function updateMissingVehicleScrapeResult(
     [MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_SOURCES]: fields.scrapedSources,
     [MISSING_VEHICLE_REQUEST_FIELDS.SCRAPE_STATUS]: fields.scrapeStatusValue,
   };
+
+  // Write spec fields when the flow returned them
+  if (fields.bodyTypeValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.BODY_TYPE] = fields.bodyTypeValue;
+  if (fields.fuelTypeValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.FUEL_TYPE] = fields.fuelTypeValue;
+  if (fields.transmissionValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.TRANSMISSION_TYPE] = fields.transmissionValue;
+  if (fields.driveTypeValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.DRIVE_TYPE] = fields.driveTypeValue;
+  if (fields.cylindersValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.CYLINDERS] = fields.cylindersValue;
+  if (fields.engineSizeValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.ENGINE_SIZE] = fields.engineSizeValue;
+  if (fields.doorsValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.DOORS] = fields.doorsValue;
+  if (fields.seatsValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.SEATS] = fields.seatsValue;
+  if (fields.categoryValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.CATEGORY] = fields.categoryValue;
 
   await safeFetch<void>({
     url: `${baseUrl}(${id})`,

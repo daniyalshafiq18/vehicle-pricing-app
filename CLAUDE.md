@@ -81,6 +81,7 @@ All paths use `@` prefix, configured in both `tsconfig.json` and `vite.config.ts
 | `npm run test:run` | Vitest single run |
 | `npm run test:coverage` | Vitest with coverage |
 | `npm run test:e2e` | Playwright E2E |
+| `npm run publish` | Full deploy: build → download portal state → upload to Power Pages |
 
 ## Project Structure
 ```

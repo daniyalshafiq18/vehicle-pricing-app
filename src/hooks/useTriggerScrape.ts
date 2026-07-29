@@ -1,8 +1,58 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { missingVehicleRepository } from '@repositories';
 import { scrapeViaFlow3 } from '@lib/yallaMotorHttpScraper';
-import { missingVehicleScrapeStatusValue } from '@data/dataverseOptionSets';
+import {
+  missingVehicleScrapeStatusValue,
+  missingVehicleBodyTypeValue,
+  missingVehicleFuelTypeValue,
+  missingVehicleTransmissionTypeValue,
+  missingVehicleDriveTypeValue,
+  missingVehicleCylindersValue,
+  DOORS,
+  SEATS,
+  CATEGORY,
+} from '@data/dataverseOptionSets';
 import toast from 'react-hot-toast';
+
+// ─── Mappers from YallaMotor JSON-LD values to Dataverse option sets ───
+
+/** Normalise drive-type schema URL to a short label Dataverse understands. */
+function mapDriveType(driveType: string): string | undefined {
+  const url = driveType.toLowerCase();
+  if (url.includes('rearwheel')) return 'RWD';
+  if (url.includes('frontwheel')) return 'FWD';
+  if (url.includes('allwheel')) return 'AWD';
+  if (url.includes('4wd') || url.includes('fourwheel')) return '4X4';
+  return undefined;
+}
+
+/** Parse the listing description for regional-spec keywords → Dataverse category label. */
+function mapCategory(description: string): string | undefined {
+  if (description.includes('GCC Specs')) return 'GCC';
+  if (description.includes('Not Sure') || description.includes('Other Specs')) return 'OTHER/STANDARD';
+  // Any other explicit spec mention → Non-GCC
+  if (description.includes('Specs')) return 'NON-GCC';
+  return undefined;
+}
+
+/** Normalise raw fuel type to MISSING_VEHICLE_FUEL_TYPE label. */
+function mapFuelType(fuelType: string): string | undefined {
+  const f = fuelType.toLowerCase();
+  if (f === 'petrol' || f === 'diesel' || f === 'petrol/diesel') return 'Petrol/Diesel';
+  if (f === 'hybrid') return 'Hybrid';
+  if (f === 'electric') return 'Electric';
+  return undefined;
+}
+
+/** Get the Dataverse integer value for a doors label string. */
+function lookupDoorsValue(label: string): number | undefined {
+  return DOORS[label];
+}
+
+/** Get the Dataverse integer value for a seats label string. */
+function lookupSeatsValue(label: string): number | undefined {
+  return SEATS[label];
+}
 
 const MISSING_VEHICLE_REQUESTS_KEY = 'missing-vehicle-requests';
 
@@ -66,6 +116,20 @@ export function useTriggerScrape() {
 
       // Success — save scraped results
       const scrapedValue = missingVehicleScrapeStatusValue('Scraped') ?? 4;
+
+      // Map deep-scrape spec values to Dataverse option-set integers
+      const bodyTypeValue = result.bodyType ? missingVehicleBodyTypeValue(result.bodyType) ?? undefined : undefined;
+      const fuelTypeValue = result.fuelType ? missingVehicleFuelTypeValue(mapFuelType(result.fuelType) ?? result.fuelType) ?? undefined : undefined;
+      const transmissionValue = result.transmission ? missingVehicleTransmissionTypeValue(result.transmission) ?? undefined : undefined;
+      const driveTypeLabel = result.driveType ? mapDriveType(result.driveType) : undefined;
+      const driveTypeValue = driveTypeLabel ? missingVehicleDriveTypeValue(driveTypeLabel) ?? undefined : undefined;
+      const cylindersValue = result.cylinders ? missingVehicleCylindersValue(result.cylinders) ?? undefined : undefined;
+      const engineSizeValue = result.engineSize ? Number(result.engineSize) || undefined : undefined;
+      const doorsValue = result.doors ? lookupDoorsValue(result.doors) : undefined;
+      const seatsValue = result.seats ? lookupSeatsValue(result.seats) : undefined;
+      const categoryLabel = result.regionalSpecs ? mapCategory(result.regionalSpecs) : undefined;
+      const categoryValue = categoryLabel ? (CATEGORY[categoryLabel] ?? undefined) : undefined;
+
       await missingVehicleRepository.updateScrapeResult(params.id, {
         scrapedMinPrice: result.minPrice,
         scrapedMaxPrice: result.maxPrice,
@@ -76,9 +140,30 @@ export function useTriggerScrape() {
           source: 'YallaMotor',
           url: result.sourceUrl,
           heading: result.heading,
+          // Also embed the raw spec values for traceability
+          bodyType: result.bodyType,
+          fuelType: result.fuelType,
+          transmission: result.transmission,
+          driveType: result.driveType,
+          cylinders: result.cylinders,
+          engineSize: result.engineSize,
+          doors: result.doors,
+          seats: result.seats,
+          mileage: result.mileage,
+          regionalSpecs: result.regionalSpecs,
         }),
         scrapedSources: result.sourceUrl,
         scrapeStatusValue: scrapedValue,
+        // Persist mapped spec values to Dataverse
+        ...(bodyTypeValue !== undefined && { bodyTypeValue }),
+        ...(fuelTypeValue !== undefined && { fuelTypeValue }),
+        ...(transmissionValue !== undefined && { transmissionValue }),
+        ...(driveTypeValue !== undefined && { driveTypeValue }),
+        ...(cylindersValue !== undefined && { cylindersValue }),
+        ...(engineSizeValue !== undefined && { engineSizeValue }),
+        ...(doorsValue !== undefined && { doorsValue }),
+        ...(seatsValue !== undefined && { seatsValue }),
+        ...(categoryValue !== undefined && { categoryValue }),
       });
 
       return result;

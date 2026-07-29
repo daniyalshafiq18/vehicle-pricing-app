@@ -16,7 +16,8 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "clean": "rimraf dist node_modules .parcel-cache"
+    "clean": "rimraf dist node_modules .parcel-cache",
+    "publish": "powershell -File publish.ps1"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
