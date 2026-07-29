@@ -94,8 +94,10 @@ export async function scrapeViaFlow3(params: {
     }
 
     // Construct the YallaMotor URL client-side.
-    // Replace spaces with hyphens and strip non-standard characters for clean slugs.
-    const slugify = (s: string) => s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    // Replace any sequence of non-alphanumeric characters with a single hyphen.
+    // This handles spaces ("Mercedes Benz" → "mercedes-benz"), periods ("2.4L" → "2-4l"),
+    // apostrophes ("O'Neil" → "oneil"), and other special chars YallaMotor converts.
+    const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     const makeSlug = slugify(params.make);
     const modelSlug = slugify(params.model);
     const trimSlug = slugify(params.trim);

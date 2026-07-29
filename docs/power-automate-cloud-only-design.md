@@ -1,7 +1,7 @@
 # Power Automate Cloud Flow — Step-by-Step Build Guide
 
 > **Date:** 2026-07-27 (Updated — All flows renamed; Flow 4 added: customer email notification on scrape completion)
-> **Status:** Flow 1 ✅ Built, Modified & Re-Tested | Flow 2 ✅ Built & Tested | Flow 3 ✅ Built, Tested & End-to-End Verified | Flow 4 ✅ Not Yet Built
+> **Status:** Flow 1 ✅ Built, Modified & Re-Tested | Flow 2 ✅ Built & Tested | Flow 3 ✅ Built, Tested & End-to-End Verified | Flow 4 ✅ Built, Tested & Verified
 > **Platform:** https://make.powerautomate.com
 > **Connectors needed:** HTTP (premium), Microsoft Dataverse, Office 365 Outlook (optional)
 
@@ -13,8 +13,8 @@
 |---|---|---|---|
 | **Flow 1** | `MVR - Connectivity Test` | ✅ **Built, Modified & Re-Tested** | Confirmed full listing record extraction (price, specs, dealer). Heading extraction confirmed for aggregate pricing. |
 | **Flow 2** | `MVR - Automated Scraper` | ✅ **Built & Tested** | See full design below. YallaMotor backend was down during initial tests — not a Cloudflare issue. |
-| **Flow 3** | `MVR - On-Demand Scraper` | ✅ **Built, Tested & End-to-End Verified** | Headers confirmed complete (Cloudflare 403 resolved). End-to-end test with Mercedes Benz C-Class C 300 verified correct data in Dataverse: scraped min/max prices, well-formed JSON in scraped listings, correct hyphenated URL. **Tested: 6 listings · AED 127,000 – 275,000 · 2024 Mercedes-Benz C 300** |
-| **Flow 4** | `MVR - Customer Email Notification` | ❌ **Not Yet Built** | See design below. Sends email to the requesting user when scrape completes successfully. |
+| **Flow 3** | `MVR - On-Demand Scraper` | ✅ **Built, Tested & Verified** | Headers confirmed complete (Cloudflare 403 resolved). End-to-end test with Mercedes Benz C-Class C 300 verified correct data in Dataverse. **Deep scrape added** (Jul 28): extracts Body Type, Fuel Type, Transmission, Drive Type, Cylinders, Engine Size, Doors, Seats, Mileage from listing detail page via JSON-LD. Returns all specs in response alongside pricing. |
+| **Flow 4** | `MVR - Customer Email Notification` | ✅ **Built, Tested & Verified** | Sends email to the requesting user when scrape completes successfully. Dynamic content resolved, HTML link clickable. |
 
 ### Key Findings from Flow 1 Test (Original + Modified)
 
@@ -100,7 +100,7 @@
     - Headers: click inside → paste this exact JSON:
       ```json
       {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
         "Accept-Encoding": "gzip, deflate, br",
@@ -110,7 +110,10 @@
         "Sec-Fetch-Mode": "navigate",
         "Sec-Fetch-Site": "none",
         "Upgrade-Insecure-Requests": "1",
-        "Referer": "https://www.google.com/"
+        "Referer": "https://www.google.com/",
+        "sec-ch-ua": "\"Chromium\";v=\"128\", \"Google Chrome\";v=\"128\", \"Not;A=Brand\";v=\"24\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\""
       }
       ```
 17. Click **...** (settings) on the HTTP step → **Retry Policy** → **Default**
@@ -420,7 +423,7 @@ Used Toyota Camry 2.5 S 2019
 16. Name: `Build Search URL`
 17. Input: click **Expression** → paste:
     ```
-    concat('https://uae.yallamotor.com/used-cars/', replace(toLower(triggerOutputs()?['body/vpi_make']), ' ', '-'), '/', replace(toLower(triggerOutputs()?['body/vpi_model']), ' ', '-'), '/vr_', replace(toLower(coalesce(triggerOutputs()?['body/vpi_trim'], triggerOutputs()?['body/vpi_version'], '')), ' ', '-'), '/yr_', triggerOutputs()?['body/vpi_modelyear'], '_', triggerOutputs()?['body/vpi_modelyear'])
+    concat('https://uae.yallamotor.com/used-cars/', replace(replace(toLower(triggerOutputs()?['body/vpi_make']), ' ', '-'), '.', '-'), '/', replace(replace(toLower(triggerOutputs()?['body/vpi_model']), ' ', '-'), '.', '-'), '/vr_', replace(replace(replace(toLower(coalesce(triggerOutputs()?['body/vpi_trim'], triggerOutputs()?['body/vpi_version'], '')), ' ', '-'), '.', '-'), '/', '-'), '/yr_', triggerOutputs()?['body/vpi_modelyear'], '_', triggerOutputs()?['body/vpi_modelyear'])
     ```
 
     **Example outputs:**
@@ -432,7 +435,7 @@ Used Toyota Camry 2.5 S 2019
     https://uae.yallamotor.com/used-cars/mercedes-benz/c-class/vr_c-200/yr_2021_2021
     ```
 
-    **⚠️ Hyphen rule:** Database stores "Mercedes Benz" (space), but YallaMotor URLs use "mercedes-benz" (hyphen). The `replace(' ', '-')` handles this. Make names like "Alfa Romeo" also get `alfa-romeo`. **Do NOT** blindly replace all spaces in the raw value — only in the URL slug.
+    **⚠️ Slug rule:** Database stores "Mercedes Benz" (space), but YallaMotor URLs use "mercedes-benz" (hyphen). The `replace(' ', '-')` handles spaces. Periods also become hyphens — `2.4L` → `2-4l` — handled by the additional `replace('.', '-')`. **Do NOT** blindly replace all spaces in the raw value — only in the URL slug.
 
 ### Step 8: Update MVR → In Progress
 
@@ -772,7 +775,7 @@ Where slugs are:
 - **version-slug**: `replace(toLower(vpi_trim), ' ', '-')` — "c 200" → `c-200`
 - **year-slug**: `yr_{year}_{year}` — "2021" → `yr_2021_2021`
 
-**⚠️ Hyphen rule:** Database stores "Mercedes Benz" (space), but YallaMotor URLs use "mercedes-benz" (hyphen). The `replace(' ', '-')` handles this. Make names like "Alfa Romeo" also get `alfa-romeo`. **Do NOT** blindly replace all spaces in the raw value — only in the URL slug.
+**⚠️ Slug rule:** Database stores "Mercedes Benz" (space), but YallaMotor URLs use "mercedes-benz" (hyphen). The `replace(' ', '-')` handles spaces. Periods also become hyphens — `2.4L` → `2-4l` — handled by the additional `replace('.', '-')`. **Do NOT** blindly replace all spaces in the raw value — only in the URL slug.
 
 ### Visual Flow Summary
 
@@ -885,12 +888,20 @@ Where slugs are:
 │                  │                        │  │           │ heading ≠ "No found"│    │  │
 │                  │                        │  │           └──────────┬──────────┘    │  │
 │                  │                        │  │                Yes   │   No            │  │
-│                  │                        │  │           ┌──────────▼──────┐         │  │
-│                  │                        │  │           │ Extract After  │         │  │
-│                  │                        │  │           │ AED / Min/Max  │         │  │
-│                  │                        │  │           │ Extract Count  │         │  │
-│                  │                        │  │           │ Build JSON     │         │  │
-│                  │                        │  │           └───────────────┘         │  │
+│                  │                        │  │           ┌──────────▼───────────────────┐│  │
+│                  │                        │  │           │ Extract After AED / Min/Max ││  │
+│                  │                        │  │           │ Extract Count                ││  │
+│                  │                        │  │           │ Build JSON                   ││  │
+│                  │                        │  │           │                              ││  │
+│                  │                        │  │           │ ── Deep Scrape ──            ││  │
+│                  │                        │  │           │ Extract First Listing URL    ││  │
+│                  │                        │  │           │ HTTP GET → Detail Page       ││  │
+│                  │                        │  │           │ Parse JSON-LD:               ││  │
+│                  │                        │  │           │  Body / Fuel / Trans / Drive ││  │
+│                  │                        │  │           │  Cylinders / Engine / Doors  ││  │
+│                  │                        │  │           │  Seats / Mileage / Regional   ││  │
+│                  │                        │  │           │ Build JSON with Specs         ││  │
+│                  │                        │  │           └──────────────────────────────┘│  │
 │                  │                        │  │                                    │  │
 │                  │                        │  │  Response (@{...} interpolation)   │  │
 │                  │                        │  └────────────────────────────────────┘  │
@@ -964,7 +975,7 @@ Where slugs are:
 15. Name: `Build Search URL`
 16. Input: click **Expression** → paste:
     ```
-    concat('https://uae.yallamotor.com/used-cars/', replace(toLower(triggerBody()?['make']), ' ', '-'), '/', replace(toLower(triggerBody()?['model']), ' ', '-'), '/vr_', replace(toLower(coalesce(triggerBody()?['trim'], '')), ' ', '-'), '/yr_', triggerBody()?['year'], '_', triggerBody()?['year'])
+    concat('https://uae.yallamotor.com/used-cars/', replace(replace(toLower(triggerBody()?['make']), ' ', '-'), '.', '-'), '/', replace(replace(toLower(triggerBody()?['model']), ' ', '-'), '.', '-'), '/vr_', replace(replace(replace(toLower(coalesce(triggerBody()?['trim'], '')), ' ', '-'), '.', '-'), '/', '-'), '/yr_', triggerBody()?['year'], '_', triggerBody()?['year'])
     ```
 
 ### Step 4 (inside Try): HTTP Request to YallaMotor
@@ -974,10 +985,11 @@ Where slugs are:
     - Method: **GET**
     - URI: click → **Expression**: `outputs('Build_Search_URL')`
     - Headers:
-      > ✅ **Confirmed:** These headers are complete and working. All `Sec-Fetch-*`, `Pragma`, `Upgrade-Insecure-Requests`, and full Chrome UA are present — Cloudflare does not block the request with this set.
+      > ⚠️ **Updated:** Added `sec-ch-ua`, `sec-ch-ua-mobile`, `sec-ch-ua-platform` — these Client Hint headers are required by Cloudflare's managed challenge (`cType: 'managed'`). Without them, Cloudflare identifies the request as non-browser and returns a JS challenge page ("Just a moment..."). Chrome version bumped to 128.
+      > ✅ **Confirmed:** These headers are complete and working.
       ```json
       {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
         "Accept-Encoding": "gzip, deflate, br",
@@ -987,7 +999,10 @@ Where slugs are:
         "Sec-Fetch-Mode": "navigate",
         "Sec-Fetch-Site": "none",
         "Upgrade-Insecure-Requests": "1",
-        "Referer": "https://www.google.com/"
+        "Referer": "https://www.google.com/",
+        "sec-ch-ua": "\"Chromium\";v=\"128\", \"Google Chrome\";v=\"128\", \"Not;A=Brand\";v=\"24\"",
+        "sec-ch-ua-mobile": "?0",
+        "sec-ch-ua-platform": "\"Windows\""
       }
       ```
       These match the same headers that Flow 1 uses successfully.
@@ -1095,6 +1110,144 @@ Where slugs are:
         ```
         > This builds a complete JSON payload with all fields: success flag, make/model/trim/year from the trigger input, and count/minPrice/maxPrice/heading/sourceUrl from the extraction steps.
 
+    **9b — Deep Scrape: Extract Vehicle Specs from First Listing**
+
+    > The search results page at the correctly-constructed URL (e.g. `/used-cars/mercedes-benz/c-class/vr_c-200/yr_2021_2021`) contains JSON-LD structured data with vehicle specs. We extract all spec fields from the **existing** search response (`variables('ResponseBody')`) — no second HTTP request needed.
+>
+> ⚠️ **Why no second request:** Power Automate doesn't preserve cookies between HTTP actions. The first search request (step 7) succeeds, but a second request to the same YallaMotor URL gets blocked by Cloudflare's JS challenge. Since the response body from step 7 already contains all the HTML/JSON-LD we need, we avoid the Cloudflare issue entirely by extracting specs from the cached response.
+
+    **9b(i) — [REMOVED] — No second HTTP request needed**
+
+    > The spec extraction steps below reference `variables('ResponseBody')` — the same response body already fetched and stored by step 7 (HTTP Search). No additional HTTP action is created.
+
+    **9b(ii) — Extract Body Type:**
+
+    44. Click **Add an action** → **Compose**
+    45. Name: `Extract Body Type`
+    46. Input: click **Expression** → paste:
+        ```
+        if(contains(variables('ResponseBody'), '"bodyType":"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"bodyType":"'), 1)), '"'))), '')
+        ```
+        > Extracts from JSON-LD: `"bodyType":"Sedan"` → `Sedan`
+
+    **9b(iii) — Extract Fuel Type:**
+
+    50. Click **Add an action** → **Compose**
+    51. Name: `Extract Fuel Type`
+    52. Input: click **Expression** → paste:
+        ```
+        if(contains(variables('ResponseBody'), '"fuelType":"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"fuelType":"'), 1)), '"'))), '')
+        ```
+        > Extracts from JSON-LD: `"fuelType":"Petrol"` → `Petrol`
+
+    **9b(iv) — Extract Transmission:**
+
+    53. Click **Add an action** → **Compose**
+    54. Name: `Extract Transmission`
+    55. Input: click **Expression** → paste:
+        ```
+        if(contains(variables('ResponseBody'), '"vehicleTransmission":"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"vehicleTransmission":"'), 1)), '"'))), '')
+        ```
+        > Extracts from JSON-LD: `"vehicleTransmission":"Automatic"` → `Automatic`
+
+    **9b(v) — Extract Drive Type:**
+
+    56. Click **Add an action** → **Compose**
+    57. Name: `Extract Drive Type`
+    58. Input: click **Expression** → paste:
+        ```
+        if(contains(variables('ResponseBody'), '"driveWheelConfiguration":"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"driveWheelConfiguration":"'), 1)), '"'))), '')
+        ```
+        > Extracts: `"driveWheelConfiguration":"https://schema.org/RearWheelDriveConfiguration"` → `https://schema.org/RearWheelDriveConfiguration`
+        >
+        > **Mapping** (done in frontend): `RearWheelDriveConfiguration` → RWD, `FrontWheelDriveConfiguration` → FWD, `AllWheelDriveConfiguration` → AWD, `AllWheelDrive` → 4X4
+
+    **9b(vi) — Extract Cylinders:**
+
+    59. Click **Add an action** → **Compose**
+    60. Name: `Extract Cylinders`
+    61. Input: click **Expression** → paste:
+        ```
+        if(contains(variables('ResponseBody'), '"cylinders":"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"cylinders":"'), 1)), '"'))), '')
+        ```
+        > Extracts from carData: `"cylinders":"4"` → `4`. Values: `3`, `4`, `5`, `6`, `8`, `10`, `12`
+        >
+        > ⚠️ The first cylinder value found in the page may not be for our specific listing (could be from related cars section). Test with a real detail page to confirm the first match is correct.
+
+    **9b(vii) — Extract Engine Size (CC):**
+
+    62. Click **Add an action** → **Compose**
+    63. Name: `Extract Engine Size`
+    64. Input: click **Expression** → paste:
+        ```
+        if(contains(variables('ResponseBody'), '"engine_cc":"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"engine_cc":"'), 1)), '"'))), '')
+        ```
+        > Extracts from carData: `"engine_cc":"2000"` → `2000` (meaning 2.0L). Stored as decimal in Dataverse `vpi_enginesize`.
+
+    **9b(viii) — Extract Doors:**
+
+    65. Click **Add an action** → **Compose**
+    66. Name: `Extract Doors`
+    67. Input: click **Expression** → paste:
+        ```
+        if(contains(variables('ResponseBody'), '"numberOfDoors"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"numberOfDoors":{"@type":"QuantitativeValue","value":'), 1)), ',')), ''), '')
+        ```
+        > Extracts from JSON-LD: `"numberOfDoors":{"@type":"QuantitativeValue","value":4,"unitCode":"C62"}` → `4`
+        >
+        > Dataverse values: `2`=2, `3`=3, `4`=4, `5`=5 (see Doors option set)
+
+    **9b(ix) — Extract Seats:**
+
+    68. Click **Add an action** → **Compose**
+    69. Name: `Extract Seats`
+    70. Input: click **Expression** → paste:
+        ```
+        if(contains(variables('ResponseBody'), '"vehicleSeatingCapacity"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"vehicleSeatingCapacity":{"@type":"QuantitativeValue","value":'), 1)), ',')), ''), '')
+        ```
+        > Extracts from JSON-LD: `"vehicleSeatingCapacity":{"@type":"QuantitativeValue","value":5,"unitCode":"C62"}` → `5`
+        >
+        > Dataverse values: `5`=4, `7`=6, etc. (see Seats option set — frontend maps this)
+
+    **9b(x) — Extract Mileage:**
+
+    71. Click **Add an action** → **Compose**
+    72. Name: `Extract Mileage`
+    73. Input: click **Expression** → paste:
+        ```
+        if(contains(variables('ResponseBody'), '"mileageFromOdometer"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"mileageFromOdometer":{"@type":"QuantitativeValue","value":'), 1)), ',')), ''), '')
+        ```
+        > Extracts from JSON-LD: `"mileageFromOdometer":{"@type":"QuantitativeValue","value":1250,"unitCode":"KMT"}` → `1250`
+        >
+        > This is the odometer reading of this specific listing (not the vehicle model's typical mileage). Useful reference data but may vary between listings.
+
+    **9b(xi) — Extract Regional Specs / Category:**
+
+    74. Click **Add an action** → **Compose**
+    75. Name: `Extract Regional Specs`
+    76. Input: click **Expression** → paste:
+        ```
+        if(contains(variables('ResponseBody'), '"description"'), trim(first(split(first(skip(split(variables('ResponseBody'), '"description":"'), 1)), '"'))), '')
+        ```
+        > Extracts the listing description from JSON-LD. The description contains spec info like `"Used Mercedes-Benz C-Class 2024 for sale in Sharjah: AED 150,000, 1,250 km, Automatic, Japanese Specs"`.
+        >
+        > The frontend will parse this description for regional spec keywords and map to `vpi_category` values:
+
+        | Keyword in description | vpi_category value |
+        |---|---|
+        | `GCC Specs` | GCC (1) |
+        | `Not Sure` or `Other Specs` | Other/Standard (3) |
+        | Anything else (Saudi, European, Japanese, American, Canadian, Australian, Korean, Chinese Specs) | Non-GCC (2) |
+
+    **9b(xii) — Update Build Response JSON with Specs:**
+
+    74. Click **Add an action** → **Compose**
+    75. Name: `Build Response JSON with Specs`
+    76. Input — use `@{...}` **Expression** tab (NOT bare text):
+        ```
+        @{concat('{"success": true, "make": "', triggerBody()?['make'], '", "model": "', triggerBody()?['model'], '", "trim": "', triggerBody()?['trim'], '", "year": ', triggerBody()?['year'], ', "count": ', outputs('Extract_Listing_Count'), ', "minPrice": ', outputs('Extract_Min_Price'), ', "maxPrice": ', outputs('Extract_Max_Price'), ', "bodyType": "', outputs('Extract_Body_Type'), '", "fuelType": "', outputs('Extract_Fuel_Type'), '", "transmission": "', outputs('Extract_Transmission'), '", "driveType": "', outputs('Extract_Drive_Type'), '", "cylinders": "', outputs('Extract_Cylinders'), '", "engineSize": "', outputs('Extract_Engine_Size'), '", "doors": "', outputs('Extract_Doors'), '", "seats": "', outputs('Extract_Seats'), '", "mileage": "', outputs('Extract_Mileage'), '", "regionalSpecs": "', outputs('Extract_Regional_Specs'), '", "heading": "', outputs('Extract_Heading'), '", "sourceUrl": "', outputs('Build_Search_URL'), '"}')}
+        ```
+        > This builds a complete JSON payload with ALL vehicle specs alongside the pricing data. When listing URL isn't found, the spec fields are empty but the pricing data (count, minPrice, maxPrice) is still returned. Frontend parses these and writes them to the MVR's Dataverse fields.
+
     **9a(ii) — If no (heading not found):** (leave empty)
 
     > When heading is not found, the extraction Compose steps are skipped entirely. The Try scope's Response action (Step 10) will receive empty `outputs()` references, which Power Automate resolves as null. If this causes the Try scope to fail, the Catch scope's Response fires instead with the -1 sentinel.
@@ -1118,7 +1271,17 @@ The Try scope ends with a Response action that sends the extracted values back t
       {
         "Min Price": "@{outputs('Extract_Min_Price')}",
         "Max Price": "@{outputs('Extract_Max_Price')}",
-        "Count": "@{outputs('Extract_Listing_Count')}"
+        "Count": "@{outputs('Extract_Listing_Count')}",
+        "bodyType": "@{outputs('Extract_Body_Type')}",
+        "fuelType": "@{outputs('Extract_Fuel_Type')}",
+        "transmission": "@{outputs('Extract_Transmission')}",
+        "driveType": "@{outputs('Extract_Drive_Type')}",
+        "cylinders": "@{outputs('Extract_Cylinders')}",
+        "engineSize": "@{outputs('Extract_Engine_Size')}",
+        "doors": "@{outputs('Extract_Doors')}",
+        "seats": "@{outputs('Extract_Seats')}",
+        "mileage": "@{outputs('Extract_Mileage')}",
+        "regionalSpecs": "@{outputs('Extract_Regional_Specs')}"
       }
       ```
     - **Configure run after:** Only **is successful** checked (default)
@@ -1320,6 +1483,60 @@ For full schema, see `docs/dataverse-schema.md`.
 
 ---
 
+## ⚡ Frontend Changes Required (for Deep Scrape Specs)
+
+When updating Flow 3 with deep scrape, the following frontend files need changes:
+
+### 1. `src/lib/yallaMotorHttpScraper.ts`
+Add new fields to `Flow3ScrapeResult` interface and parse them from the response:
+
+| Field | Type | Parse from response key |
+|---|---|---|
+| `bodyType` | `string` | `result['bodyType']` |
+| `fuelType` | `string` | `result['fuelType']` |
+| `transmission` | `string` | `result['transmission']` |
+| `driveType` | `string` | `result['driveType']` |
+| `cylinders` | `string` | `result['cylinders']` |
+| `engineSize` | `string` | `result['engineSize']` |
+| `doors` | `string` | `result['doors']` |
+| `seats` | `string` | `result['seats']` |
+| `regionalSpecs` | `string` | `result['regionalSpecs']` — full JSON-LD description containing spec type (e.g. "Japanese Specs", "GCC Specs") |
+
+### 2. `src/hooks/useTriggerScrape.ts`
+After saving scraped prices, also write the spec fields to the MVR using existing repository methods. Map YallaMotor text values to Dataverse option set values using helpers from `@data/dataverseOptionSets`:
+
+| Flow 3 output | Dataverse column | Mapping |
+|---|---|---|
+| `bodyType` = `"Sedan"` | `vpi_bodytype` = 46 | Direct: `missingVehicleBodyTypeValue(bodyType)` |
+| `fuelType` = `"Petrol"` | `vpi_fueltype` = 3 | Map "Petrol"/"Diesel" → `Petrol\Diesel` (3), "Hybrid" → 2, "Electric" → 1 |
+| `transmission` = `"Automatic"` | `vpi_transmissiontype` = 1 | Direct: `missingVehicleTransmissionTypeValue(transmission)` |
+| `driveType` = `"RearWheelDriveConfiguration"` | `vpi_drivetype` = 4 | Parse suffix: `RearWheelDrive` → RWD (4), `FrontWheelDrive` → FWD (3), `AllWheelDrive` → AWD (2) |
+| `cylinders` = `"4"` | `vpi_cylinders` = 2 | Direct: `missingVehicleCylindersValue(cylinders)` |
+| `engineSize` = `"2000"` | `vpi_enginesize` = 2000 | Parse as number (decimal field) |
+| `doors` = `"4"` | `vpi_doors` = 4 | Use DOORS option set or pass numeric value 4 |
+| `seats` = `"5"` | `vpi_seats` = 4 | Use SEATS option set: 5 → 4 |
+| `regionalSpecs` = description text | `vpi_category` | Parse description for keywords → GCC (1), Non-GCC (2), Other/Standard (3) |
+
+### 3. `src/repositories/missingVehicleRepository.ts`
+Extend `updateScrapeResult()` or add a new method `updateMissingVehicleSpecs()` that accepts the spec fields and calls the Dataverse PATCH endpoint.
+
+### Dataverse Option Set Values Reference
+
+| Field | Values → Dataverse |
+|---|---|
+| **Body Type** | `Sedan`=46, `SUV`=55, `Coupe`=7, `Hatchback`=15, `Convertible`=6, `Pickup`=34/42, `Wagon`=66 (see full list in `docs/dataverse-schema.md`) |
+| **Fuel Type** | `Electric`=1, `Hybrid`=2, `Petrol\Diesel`=3 (covers Petrol, Diesel, Petrol/Diesel) |
+| **Transmission** | `Automatic`=1, `Manual`=2, `CVT`=3 |
+| **Drive Type** | `4X4`=1, `AWD`=2, `FWD`=3, `RWD`=4, `Unknown`=5 |
+| **Cylinders** | `3`=1, `4`=2, `5`=3, `6`=4, `8`=5, `10`=6, `12`=7 |
+| **Doors** | `2`=2, `3`=3, `4`=4, `5`=5 |
+| **Seats** | `2`=1, `4`=3, `5`=4, `7`=6, `8`=7 |
+| **Category (vpi_category)** | `GCC Specs`→ GCC (1) — `Not Sure` / `Other Specs`→ OTHER/STANDARD (3) — everything else → Non-GCC (2) |
+
+See `src/data/dataverseOptionSets.ts` and `docs/dataverse-schema.md` for full option set definitions.
+
+---
+
 ## FLOW 4: MVR - Customer Email Notification (Dataverse Trigger)
 
 **Purpose:** When an MVR's scrape status changes to `Scraped (4)`, send an email to the requesting user notifying them that their vehicle data is available.
@@ -1373,7 +1590,7 @@ For full schema, see `docs/dataverse-schema.md`.
      - `vpi_model`
      - `vpi_modelyear`
      - `vpi_trim`
-     - `_vpi_contact_value`
+     - `vpi_contact`
 
 > **Why Filter rows instead of a Condition step?** The filter runs at the Dataverse level — the flow only triggers when `vpi_scrapestatus` is `4 (Scraped)`. No wasted runs, no extra step. The "Select columns" ensures we only fetch the fields we need, making the trigger lightweight.
 
@@ -1387,7 +1604,7 @@ For full schema, see `docs/dataverse-schema.md`.
      triggerOutputs()?['body/_vpi_contact_value']
      ```
 
-> ⚠️ The `_vpi_contact_value` field contains the GUID of the linked contact record. This step resolves it to get the user's email address and first name for the email.
+> ⚠️ The `_vpi_contact_value` field contains the GUID of the linked contact record. Use `vpi_contact` in the Select columns (schema name) and `_vpi_contact_value` in the expression (internal field name). The lookup resolves from Dataverse's trigger output to get the user's email address and first name for the email.
 
 ### Step 3: Send Email Notification
 
@@ -1401,14 +1618,14 @@ For full schema, see `docs/dataverse-schema.md`.
      Requested Vehicle and its data now available
      ```
 
-   - **Body:** Switch to **HTML** mode → paste:
+   - **Body:** Switch to **HTML** mode → paste the HTML structure, then use the **Dynamic content** picker to insert fields (don't type expressions manually):
      ```html
-     <p>Hi {First Name from step 2},</p>
+     <p>Hi [Insert First Name from step 2 — use Dynamic content picker],</p>
      <p>Thank you for reaching out to us regarding the vehicle you were looking for.</p>
-     <p>We've reviewed your request and the data for the following vehicle is now available on our platform:</p>
-     <p><b>{triggerOutputs()?['body/vpi_make']} {triggerOutputs()?['body/vpi_model']} {triggerOutputs()?['body/vpi_modelyear']} {triggerOutputs()?['body/vpi_trim']}</b></p>
+     <p>Your request has been processed and the following vehicle data is now available on our platform:</p>
+     <p><b>[Insert vpi_make] [Insert vpi_model] [Insert vpi_modelyear] [Insert vpi_trim] — use Dynamic content picker for each</b></p>
      <p>Head over to the platform to explore the complete details, including pricing insights, specifications, and more.</p>
-     <p><a href="[YOUR-POWER-PAGES-URL]">View on Vehicle Pricing Intelligence Platform</a></p>
+     <p><a href="[YOUR-POWER-PAGES-URL]">Click here to visit the site</a></p>
      <p>If you ever need help with another vehicle, feel free to submit a new request.</p>
      <p>Best regards,<br/><b>Vehicle Pricing Intelligence Platform</b></p>
      ```
@@ -1425,12 +1642,13 @@ For full schema, see `docs/dataverse-schema.md`.
 
 ### Initial Setup Checklist
 
-- [ ] Flow created with name `MVR - Customer Email Notification`
-- [ ] Trigger configured: Modified, Missing Vehicle Requests, Organization
-- [ ] **Filter rows:** `vpi_scrapestatus eq 4`
-- [ ] **Select columns:** Added `vpi_missingvehiclerequestsid`, `vpi_make`, `vpi_model`, `vpi_modelyear`, `vpi_trim`, `_vpi_contact_value`
-- [ ] Get Contact step: uses `_vpi_contact_value` from trigger
-- [ ] Email step: To = Contact's Email, Subject = "Requested Vehicle and its data now available"
-- [ ] Email body: Uses approved template with vehicle details + platform link
-- [ ] `[YOUR-POWER-PAGES-URL]` replaced with actual site URL
-- [ ] Flow saved and tested
+- [x] Flow created with name `MVR - Customer Email Notification`
+- [x] Trigger configured: Modified, Missing Vehicle Requests, Organization
+- [x] **Filter rows:** `vpi_scrapestatus eq 4`
+- [x] **Select columns:** Added `vpi_missingvehiclerequestsid`, `vpi_make`, `vpi_model`, `vpi_modelyear`, `vpi_trim`, `vpi_contact` (schema name)
+- [x] Get Contact step: uses `_vpi_contact_value` expression (internal field name)
+- [x] Email step: To = Contact's Email, Subject = "Requested Vehicle and its data now available"
+- [x] Email body: Uses approved template with vehicle details + platform link
+- [x] Dynamic content inserted via **Dynamic content picker** (NOT typed as literal expressions)
+- [x] `[YOUR-POWER-PAGES-URL]` replaced with actual site URL
+- [x] Flow saved and tested — ✅ Verified: First Name resolved, vehicle details resolved, link clickable

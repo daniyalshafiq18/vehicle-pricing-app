@@ -22,6 +22,31 @@
 - Fixed Top Models chart labels so make names are not duplicated when the model already includes the make, and widened/shifted the Y-axis label area for cleaner left alignment.
 - Reduced the Top Models chart label gutter so the horizontal bars start further left with less empty space.
 - Removed the admin header page icon/title block so the search field sits further left, removed the Weekly Stats circular car icon, and strengthened the Overall Performance Dashboard title weight.
+### Power Automate — Flow 3 Deep Scrape for Vehicle Specs
+- **Deep scrape designed** for Flow 3 (`MVR - On-Demand Scraper`): extracts complete vehicle specs from first listing's detail page via JSON-LD
+- **New Flow 3 steps (inside Try/heading-found branch):**
+  - Extract First Listing URL from search results
+  - HTTP Deep Scrape → listing detail page
+  - Extract: Body Type, Fuel Type, Transmission, Drive Type, Cylinders, Engine Size, Doors, Seats, Mileage
+  - Updated Response to include all spec fields
+- **Design doc updated** with full deep scrape steps, extraction expressions, data flow diagram, and Dataverse option set mapping reference
+- **Frontend changes documented** — `yallaMotorHttpScraper.ts`, `useTriggerScrape.ts`, and repository need updates to write specs to Dataverse
+
+### 🐛 Flow 3 Fix — Deep Scrape URL + Cloudflare
+- **Removed step 9b(i) `Extract First Listing URL`** — extracted listing detail URLs (`/used-cars/{make}-{model}-{year}-{city}-{listingID}`) always return 404 on YallaMotor. That URL format is invalid.
+- **Removed `HTTP Deep Scrape` action entirely** — making a second HTTP request to YallaMotor triggers Cloudflare's JS challenge.
+- **All spec extraction now uses `variables('ResponseBody')`** — the response from Step 4 (HTTP Search) is cached here. All 10 extraction expressions changed from `body('HTTP_Deep_Scrape')` → `variables('ResponseBody')`, avoiding the Cloudflare issue entirely.
+- **Updated HTTP headers in Steps 4 & 7:** Added `sec-ch-ua`, `sec-ch-ua-mobile`, `sec-ch-ua-platform` (User-Agent Client Hints) and bumped Chrome 125 → 128. Cloudflare's managed challenge requires these Client Hint headers — without them, it returns a JS challenge page ("Just a moment..."). Applied to both Flow 1 and Flow 3 HTTP actions.
+- **Design doc updated** with new headers, Cloudflare explanation, and simplified no-second-request approach.
+
+### Power Automate — Flow 4 Built, Tested & Verified
+- **Flow 4 (`MVR - Customer Email Notification`) built & tested** — email sends successfully when scrape completes
+- **Fixed:** `vpi_contact` (schema name) vs `_vpi_contact_value` (internal field name) — Select columns uses schema name, expression uses internal name
+- **Fixed:** Dynamic content must be inserted via **Dynamic content picker**, not typed as literal expressions
+- **Fixed:** Email link text changed to "Click here to visit the site"
+- **Fixed:** Email body wording — "We've reviewed your request" → "Your request has been processed"
+- **Docs updated** with corrected template, accurate instructions, and checked-off setup checklist
+- **Memory saved:** Dataverse lookup field naming convention (schema vs internal)
 
 ## 2026-07-27
 
@@ -37,6 +62,27 @@
 
 ### Admin Sidebar UI Revamp
 - Restyled the admin sidebar into a compact white layout matching the provided reference: slimmer width, smaller navigation rows, pale icons, subtle grey active state, compact brand area, and bottom "Back to site" link while preserving all existing navigation labels, routes, badges, and collapse behavior.
+
+### Power Automate — Flow 4 Design: Customer Email Notification
+- **New flow designed** — `MVR - Customer Email Notification` sends an email to the requesting user when their MVR's scrape status changes to `Scraped (4)`
+- **Trigger:** Dataverse "When a row is modified" on Missing Vehicle Requests with filter `vpi_scrapestatus eq 4`
+- **Actions:** Get Contact row (resolves `_vpi_contact_value` lookup) → Send Email (Office 365 Outlook)
+- **Email template:** Professional notification with vehicle details, platform link, and CTA — no pricing/listings in email body
+- **All flows renamed** with consistent `MVR -` prefixing:
+  - Flow 1: `MVR - Connectivity Test` (was `MVR - Test YallaMotor Accessibility`)
+  - Flow 2: `MVR - Automated Scraper` (was `MVR - Scrape YallaMotor (Automated)`)
+  - Flow 3: `MVR - On-Demand Scraper` (was `MVR - Scrape YallaMotor (HTTP)`)
+  - Flow 4: `MVR - Customer Email Notification` (new)
+- **`docs/power-automate-cloud-only-design.md`** — Updated status summary, renamed all flow headings, added complete Flow 4 design section with Filter rows approach (simpler, no extra Condition step)
+
+### Fixed — YallaMotor URL slug: periods now convert to hyphens
+- **Root cause:** Trim "2.4L" produced `vr_2.4l` in Flow 3's URL (period kept) and `vr_24l` in frontend slugify (period stripped). YallaMotor expects `vr_2-4l` (period → hyphen).
+- **`src/lib/yallaMotorHttpScraper.ts`** — Updated slugify: `toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')` — replaces any sequence of non-alphanumeric chars with a single hyphen instead of just stripping them
+- **Flow 3 URL builder expression** — Added nested `replace('.', '-')` for make, model, and trim segments
+- **Flow 2 URL builder expression** — Same fix applied
+- **Design doc** — Updated "Hyphen rule" → "Slug rule" to reflect broader character handling
+
+## 2026-07-26
 
 ### Power Automate — Flow 4 Design: Customer Email Notification
 - **New flow designed** — `MVR - Customer Email Notification` sends an email to the requesting user when their MVR's scrape status changes to `Scraped (4)`

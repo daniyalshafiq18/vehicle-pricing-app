@@ -372,7 +372,7 @@ export const MISSING_VEHICLE_CYLINDERS: Record<string, number> = {
 };
 export const missingVehicleCylindersValue = (label: string): number | null =>
   toValue(MISSING_VEHICLE_CYLINDERS, label);
-export const missingVehicleCylindersLabel = (v: unknown, fallback = '4'): string =>
+export const missingVehicleCylindersLabel = (v: unknown, fallback = ''): string =>
   toLabel(MISSING_VEHICLE_CYLINDERS, v, fallback);
 
 // ─── Missing Vehicle Fuel Type ─────────────────────────────
@@ -384,7 +384,7 @@ export const MISSING_VEHICLE_FUEL_TYPE: Record<string, number> = {
 };
 export const missingVehicleFuelTypeValue = (label: string): number | null =>
   toValue(MISSING_VEHICLE_FUEL_TYPE, label);
-export const missingVehicleFuelTypeLabel = (v: unknown, fallback = 'Petrol/Diesel'): string =>
+export const missingVehicleFuelTypeLabel = (v: unknown, fallback = ''): string =>
   toLabel(MISSING_VEHICLE_FUEL_TYPE, v, fallback);
 
 // ─── Missing Vehicle Transmission Type ─────────────────────
@@ -396,7 +396,7 @@ export const MISSING_VEHICLE_TRANSMISSION_TYPE: Record<string, number> = {
 };
 export const missingVehicleTransmissionTypeValue = (label: string): number | null =>
   toValue(MISSING_VEHICLE_TRANSMISSION_TYPE, label);
-export const missingVehicleTransmissionTypeLabel = (v: unknown, fallback = 'Automatic'): string =>
+export const missingVehicleTransmissionTypeLabel = (v: unknown, fallback = ''): string =>
   toLabel(MISSING_VEHICLE_TRANSMISSION_TYPE, v, fallback);
 
 // ─── Missing Vehicle Drive Type ──────────────────────────
@@ -410,7 +410,7 @@ const MISSING_VEHICLE_DRIVE_TYPE_VALUES: Record<string, number> = {
 };
 export const missingVehicleDriveTypeValue = (label: string): number | null =>
   toValue(MISSING_VEHICLE_DRIVE_TYPE_VALUES, label);
-export const missingVehicleDriveTypeLabel = (v: unknown, fallback = 'Unknown'): string =>
+export const missingVehicleDriveTypeLabel = (v: unknown, fallback = ''): string =>
   toLabel(MISSING_VEHICLE_DRIVE_TYPE_VALUES, v, fallback);
 
 // ─── Missing Vehicle Scrape Status (vpi_scrapestatus) ──────
