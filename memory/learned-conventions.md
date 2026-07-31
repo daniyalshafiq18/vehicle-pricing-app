@@ -37,3 +37,66 @@ metadata:
 - Unused env files should be removed (`.env`, `.env.production` not consumed)
 - `.prettierignore` should only have entries NOT already in `.gitignore`
 - Build artifacts (`tsconfig.tsbuildinfo`, `.vite/`) belong in `.gitignore`
+
+## YallaMotor Scraping Patterns
+
+### Flow 3 Architecture
+- Flow 3 is an HTTP-triggered Power Automate Cloud flow (SAS token auth) that scrapes YallaMotor in real-time.
+- The flow uses a **Try/Catch Scope** with a `-1` sentinel for `count` to signal YallaMotor being unreachable (Cloudflare block).
+- Two HTTP requests: (1) search results page → pricing data + first listing URL, (2) detail page → spec fields.
+
+### JSON-LD Extraction (Search Page)
+- YallaMotor uses Next.js with structured data in `<script type="application/ld+json">` blocks.
+- The **WebPage** JSON-LD block comes first and has `.mainEntity` with an `ItemList` of vehicles.
+- Key search page extraction patterns:
+  - `count`: `"numberOfItems":"` → split on `"`
+  - `minPrice` / `maxPrice`: split `heading-h2-content">` on `–` and strip `AED`
+  - `heading`: split `heading-h2-content">` on `</span>`
+  - First listing URL: extract `<article>` HTML, then split on `href="`, prepend domain
+
+### JSON-LD Extraction (Detail Page — schema.org Vehicle)
+- The detail page has an `AutoDealer` JSON-LD block with `itemOffered` containing vehicle properties.
+- Fields available in JSON-LD:
+  - `bodyType`: `"vehicleBodyType":{"name":"` → split on `"`
+  - `fuelType`: `"fuelType":"` → split on `"`
+  - `transmission`: `"vehicleTransmission":"` → split on `"`
+  - `driveType`: `"driveWheelConfiguration":"` → split on `"` (returns schema.org URL like `https://schema.org/RearWheelDriveConfiguration`)
+  - `mileage`: `"mileageFromOdometer":{"@type":"QuantitativeValue","value":` → could be a **quoted string** (`"value":"130161"`, like engine size) OR **unquoted number** (`"value":130161`). Hardened expression (2026-07-31) tries the string pattern first, then numeric. **Verified on real Pajero JSON-LD (2026-07-31): the value is an UNQUOTED number** (`130161` with `"unitCode":"KMT"`) — the string branch correctly stays silent, the numeric branch fires.
+  - `engineSize`: nested at `"engineDisplacement":{"@type":"QuantitativeValue","value":"` → split on `"` (NOT flat `"engineDisplacement":"`). Verified: `2972` on Pajero. Note: **engine size's value IS a quoted string** while mileage's is unquoted — always check which before assuming.
+  - `doors`: `"numberOfDoors"` → structure varies (nested `{"@type":"QuantitativeValue","value":N}` OR plain `"numberOfDoors":N`). Hardened expression (2026-07-31) checks nested first, then plain int. Both use `}`-then-`,` split so a trailing comma **or** closing brace works (`"value":4}` → `4`). Verified on Pajero: nested with `"unitCode":"C62"` (comma present, so the `,`-only split also worked there — the `}`-then-`,` is insurance for listings without unitCode).
+  - `regionalSpecs`: **HTML table row primary** (`Regional Specs` label → `<td>`), `description` JSON-LD as fallback (hardened 2026-07-31). Frontend keyword-matches for `GCC Specs` / `Non-GCC` / `Other Specs`. **Verified (2026-07-31): "Regional Specs" is ABSENT from the JSON-LD** (HTML-only, like Cylinders) — but `description` contains `GCC Specs`, so the fallback always reaches GCC.
+- **Seats (`vehicleSeatingCapacity`)** is NOT reliably available in YallaMotor listing JSON-LD — skip it.
+- **Power Automate single-parameter functions reject a trailing `''`** — `trim()`, `first()`, `last()`, etc. take a fixed arg count. A `, ''` meant for the `if()` false-branch that lands inside `trim(first(...), '')` fails at runtime: `InvalidTemplate: 'trim' must have only one parameter`. The `if()`'s closing `, '')` must come after the inner function's close paren. (Hit on `Extract_Doors`, fixed 2026-07-31 — pattern now matches `Extract_Mileage`.)
+
+### HTML DOM Extraction (Detail Page)
+- Some fields are only in the Vehicle Highlights tiles (HTML), not JSON-LD. **The real markup (verified view-source, Pajero 2026-07-31) is a grid of `<div>` cards, NOT a `<table>`:**
+  ```html
+  <div class="mb-1 text-sm text-gray-600 capitalize" title="LABEL">LABEL</div>
+  <div class="text-base font-semibold text-gray-900 lg:text-base" title="VALUE">VALUE</div>
+  ```
+  - **Cylinders / Regional Specs extraction pattern:** split on `title="LABEL"`, then split the following segment on `title="` (the value div's title attribute), then split on `"`:
+    `trim(first(split(first(skip(split(first(skip(split(body, 'title="Number of Cylinders"'), 1)), 'title="'), 1)), '"')))` → `6`.
+  - ❌ **A `contains()` diagnostic does NOT prove HTML structure.** The earlier `<th>Number of Cylinders</th><td>4</td>` table assumption was WRONG — there are NO `<td>` tags on the page. `split(..., '<td>')` returned Null at runtime. Always get the actual view-source snippet (~300 chars around the label) before writing HTML extraction. (Hit on Extract_Cylinders, fixed 2026-07-31.)
+  - **Listing URL**: Two-step: (1) find `<article>` element, (2) within it, `split(article, 'href="')` → take second segment → `split on '"'` → `concat('https://uae.yallamotor.com', url)`
+
+### YallaMotor URL Structure
+- Search page: `https://uae.yallamotor.com/used-cars/{make}/{model}/vr_{trim}/yr_{year}_{year}`
+- Detail page: `https://uae.yallamotor.com/used-cars/{make-slug}-{model-slug}-{year}-{listing-id}` (e.g. `/used-cars/mercedes-benz-c-class-2021-sharjah-2104988`)
+- The first `"url":"` match in the search page response gives the WebPage canonical URL, NOT the listing URL. The listing URL must be extracted from the `<article>` HTML.
+
+### Cloudflare Rate Limiting
+- YallaMotor is behind Cloudflare. Repeated rapid test calls (3+ in quick succession) trigger 403 Forbidden.
+- Need ~30 minute cooldown after hitting rate limit.
+- Full HTTP headers including `sec-ch-ua*` help but don't prevent rate limiting on high-frequency calls.
+- Flow 3's Try/Catch Scope handles 403 errors gracefully.
+- Test strategy: wait between manual tests, or test from Power Automate's "Test → Automatic" with saved data.
+
+## Dataverse Option Sets — Verify, Don't Assume
+
+### Option-set maps in code MUST be verified against the actual Dataverse option set
+Two fields on the Missing Vehicle Request table had code maps that were WRONG because they were never checked against Dataverse (verified 2026-07-31):
+- **`vpi_fueltype`**: code assumed `Electric`=1, `Hybrid`=2, `Petrol/Diesel`=3 — that's the Vehicle *Powertrain* option set, copied by mistake. Actual MVR set: `Petrol`=1, `Diesel`=2, `Hybrid`=3, `Electric`=4. Consequence: scraped `Petrol` was written as value 3 → displayed **Hybrid** in Dataverse.
+- **`vpi_bodytype`**: the code map had fabricated labels ("Convertable", "Targah", "Wide Body Minus Bus") and wrong values (Sedan=42, Suv=47). The actual MVR set is its own **68-option** set (Sedan=44, SUV=53, `SUV - Crossover`=57). Consequence: scraped `SUV / Crossover` matched nothing → field never written.
+**Rule:** before trusting a label→value map, open the field in the Power Apps maker portal (Table → field → edit Choice) and copy the exact labels AND integer values. Renaming a label in Dataverse keeps its value (safe) — but the code map must match the final labels exactly.
+**YallaMotor value formats:** `SUV / Crossover` (slash separator) will not match the Dataverse label `SUV - Crossover` (hyphen separator) in an exact lookup. Normalise by comparing lowercase alphanumeric-only (`suvcrossover` == `suvcrossover`) — this also covers `Compact/Mini MPV` and `Coupe/Cabriolet`, whose slashes are legitimate.
+**The Vehicle Data table had the same disease:** the code `BODY_TYPE` map (Sedan=46, SUV=55, "Landaulet"/"Minivan"/"Pickup Truck") was fabricated too. The real Vehicle Data `vpi_bodytype` set is 68 options with values **identical to the MVR set** (Sedan=44, SUV=53, `SUV Crossover`=57). The labels were then cleaned in Dataverse on 2026-07-31 (uppercase `LWB`, uniform ` - ` separator) so both sets are now fully identical — the code mirrors that by aliasing `MISSING_VEHICLE_BODY_TYPE = BODY_TYPE` (one map, can't drift). When two tables' option sets share values, cross-table mapping still needs label-aware conversion: approving an MVR maps `fuelType` → Vehicle `powertraintype`, and "Petrol"/"Diesel" have no exact label in the powertrain set — they must be collapsed to `Petrol/Diesel` (3).

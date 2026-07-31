@@ -35,7 +35,32 @@ function toValue(map: Record<string, number>, label: string): number | null {
   return map[label] ?? null;
 }
 
-// ─── Body Type ────────────────────────────────────────────
+/**
+ * Normalised option lookup: exact match first, then a case + separator-insensitive
+ * fallback. Lets free-form scraper values match Dataverse labels whose casing /
+ * separators differ (e.g. YallaMotor "SUV / Crossover" → "SUV Crossover" / "SUV - Crossover").
+ * The alphanumeric-only normaliser also preserves legitimate slashes ("Compact/Mini MPV",
+ * "Coupe/Cabriolet").
+ */
+function normalizedOptionValue(map: Record<string, number>, label: string): number | null {
+  const exact = toValue(map, label);
+  if (exact !== null) return exact;
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const lc = norm(label);
+  for (const [key, value] of Object.entries(map)) {
+    if (norm(key) === lc) return value;
+  }
+  return null;
+}
+
+// ─── Body Type (Vehicle Data table) ─────────────────────────
+//
+// ⚠️ VERIFIED 2026-07-31 against the actual Dataverse option set
+// (`vpi_bodytype` on the Vehicle table) — 68 options. The previous map was
+// FABRICATED (Sedan=46, SUV=55, "Landaulet"/"Minivan"/"Pickup Truck" don't exist)
+// and shifted every value below 16. Labels cleaned in Dataverse on 2026-07-31 to
+// match the MVR set exactly (uppercase LWB, uniform " - " separator for the SUV
+// subtypes) — labels AND values are now identical to MISSING_VEHICLE_BODY_TYPE.
 
 export const BODY_TYPE: Record<string, number> = {
   Bus: 1,
@@ -53,7 +78,7 @@ export const BODY_TYPE: Record<string, number> = {
   'Half Panel Van': 13,
   'Hard Top': 14,
   Hatchback: 15,
-  Landaulet: 16,
+  Limousine: 16,
   'Long Cargo': 17,
   'Long Van': 18,
   'LWB HR Van': 19,
@@ -65,122 +90,63 @@ export const BODY_TYPE: Record<string, number> = {
   'Mini Bus LWB Wide Body HR': 25,
   'Mini Bus Semi High Roof': 26,
   'Mini Van': 27,
-  Minivan: 28,
-  MPV: 29,
-  'Open Top': 30,
-  'Panel Van': 31,
-  'Panel Van High Roof': 32,
-  'Panelvan Wide Body High Roof': 33,
-  'Pick Up': 34,
-  'Pick Up Double Cab': 35,
-  'Pick Up Double Cab Long Box': 36,
-  'Pick Up Ext Cab': 37,
-  'Pick Up Ext Cab Long Box': 38,
-  'Pick Up Long Box': 39,
-  'Pick Up Lwb': 40,
-  'Pick Up Single Cab': 41,
-  'Pickup Truck': 42,
-  'Regular Cab': 43,
-  'Regular Cab Chassis': 44,
-  'Retractable Hard Top': 45,
-  Sedan: 46,
-  'Short Van': 47,
-  'Single Cabin Long Cargo': 48,
-  'Single Cabin Long Chassis': 49,
-  'Single Cabin Std Cargo': 50,
-  'Single Cabin Std Chassis': 51,
-  'Soft Top': 52,
-  Sportback: 53,
-  Station: 54,
-  SUV: 55,
-  'SUV - Compact': 56,
-  'SUV Convertible': 57,
-  'SUV Coupe': 58,
-  'SUV - Crossover': 59,
-  'SWB Van': 60,
-  Targa: 61,
-  Truck: 62,
-  Van: 63,
-  'Van 3.5 Ton': 64,
-  'Van 4.5 Ton': 65,
-  Wagon: 66,
-  'Wide Body Mini Bus': 67,
-  'Wide Body Van': 68,
-  'Window Van': 69,
+  MPV: 28,
+  'Open Top': 29,
+  'Panel Van': 30,
+  'Panel Van High Roof': 31,
+  'Panel Van Wide Body High Roof': 32,
+  'Pick Up': 33,
+  'Pick Up Double Cab Long Box': 34,
+  'Pick Up Ext Cab': 35,
+  'Pick Up Ext Cab Long Box': 36,
+  'Pick Up Long Box': 37,
+  'Pick Up LWB': 38,
+  'Pick Up Single Cab': 39,
+  'Pick Up Truck': 40,
+  'Regular Cab': 41,
+  'Regular Cab Chassis': 42,
+  'Retractable Hard Top': 43,
+  Sedan: 44,
+  'Short Van': 45,
+  'Single Cabin Long Cargo': 46,
+  'Single Cabin Long Chassis': 47,
+  'Single Cabin Std Cargo': 48,
+  'Single Cabin Std Chassis': 49,
+  'Soft Top': 50,
+  Sportback: 51,
+  Station: 52,
+  SUV: 53,
+  'SUV - Compact': 54,
+  'SUV - Convertible': 55,
+  'SUV - Coupe': 56,
+  'SUV - Crossover': 57,
+  'SWB Van': 58,
+  Targa: 59,
+  Truck: 60,
+  Van: 61,
+  'Van 3.5 Ton': 62,
+  'Van 4.5 Ton': 63,
+  Wagon: 64,
+  'Wide Body Mini Bus': 65,
+  'Wide Body Van': 66,
+  'Window Van': 67,
+  'Pick Up Double Cab': 68,
 };
 export const bodyTypeLabel = (v: unknown, fallback = 'SUV'): string =>
   toLabel(BODY_TYPE, v, fallback);
 export const bodyTypeValue = (label: string): number | null =>
-  toValue(BODY_TYPE, label);
+  normalizedOptionValue(BODY_TYPE, label);
 
-// ─── Missing Vehicle Body Type (dedicated optionset) ───────
+// ─── Missing Vehicle Body Type ─────────────────────────────
+//
+// ⚠️ VERIFIED 2026-07-31 — the MVR `vpi_bodytype` field shares the SAME 68 option
+// values as the Vehicle Data Body Type set, and after the 2026-07-31 label cleanup
+// the labels are identical too. MISSING_VEHICLE_BODY_TYPE is an alias of BODY_TYPE
+// (single source of truth) so the two can never drift apart again.
 
-export const MISSING_VEHICLE_BODY_TYPE: Record<string, number> = {
-  Bus: 1,
-  Cargo: 2,
-  'Cargo Van': 3,
-  'Cargo Van High Roof': 4,
-  'Compact Mini Mpv': 5,
-  Convertable: 6,
-  Coupe: 7,
-  'Coupe Cabriolet': 8,
-  'Crew Cab': 9,
-  Crossbow: 10,
-  'Crossover Fastback': 11,
-  Estate: 12,
-  'Half Panel Van': 13,
-  'Hard Top': 14,
-  Hatchback: 15,
-  Limousine: 16,
-  'Long Cargor': 17,
-  'long Van': 18,
-  'Lwb Hr Van': 19,
-  'Lwb Low Roof Van': 20,
-  'Lwb Van': 21,
-  'Mini Bus': 22,
-  'Mini Bus High Roof': 23,
-  'Mini Bus High Lwb': 24,
-  'Mini Bus High Lwb wide body Hr': 25,
-  'Mini Bus Semi High Roof': 26,
-  'Mini Van': 27,
-  'Open Top': 28,
-  'Panel Van': 29,
-  'Panel Van High Roof': 30,
-  'Panel Van Wide Body High Roof': 31,
-  'Pick Up Double Cab': 32,
-  'Pick Up Double Cab Long Box': 33,
-  'Pick Up Ext Cab': 34,
-  'Pick Up Ext Cab Long Box': 35,
-  'Pick Up Long Box': 36,
-  'Pick Up Lwb': 37,
-  'Pick Up Single Cab': 38,
-  'Pick Up Truck': 39,
-  'Pick Up Regular Cab': 40,
-  'Regular Cab Chassis': 41,
-  Sedan: 42,
-  'Short Cabin Long Cargo': 43,
-  'Single Cabin Long Cargo': 44,
-  'Single Cabin Long Chassis': 45,
-  'Soft Top': 46,
-  Suv: 47,
-  SportBack: 48,
-  Station: 49,
-  'Suv - Conertible': 50,
-  'Suv - Coupe': 51,
-  'Suv - Crossover': 52,
-  'Swb Van': 53,
-  Targah: 54,
-  Truck: 55,
-  Van: 56,
-  'Van 3.5 Ton': 57,
-  'Van 4.5 Ton': 58,
-  Wagon: 59,
-  'Wide Body Minus Bus': 60,
-  'Wide Body Van': 61,
-  'Window Van': 62,
-};
+export const MISSING_VEHICLE_BODY_TYPE: Record<string, number> = BODY_TYPE;
 export const missingVehicleBodyTypeValue = (label: string): number | null =>
-  toValue(MISSING_VEHICLE_BODY_TYPE, label);
+  normalizedOptionValue(MISSING_VEHICLE_BODY_TYPE, label);
 
 // ─── Category ─────────────────────────────────────────────
 
@@ -298,7 +264,11 @@ export const driveTypeLabel = (v: unknown, fallback = 'Unknown'): string =>
 export const driveTypeValue = (label: string): number | null =>
   toValue(DRIVE_TYPE, label);
 
-// ─── Powertrain Type ──────────────────────────────────────
+// ─── Powertrain Type (Vehicle Data table) ─────────────────
+//
+// ⚠️ VERIFIED 2026-07-31 — correct as documented. This is the Vehicle *Powertrain*
+// set. It was previously copied into the MVR Fuel Type map by mistake — the MVR
+// `vpi_fueltype` set is different (Petrol=1, Diesel=2, Hybrid=3, Electric=4).
 
 export const POWERTRAIN: Record<string, number> = {
   Electric: 1,
@@ -376,11 +346,18 @@ export const missingVehicleCylindersLabel = (v: unknown, fallback = ''): string 
   toLabel(MISSING_VEHICLE_CYLINDERS, v, fallback);
 
 // ─── Missing Vehicle Fuel Type ─────────────────────────────
+//
+// ⚠️ VERIFIED 2026-07-31 against the actual Dataverse option set
+// (`vpi_fueltype` on the Missing Vehicle Request table):
+//   Petrol=1, Diesel=2, Hybrid=3, Electric=4.
+// (Previously assumed Electric=1, Hybrid=2, 'Petrol/Diesel'=3 — that was the
+//  Vehicle *Powertrain* option set, copied here by mistake.)
 
 export const MISSING_VEHICLE_FUEL_TYPE: Record<string, number> = {
-  Electric: 1,
-  Hybrid: 2,
-  'Petrol/Diesel': 3,
+  Petrol: 1,
+  Diesel: 2,
+  Hybrid: 3,
+  Electric: 4,
 };
 export const missingVehicleFuelTypeValue = (label: string): number | null =>
   toValue(MISSING_VEHICLE_FUEL_TYPE, label);

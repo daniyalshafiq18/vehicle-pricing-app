@@ -1,7 +1,103 @@
 
 # Changelog
 
+## 2026-07-31
+
+### Flow 3 — MVR Option-Set Mapping Fixed (Fuel + Body Type)
+- **User verified the actual Dataverse option sets** for the Missing Vehicle Request table → the code maps were WRONG (assumed values, never verified against Dataverse).
+- **Fuel Type (`vpi_fueltype`)** — actual: `Petrol`=1, `Diesel`=2, `Hybrid`=3, `Electric`=4. The old code map was copied from the Vehicle *Powertrain* set (Electric=1, Hybrid=2, Petrol/Diesel=3) → scraped `Petrol` was written as value 3 = **Hybrid** in Dataverse. Fixed `MISSING_VEHICLE_FUEL_TYPE` + `mapFuelType()` (Petrol→Petrol, Diesel→Diesel, Hybrid→Hybrid, Electric→Electric).
+- **Body Type (`vpi_bodytype`)** — actual: its own **68-option set** (Sedan=44, SUV=53, `SUV - Crossover`=57). The old code used a fabricated 62-option map (Sedan=42, Suv=47, plus labels that don't exist like "Convertable"/"Targah") → scraped `SUV / Crossover` matched nothing → body type was never written. Replaced with the real values + added a **normalised fallback lookup** (case/separator-insensitive) so YallaMotor `SUV / Crossover` matches Dataverse `SUV - Crossover`.
+- **User cleaned the labels in Dataverse** (acronym casing LWB/HR/MPV/SUV, uniform `SUV - ` separator for all SUV subtypes, `Electrical`→`Electric`). Code uses exactly those labels.
+- **Schema doc lie corrected:** MVR `vpi_bodytype` does NOT share the global Vehicle Data option set — it has its own 68-value set (previously documented as shared). Added the real `vpi_fueltype` table too.
+- Files: `src/data/dataverseOptionSets.ts`, `src/hooks/useTriggerScrape.ts`, `docs/dataverse-schema.md`, `docs/power-automate-cloud-only-design.md`.
+
+### Vehicle Data Option Sets — Body Type Fixed + Powertrain Approval Mapping
+- **User shared the real Vehicle Data option sets** — Body Type `vpi_bodytype` and Powertrain Type `vpi_powertraintype`.
+- **Body Type (`vpi_bodytype`)** — real set is 68 options with values **1:1 identical to the MVR set** (Sedan=44, SUV=53, `SUV Crossover`=57). Only label formatting differs: Vehicle Data has **no ` - ` separator** ("SUV Compact"…"SUV Crossover") and lowercase `Lwb` ("Mini Bus Lwb Wide Body HR"). The old `BODY_TYPE` map was FABRICATED (Sedan=46, SUV=55, labels like "Landaulet"/"Minivan"/"Pickup Truck") and shifted every value below 16 — replaced with the real set; `bodyTypeValue` now uses the normalised fallback lookup.
+- **Powertrain Type (`vpi_powertraintype`)** — was already correct (Electric=1, Hybrid=2, Petrol/Diesel=3); added a VERIFIED note.
+- **Approval flow fix:** `approveAndCreateVehicle()` mapped MVR `fuelType` directly through `powertrainValue()`, so MVR "Petrol"/"Diesel" → Vehicle powertrain was silently dropped (there is no exact "Petrol" label in the powertrain set). Added `mvrFuelToPowertrainLabel()` — Petrol/Diesel → `Petrol/Diesel` (3), Hybrid → 2, Electric → 1.
+- Files: `src/data/dataverseOptionSets.ts`, `src/lib/missingVehicleApi.ts`, `docs/dataverse-schema.md`.
+
+### Vehicle Data Body Type — Labels Synced with MVR + Maps Unified
+- **User cleaned the Vehicle Data labels in Dataverse** on 2026-07-31: `Mini Bus Lwb Wide Body HR` → `Mini Bus LWB Wide Body HR` (uppercase `LWB`), and the four SUV subtypes gained the ` - ` separator (`SUV - Compact`…`SUV - Crossover`).
+- The Vehicle Data and MVR body-type sets are now **fully identical** (labels AND values) — `MISSING_VEHICLE_BODY_TYPE` is now an alias of `BODY_TYPE` (single source of truth), replacing the duplicated 68-entry literal so the two can never drift again.
+- Docs: `docs/dataverse-schema.md` tables + notes updated.
+
+### Flow 3 Deep Scrape — Debugging Retrospective Documented
+- **Added `docs/flow3-deep-scrape-debugging-retrospective.md`** — a complete, self-contained narrative of the entire Flow 3 deep-scrape journey, per user request ("document it, as it is").
+- **Covers, in order:** where it started (patterns designed 2026-07-28 from *guessed* page structures), the full test timeline (Flow 1/2, Flow 3 Tests 1–7), the three live runs of 2026-07-31 (Doors `trim()` arity error → Cylinders Null-split crash → full clean sweep), root-cause analysis of each failure, a "where we were lacking → how we overcame" table, **the final verified extraction expressions** (all 9 fields, copied verbatim from the design doc), how the last run got every field, and the lessons learned.
+- **Key insight preserved:** the killer bug was the assumed `<th>/<td>` table — the real page is `<div title="LABEL">` tiles with zero `<td>` tags. A `contains()` diagnostic proved the label exists but not the markup.
+- **Documents the honesty audit** (evidence extraction is live, not hardcoded) and the remaining step: a second-vehicle credibility re-test after the Cloudflare cooldown.
+- Linked from CLAUDE.md Documentation section and from the design doc's Test 7 section.
+
+### Flow Expression Validator (`npm run validate:flows`)
+- **Added `scripts/validate-flow-expressions.mjs`** — extracts every Power Automate expression from `docs/power-automate-cloud-only-design.md` and validates paren balance (ignoring string literals) **and** single-argument function arity (`trim`/`first`/`last`/etc. must receive exactly one argument).
+- **Why:** The Flow 3 `Extract_Doors` `trim(first(...), '')` two-parameter error cost a Cloudflare-limited test cycle. Every live Flow test is expensive (~30 min cooldown), so catching expression typos locally before testing saves time.
+- **Validated 49 expression blocks** across Flow 1/2/3 sections — all currently pass. Verified the tool catches the exact `trim` bug and stray-paren cases, and skips non-expression blocks (HTML templates, ASCII diagrams, URL/JS samples).
+- **Workflow rule:** run `npm run validate:flows` before any live Flow test.
+- Added `"validate:flows"` npm script + CLAUDE.md Commands/Project Structure entries.
+
+### Flow 3 Deep Scrape — Live Retest (Mitsubishi Pajero)
+- **Retested Flow 3** against a Mitsubishi Pajero GLS V6 2020 listing after the Cloudflare cooldown.
+- **Now verified working:** Listing URL (`<article>` + `href` extraction), Body Type (SUV / Crossover), Fuel Type (Petrol), Transmission (Automatic), Drive Type (`https://schema.org/AllWheelDriveConfiguration`), Engine Size (`2972`).
+- **Cylinders `contains()` diagnostic passed** — confirmed `Number of Cylinders` exists in the HTML DOM, so the HTML extraction path is viable.
+- **Fixed `Extract Doors` expression** (§9b iv-g) — Power Automate error `InvalidTemplate: 'trim' must have only one parameter`. Root cause: a stray `, ''` was passed as a second argument to `trim(first(...), '')`. Corrected to `trim(first(...))`.
+- **Catch Scope verified** — error was gracefully caught without failing the flow.
+
+### Flow 3 Deep Scrape — Expression Hardening (pre-emptive, for next retest)
+- **Doors hardened** (§9b iv-g) — The `trim()` fix still split on `,` only; if `"numberOfDoors"` is the last JSON-LD property (`"value":4}` no trailing comma), it would return `4}`. New nested-if handles: nested `QuantitativeValue` number **and** plain `"numberOfDoors":` integer, using a `}`-then-`,` split in both branches.
+- **Mileage hardened** (§9b iv-i) — Old expression split on `,`, which breaks if the value is a quoted string (like verified engine size `"value":"2000"`). New nested-if tries the string pattern first, then the numeric pattern. Expected: `130161`.
+- **Regional Specs hardened** (§9b iv-j) — Old expression relied on `description` JSON-LD only. New version extracts from the HTML table row (`Regional Specs</th><td>`) first (same server-rendered table as Cylinders, confirmed present), with `description` as fallback. Expected: `GCC Specs`.
+- **All three expressions paren-validated** programmatically (Node script) before committing — DOORS/MILEAGE/REGIONAL all BALANCED.
+- **Still pending:** Doors value, Cylinders numeric value, Mileage value, Regional Specs value (all on next live retest).
+
+### Flow 3 Deep Scrape — Hardened Expressions Verified Against Real JSON-LD (Test 6)
+- **User pasted the real Pajero JSON-LD** — simulated all hardened expressions against it. **All extract correct values:** Doors=`4`, Mileage=`130161`, Regional=`GCC Specs`, plus all previously-working fields re-confirmed.
+- **Key structural findings recorded in the design doc (Test 6 section):**
+  - **Mileage value is an UNQUOTED number** (`"value":130161`) — unlike engine size (quoted string `"value":"2972"`). This validates the dual-path Mileage expression: string branch stays silent, numeric branch fires.
+  - **Doors has a `unitCode`** (`"value":4,"unitCode":"C62"`) — the old `,`-split would have worked *for this car*; the `}`-then-`,` hardening is insurance for listings where doors is the last property.
+  - **"Regional Specs" is absent from JSON-LD** (HTML table only, same as Cylinders) — but `description` contains `GCC Specs`, so both the HTML branch and the description fallback reach GCC.
+  - **JSON-LD wrapper is flat `["Product","Car"]`**, not `AutoDealer`/`itemOffered` — irrelevant to extraction, but recorded so future edits stop guessing.
+- **Residual risk noted:** regional HTML branch assumes the table row is the first `Regional Specs` occurrence in the page — confirmed next live test.
+- **Next step (user-side):** paste the 3 hardened expressions into Power Automate, run `npm run validate:flows` first, then retest (mind the ~30 min Cloudflare cooldown).
+
+### Flow 3 Deep Scrape — Cylinders & Regional Specs `<td>` Bug Root-Caused + Fixed
+- **Live retest failed at `Extract Cylinders`** with `InvalidTemplate: split expects first parameter of type string; provided value of type 'Null'`. The old expression split on `'Number of Cylinders'` → `<td>` → `</td>`.
+- **Root cause (view-source verified):** the YallaMotor Vehicle Highlights section is a grid of **`<div>` cards — there are NO `<td>` tags anywhere on the page**. The `<th>/<td>` table assumption was wrong (the `contains()` diagnostic had only proved the label string exists, not the markup). `first(skip(split(after, '<td>'), 1))` → Null.
+- **Real markup:** `<div class="mb-1 text-sm text-gray-600 capitalize" title="Number of Cylinders">Number of Cylinders</div><div class="text-base font-semibold text-gray-900 lg:text-base" title="6">6</div>` — label and value are sibling `<div>`s; the value's `title` attribute holds the data.
+- **Fix:** both Cylinders (§9b iv-e) and Regional Specs (§9b iv-j) rewritten to split on `title="LABEL"` → the next `title="` → `"`:
+  - Cylinders: `trim(first(split(first(skip(split(first(skip(split(body, 'title="Number of Cylinders"'), 1)), 'title="'), 1)), '"')))` → sim-verified `6`.
+  - Regional Specs: same `title="Regional Specs"` tile pattern primary, JSON-LD `description` fallback (verified contains `GCC Specs`) → either branch reaches GCC.
+- **Simulated all 10 extractions against a faithful reconstruction of the real page** (JSON-LD + Organization block + summary bar + tiles) — all correct: Doors=`4`, Mileage=`130161`, Engine=`2972`, Cylinders=`6`, Regional=`GCC Specs`, plus Body/Fuel/Transmission/Drive.
+- **Bonus finding:** the sticky summary bar contains `<span>GCC Specs</span>` — plain-text region value in the page.
+- **All 43 expressions re-validated** (paren + arity) after the edit.
+
+### Flow 3 Deep Scrape — ✅ FULL CLEAN SWEEP (Mitsubishi Pajero) — Flow 3 Verified End-to-End
+- **One live run, every field correct:** Listing URL ✅, Body Type `SUV / Crossover` ✅, Fuel `Petrol` ✅, Transmission `Automatic` ✅, Drive Type ✅, **Cylinders `6`** ✅, Engine Size `2972` ✅, **Doors `4`** ✅, **Mileage `130161`** ✅, **Regional Specs `GCC Specs`** ✅.
+- **Both `<td>`-bug fixes confirmed live** — Cylinders and Regional Specs extracted correctly via the `title="LABEL"` tile pattern (no Null-split errors).
+- **Full Response JSON correct** — all 9 specs + count=5, minPrice=54999, maxPrice=75500, heading, sourceUrl. No Catch Scope triggered.
+- **Doc:** Test 7 entry added to `docs/power-automate-cloud-only-design.md` recording the full pass.
+- **Flow 3 is now fully verified end-to-end** after the 2026-07-31 `<td>` bug journey (assumed table → Null split crash → view-source revealed `<div title="LABEL">` tiles → rewritten → sim-verified → live pass).
+
+## 2026-07-30
+
+### Flow 3 Deep Scrape — Detail Page Verification & Doc Update
+- **Manual detail page verification** — Confirmed all spec fields present on individual listing page (`used-mercedes-benz-c-class-2021-sharjah-2104988`).
+- **Raw JSON-LD analyzed** — compared extraction patterns against actual page source → found 3 mismatches:
+  - **Fixed Cylinders extraction** (§9b iv-e): **NOT in JSON-LD** at all. Changed from JSON-LD `"numberOfCylinders":"` → HTML DOM extraction (`Number of Cylinders</th>` → `<td>`).
+  - **Fixed Engine Size extraction** (§9b iv-f): Value is nested at `vehicleEngine.engineDisplacement.value`. Changed from `"engineDisplacement":"` (flat) → `"engineDisplacement":{"@type":"QuantitativeValue","value":"` (nested path).
+  - **Added Seats note** (§9b iv-h): Not present in verified JSON-LD, may need DOM extraction or graceful omission.
+- **Added Test 5 entry** — Full "Vehicle Highlights" table with JSON-LD cross-reference: 8/10 fields in JSON-LD, 2 fields (Cylinders, Seats) HTML-only.
+- **Doc clarity fixes**: Renamed `Listing URL Found?` → `Is Listing URL Found`. Clarified that `(empty)` means leave the value field blank (not type "empty"). Clarified that no action is needed in the "If no" branch (DetailResponseBody stays empty automatically). Added explicit placement note: extraction steps go AFTER the condition, not inside its branches.
+
 ## 2026-07-29
+
+### Git Workflow — Hassan PR Merge (165 conflicts)
+- **Merged `origin/hassan` into `main`** — Resolved 165 conflicts by categorizing: source files (manual), auto-generated build artifacts (accept theirs with `git checkout --theirs`), rename/delete edge cases (DD/UD → `git rm`, AU → `git add`).
+- **Removed auto-generated files from git tracking** — `web-files/`, `manifest.yml`, `org*.yml` now in `.gitignore` + removed from tracking via `git rm --cached`. Future merges won't conflict on these.
+- **Ran `npm run publish` post-merge** — SPA-Shell and Home.webpage auto-updated to the correct build hashes. Build succeeded: 3282 modules transformed.
+- **Pushed to origin/main** — 3 commits ahead of remote synced. Remote was on "Revert 'Final Ui Yo'", now at f7a1650.
+- **Key lesson learned**: After any merge, run `npm run publish` to regenerate asset references rather than manually fixing hashes.
 
 ### Git Workflow — publish script & .gitignore
 - **Added `publish.ps1`**: Single PowerShell script that runs build → download portal state → upload to Power Pages.

@@ -35,12 +35,13 @@ function mapCategory(description: string): string | undefined {
   return undefined;
 }
 
-/** Normalise raw fuel type to MISSING_VEHICLE_FUEL_TYPE label. */
+/** Normalise raw fuel type to a MISSING_VEHICLE_FUEL_TYPE label. */
 function mapFuelType(fuelType: string): string | undefined {
   const f = fuelType.toLowerCase();
-  if (f === 'petrol' || f === 'diesel' || f === 'petrol/diesel') return 'Petrol/Diesel';
+  if (f === 'petrol') return 'Petrol';
+  if (f === 'diesel') return 'Diesel';
   if (f === 'hybrid') return 'Hybrid';
-  if (f === 'electric') return 'Electric';
+  if (f === 'electric' || f === 'electrical') return 'Electric';
   return undefined;
 }
 

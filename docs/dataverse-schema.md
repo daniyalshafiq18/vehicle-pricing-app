@@ -120,6 +120,8 @@ The solution now consists of five primary tables:
 
 #### Body Type (`vpi_bodytype`)
 
+> ⚠️ **VERIFIED 2026-07-31** against the actual Dataverse option set — 68 options. The previous table here was FABRICATED (Sedan=46, SUV=55, plus labels like "Landaulet"/"Minivan"/"Panelvan Wide Body High Roof" that don't exist). Labels were cleaned in Dataverse on 2026-07-31 to match the MVR set exactly (uppercase `LWB`, uniform ` - ` separator for the SUV subtypes) — labels AND values are now identical to the [Missing Vehicle Body Type](#body-type-vpi_bodytype-1) set.
+
 | Label | Value |
 |---|---|
 | Bus | 1 |
@@ -137,7 +139,7 @@ The solution now consists of five primary tables:
 | Half Panel Van | 13 |
 | Hard Top | 14 |
 | Hatchback | 15 |
-| Landaulet | 16 |
+| Limousine | 16 |
 | Long Cargo | 17 |
 | Long Van | 18 |
 | LWB HR Van | 19 |
@@ -149,48 +151,47 @@ The solution now consists of five primary tables:
 | Mini Bus LWB Wide Body HR | 25 |
 | Mini Bus Semi High Roof | 26 |
 | Mini Van | 27 |
-| Minivan | 28 |
-| MPV | 29 |
-| Open Top | 30 |
-| Panel Van | 31 |
-| Panel Van High Roof | 32 |
-| Panelvan Wide Body High Roof | 33 |
-| Pick Up | 34 |
-| Pick Up Double Cab | 35 |
-| Pick Up Double Cab Long Box | 36 |
-| Pick Up Ext Cab | 37 |
-| Pick Up Ext Cab Long Box | 38 |
-| Pick Up Long Box | 39 |
-| Pick Up Lwb | 40 |
-| Pick Up Single Cab | 41 |
-| Pickup Truck | 42 |
-| Regular Cab | 43 |
-| Regular Cab Chassis | 44 |
-| Retractable Hard Top | 45 |
-| Sedan | 46 |
-| Short Van | 47 |
-| Single Cabin Long Cargo | 48 |
-| Single Cabin Long Chassis | 49 |
-| Single Cabin Std Cargo | 50 |
-| Single Cabin Std Chassis | 51 |
-| Soft Top | 52 |
-| Sportback | 53 |
-| Station | 54 |
-| SUV | 55 |
-| SUV - Compact | 56 |
-| SUV Convertible | 57 |
-| SUV Coupe | 58 |
-| SUV - Crossover | 59 |
-| SWB Van | 60 |
-| Targa | 61 |
-| Truck | 62 |
-| Van | 63 |
-| Van 3.5 Ton | 64 |
-| Van 4.5 Ton | 65 |
-| Wagon | 66 |
-| Wide Body Mini Bus | 67 |
-| Wide Body Van | 68 |
-| Window Van | 69 |
+| MPV | 28 |
+| Open Top | 29 |
+| Panel Van | 30 |
+| Panel Van High Roof | 31 |
+| Panel Van Wide Body High Roof | 32 |
+| Pick Up | 33 |
+| Pick Up Double Cab Long Box | 34 |
+| Pick Up Ext Cab | 35 |
+| Pick Up Ext Cab Long Box | 36 |
+| Pick Up Long Box | 37 |
+| Pick Up LWB | 38 |
+| Pick Up Single Cab | 39 |
+| Pick Up Truck | 40 |
+| Regular Cab | 41 |
+| Regular Cab Chassis | 42 |
+| Retractable Hard Top | 43 |
+| Sedan | 44 |
+| Short Van | 45 |
+| Single Cabin Long Cargo | 46 |
+| Single Cabin Long Chassis | 47 |
+| Single Cabin Std Cargo | 48 |
+| Single Cabin Std Chassis | 49 |
+| Soft Top | 50 |
+| Sportback | 51 |
+| Station | 52 |
+| SUV | 53 |
+| SUV - Compact | 54 |
+| SUV - Convertible | 55 |
+| SUV - Coupe | 56 |
+| SUV - Crossover | 57 |
+| SWB Van | 58 |
+| Targa | 59 |
+| Truck | 60 |
+| Van | 61 |
+| Van 3.5 Ton | 62 |
+| Van 4.5 Ton | 63 |
+| Wagon | 64 |
+| Wide Body Mini Bus | 65 |
+| Wide Body Van | 66 |
+| Window Van | 67 |
+| Pick Up Double Cab | 68 |
 
 > **Usage:** Vehicle filtering, search, categorization, analytics segmentation, valuation grouping.
 
@@ -297,6 +298,8 @@ The solution now consists of five primary tables:
 | Unknown | 5 |
 
 #### Powertrain Type (`vpi_powertraintype`)
+
+> ⚠️ **VERIFIED 2026-07-31** — correct as documented. This is the Vehicle *Powertrain* set (3 options). It was previously copied into the MVR Fuel Type map by mistake — the MVR `vpi_fueltype` set is different (`Petrol`=1, `Diesel`=2, `Hybrid`=3, `Electric`=4).
 
 | Label | Value |
 |---|---|
@@ -468,7 +471,89 @@ This table records vehicles that users searched for but do not currently exist i
 
 #### Body Type (`vpi_bodytype`)
 
-Shares the same global optionset as [Vehicle Data Body Type](#body-type-vpi_bodytype) — identical labels and values. Refer to that section for the full list (Bus = 1, Sedan = 46, SUV = 55, etc.).
+> ⚠️ **Verified 2026-07-31** — labels AND values are identical to the [Vehicle Data Body Type](#body-type-vpi_bodytype) set (both 68 options, same integers, same labels). Vehicle Data labels were cleaned in Dataverse on 2026-07-31 to match this set exactly (uppercase `LWB`, uniform ` - ` separator for the SUV subtypes). Both sets are mirrored in code by a single `BODY_TYPE` map.
+
+| Label | Value |
+|---|---|
+| Bus | 1 |
+| Cargo | 2 |
+| Cargo Van | 3 |
+| Cargo Van High Roof | 4 |
+| Compact/Mini MPV | 5 |
+| Convertible | 6 |
+| Coupe | 7 |
+| Coupe/Cabriolet | 8 |
+| Crew Cab | 9 |
+| Crossbow | 10 |
+| Crossover Fastback | 11 |
+| Estate | 12 |
+| Half Panel Van | 13 |
+| Hard Top | 14 |
+| Hatchback | 15 |
+| Limousine | 16 |
+| Long Cargo | 17 |
+| Long Van | 18 |
+| LWB HR Van | 19 |
+| LWB Low Roof Van | 20 |
+| LWB Van | 21 |
+| Mini Bus | 22 |
+| Mini Bus High Roof | 23 |
+| Mini Bus LWB | 24 |
+| Mini Bus LWB Wide Body HR | 25 |
+| Mini Bus Semi High Roof | 26 |
+| Mini Van | 27 |
+| MPV | 28 |
+| Open Top | 29 |
+| Panel Van | 30 |
+| Panel Van High Roof | 31 |
+| Panel Van Wide Body High Roof | 32 |
+| Pick Up | 33 |
+| Pick Up Double Cab Long Box | 34 |
+| Pick Up Ext Cab | 35 |
+| Pick Up Ext Cab Long Box | 36 |
+| Pick Up Long Box | 37 |
+| Pick Up LWB | 38 |
+| Pick Up Single Cab | 39 |
+| Pick Up Truck | 40 |
+| Regular Cab | 41 |
+| Regular Cab Chassis | 42 |
+| Retractable Hard Top | 43 |
+| Sedan | 44 |
+| Short Van | 45 |
+| Single Cabin Long Cargo | 46 |
+| Single Cabin Long Chassis | 47 |
+| Single Cabin Std Cargo | 48 |
+| Single Cabin Std Chassis | 49 |
+| Soft Top | 50 |
+| Sportback | 51 |
+| Station | 52 |
+| SUV | 53 |
+| SUV - Compact | 54 |
+| SUV - Convertible | 55 |
+| SUV - Coupe | 56 |
+| SUV - Crossover | 57 |
+| SWB Van | 58 |
+| Targa | 59 |
+| Truck | 60 |
+| Van | 61 |
+| Van 3.5 Ton | 62 |
+| Van 4.5 Ton | 63 |
+| Wagon | 64 |
+| Wide Body Mini Bus | 65 |
+| Wide Body Van | 66 |
+| Window Van | 67 |
+| Pick Up Double Cab | 68 |
+
+#### Fuel Type (`vpi_fueltype`)
+
+> ⚠️ **Verified 2026-07-31** — a distinct 4-value set. Earlier code/docs assumed `Electric`=1, `Hybrid`=2, `Petrol/Diesel`=3 (copied from the Vehicle *Powertrain* set). The actual MVR set is `Petrol`=1, `Diesel`=2, `Hybrid`=3, `Electric`=4.
+
+| Label | Value |
+|---|---|
+| Petrol | 1 |
+| Diesel | 2 |
+| Hybrid | 3 |
+| Electric | 4 |
 
 #### Scrape Status (`vpi_scrapestatus`)
 

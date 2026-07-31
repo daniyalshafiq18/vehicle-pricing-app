@@ -435,6 +435,19 @@ export async function updateMissingVehicleScrapeResult(
 }
 
 /**
+ * Map an MVR fuel-type label to the Vehicle Data Powertrain label.
+ * Petrol and Diesel both collapse to "Petrol/Diesel" (the one non-EV/HEV bucket in
+ * the powertrain option set — there is no exact "Petrol" label there).
+ */
+function mvrFuelToPowertrainLabel(fuelType: string): string | undefined {
+  const f = fuelType.toLowerCase();
+  if (f === 'petrol' || f === 'diesel') return 'Petrol/Diesel';
+  if (f === 'hybrid') return 'Hybrid';
+  if (f === 'electric' || f === 'electrical') return 'Electric';
+  return undefined;
+}
+
+/**
  * Approve a missing vehicle request: create a Vehicle Data record and update status to Approved.
  *
  * Field mapping (MVR → Vehicle Data):
@@ -464,7 +477,9 @@ export async function approveAndCreateVehicle(mvr: MissingVehicleRequest): Promi
     if (!isNaN(cyl)) vehicle[VEHICLE_FIELDS.CYLINDERS] = cyl;
   }
   if (mvr.fuelType) {
-    const pt = powertrainValue(mvr.fuelType);
+    // MVR fuel label → Vehicle powertrain label: Petrol/Diesel both → Petrol/Diesel
+    const ptLabel = mvrFuelToPowertrainLabel(mvr.fuelType);
+    const pt = ptLabel ? powertrainValue(ptLabel) : null;
     if (pt !== null) vehicle[VEHICLE_FIELDS.POWERTRAIN_TYPE] = pt;
   }
   if (mvr.transmissionType) {

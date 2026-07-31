@@ -7,6 +7,13 @@ metadata:
 
 # Cleanup History
 
+## 2026-07-31 — Fabricated Option-Set Maps Replaced + MVR Map Collapsed
+- **Removed fabricated option-set maps** in `src/data/dataverseOptionSets.ts` that were never verified against the real Dataverse:
+  - `MISSING_VEHICLE_BODY_TYPE` (MVR) — the 68-entry literal was fabricated (Sedan=42, Suv=47, non-existent labels "Convertable"/"Targah"). Replaced with the real set (Sedan=44, SUV=53, `SUV - Crossover`=57). After the user cleaned labels in Dataverse on BOTH tables, the MVR and Vehicle Data sets became fully identical → the duplicate literal was **collapsed into an alias** of `BODY_TYPE` (`MISSING_VEHICLE_BODY_TYPE = BODY_TYPE`).
+  - `MISSING_VEHICLE_FUEL_TYPE` (MVR) — was copied from the Vehicle *Powertrain* set (Electric=1, Hybrid=2, Petrol/Diesel=3). Replaced with the real 4-value set (Petrol=1, Diesel=2, Hybrid=3, Electric=4).
+  - `BODY_TYPE` (Vehicle Data) — was fabricated (Sedan=46, SUV=55, "Landaulet"/"Minivan"/"Pickup Truck"). Replaced with the real 68-value set.
+- Rationale: unverified maps silently dropped scrape results (body type never wrote) or wrote wrong values (Petrol stored as Hybrid). Full story in `docs/CHANGELOG.md` (2026-07-31) + `memory/learned-conventions.md`.
+
 ## 2026-07-29 - Power Pages Stale Asset Cleanup
 - Removed obsolete hashed Vite asset web-file directories from `vehicle-pricing-intelligence-platform/.powerpages-site/web-files/`, including the failing `analyticsRepository-Bim_5Jb3.js`, because PAC was trying to upload stale generated assets that no longer match the current build.
 - Left only the current `dist/assets` web-file directories in the Power Pages package and broadened the cleanup matcher in `scripts/update-portal-template.mjs` to catch legacy lowercase `analyticsrepository`/`usepricing` chunks plus old `charts-*` and `table-*` chunks.
