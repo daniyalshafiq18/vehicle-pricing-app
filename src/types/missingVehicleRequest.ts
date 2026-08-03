@@ -1,5 +1,6 @@
 export interface MissingVehicleRequest {
   id: string;
+  name?: string;
   make: string;
   model: string;
   bodyType: string;

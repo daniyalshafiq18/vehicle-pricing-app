@@ -1,6 +1,23 @@
 
 # Changelog
 
+## 2026-08-03
+
+### Missing Vehicle `vpi_name` — Now Populated + Shown in UI
+- **`vpi_name` (Primary Name) was never set** on MVR creation → records had blank titles in Dataverse views/lookups/Power Automate. The Inquiry table already composed its `vpi_name`; MVR was the one that didn't.
+- **Create** (`missingVehicleApi.upsertMissingVehicleRequest`) now sets `vpi_name` = composite vehicle title (`Make Model Trim Year`, e.g. `Mercedes Benz C-Class C 200 2021`), matching the Inquiry pattern.
+- **Read** — added `NAME: 'vpi_name'` to `MISSING_VEHICLE_REQUEST_FIELDS`, mapped it in `parseRawRecord`, added the field to both `$select` lists.
+- **Type** — `MissingVehicleRequest` gains `name?: string`.
+- **UI** — detail-modal heading and card heading now show `request.name` (fallback to `Make Model` for legacy records).
+- Schema doc: MVR table now documents `vpi_name` as Primary Name.
+- Files: `dataverseConfig.ts`, `types/missingVehicleRequest.ts`, `lib/missingVehicleApi.ts`, `features/admin/AdminMissingVehiclesPage.tsx`, `docs/dataverse-schema.md`. Typecheck passes.
+
+### Admin Missing Vehicles — Removed Dead Min/Max Price Fields
+- **`AdminMissingVehiclesPage.tsx`** — Removed the user-suggestion `Min Price` / `Max Price` displays, which are never populated for missing-vehicle (MVR) records (the scrape writes to `vpi_scraped_minprice`/`maxprice` instead).
+- Removed in **3 places**: the two detail-modal grid cards, a dead `{/* Price info */}` block that was always guarded to no-render, and the table's two `Min Price`/`Max Price` columns (header + body cells) — table drops from 12 to 10 columns.
+- Used the `Scraped Min` / `Scraped Max` fields as the single source of price truth in the admin UI; user-suggested pricing still lives in the Vehicles + Price Suggestions flows.
+- `formatCurrency` retained (still used by scraped-price cells). Typecheck passes.
+
 ## 2026-07-31
 
 ### Flow 3 — MVR Option-Set Mapping Fixed (Fuel + Body Type)
@@ -10,6 +27,7 @@
 - **User cleaned the labels in Dataverse** (acronym casing LWB/HR/MPV/SUV, uniform `SUV - ` separator for all SUV subtypes, `Electrical`→`Electric`). Code uses exactly those labels.
 - **Schema doc lie corrected:** MVR `vpi_bodytype` does NOT share the global Vehicle Data option set — it has its own 68-value set (previously documented as shared). Added the real `vpi_fueltype` table too.
 - Files: `src/data/dataverseOptionSets.ts`, `src/hooks/useTriggerScrape.ts`, `docs/dataverse-schema.md`, `docs/power-automate-cloud-only-design.md`.
+- ✅ **Verified live 2026-07-31** after publish — re-ran the scrape (Mercedes C-Class C 200 2021): Body Type + Fuel Type now record correctly in Dataverse.
 
 ### Vehicle Data Option Sets — Body Type Fixed + Powertrain Approval Mapping
 - **User shared the real Vehicle Data option sets** — Body Type `vpi_bodytype` and Powertrain Type `vpi_powertraintype`.

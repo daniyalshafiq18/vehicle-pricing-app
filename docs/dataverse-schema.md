@@ -430,6 +430,7 @@ This table records vehicles that users searched for but do not currently exist i
 
 | Display Name | Logical Name | Type | Usage |
 |---|---|---|---|
+| Name | `vpi_name` | Single Line Text | **Primary Name** — composite vehicle title (`Make Model Trim Year`, e.g. "Mercedes Benz C-Class C 200 2021"), set on creation so records are identifiable in Dataverse views/lookups |
 | Make | `vpi_make` | Single Line Text | Vehicle make/brand searched by user |
 | Model | `vpi_model` | Single Line Text | Vehicle model searched by user |
 | Model Year | `vpi_modelyear` | Whole Number | Model year of the searched vehicle |

@@ -214,7 +214,7 @@ src/
 
 ### Admin Missing Vehicles (`/admin/missing-vehicles`)
 
-- **Table**: #, Make, Model, Year, Spec, Body Type, Requested By, Scrape status badge, Listing count, Min/Max Price, Submitted date, View action
+- **Table**: #, Make, Model, Year, Trim, Status, Scraped, Requester, Date, View action
 - **Card/Grid view**: Toggle with `LayoutList`/`LayoutGrid` icons — responsive grid (`sm:grid-cols-2 lg:grid-cols-3`)
 - **Status filter tabs**: All · Pending · Approved · In Progress · Reject — each with count badge
 - **Detail modal**: Vehicle info, Contact details, Scrape Results section (parsed JSON listing data, clickable source URL), Status dropdown

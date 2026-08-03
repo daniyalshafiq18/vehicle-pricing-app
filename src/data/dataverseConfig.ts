@@ -94,6 +94,7 @@ export const INQUIRY_SELECT_FIELDS = Object.values(INQUIRY_FIELDS).join(',');
 // ─── Missing Vehicle Request Field Logical Names ─────────────
 export const MISSING_VEHICLE_REQUEST_FIELDS = {
   ID: 'vpi_missingvehiclerequestsid',
+  NAME: 'vpi_name',
   MAKE: 'vpi_make',
   MODEL: 'vpi_model',
   TRIM: 'vpi_trim',

@@ -57,6 +57,7 @@ function parseRawRecord(raw: Record<string, unknown>): MissingVehicleRequest {
 
   return {
     id: (raw[MISSING_VEHICLE_REQUEST_FIELDS.ID] as string) ?? '',
+    name: (raw[MISSING_VEHICLE_REQUEST_FIELDS.NAME] as string) ?? undefined,
     make: (raw[MISSING_VEHICLE_REQUEST_FIELDS.MAKE] as string) ?? '',
     model: (raw[MISSING_VEHICLE_REQUEST_FIELDS.MODEL] as string) ?? '',
     bodyType: (raw[bodyTypeKey] as string) ?? '',
@@ -120,7 +121,12 @@ export async function upsertMissingVehicleRequest(payload: {
 }): Promise<string> {
   const baseUrl = `${API_BASE}/${ENTITIES.MISSING_VEHICLE_REQUEST}`;
 
+  // vpi_name is the table's Primary Name — set a composite title so the record
+  // is identifiable in Dataverse views / lookups / Power Automate, not just in the app
   const record: Record<string, unknown> = {
+    [MISSING_VEHICLE_REQUEST_FIELDS.NAME]: [payload.make, payload.model, payload.trim, payload.modelYear]
+      .filter(Boolean)
+      .join(' '),
     [MISSING_VEHICLE_REQUEST_FIELDS.MAKE]: payload.make,
     [MISSING_VEHICLE_REQUEST_FIELDS.MODEL]: payload.model,
     [MISSING_VEHICLE_REQUEST_FIELDS.TRIM]: payload.trim,
@@ -241,6 +247,7 @@ export async function fetchMissingVehicleRequests(): Promise<MissingVehicleReque
 
   const select = [
     MISSING_VEHICLE_REQUEST_FIELDS.ID,
+    MISSING_VEHICLE_REQUEST_FIELDS.NAME,
     MISSING_VEHICLE_REQUEST_FIELDS.MAKE,
     MISSING_VEHICLE_REQUEST_FIELDS.MODEL,
     MISSING_VEHICLE_REQUEST_FIELDS.TRIM,
@@ -284,6 +291,7 @@ export async function fetchMissingVehicleRequestById(id: string): Promise<Missin
 
   const select = [
     MISSING_VEHICLE_REQUEST_FIELDS.ID,
+    MISSING_VEHICLE_REQUEST_FIELDS.NAME,
     MISSING_VEHICLE_REQUEST_FIELDS.MAKE,
     MISSING_VEHICLE_REQUEST_FIELDS.MODEL,
     MISSING_VEHICLE_REQUEST_FIELDS.TRIM,

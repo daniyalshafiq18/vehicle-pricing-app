@@ -270,7 +270,7 @@ function MissingVehicleDetailModal({
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-foreground">
-                  {request.make} {request.model}
+                  {request.name || `${request.make} ${request.model}`}
                 </h2>
                 <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Calendar className="h-3 w-3" />
@@ -304,8 +304,6 @@ function MissingVehicleDetailModal({
               { label: 'Fuel Type', value: request.fuelType },
               { label: 'Transmission', value: request.transmissionType },
               { label: 'Drive Type', value: request.driveType },
-              { label: 'Min Price', value: request.minPrice != null ? formatCurrency(request.minPrice) : null },
-              { label: 'Max Price', value: request.maxPrice != null ? formatCurrency(request.maxPrice) : null },
               { label: 'Status', value: request.status },
               { label: 'Requested By', value: request.contactName || request.contactEmail },
               { label: 'Contact Email', value: request.contactEmail },
@@ -584,7 +582,7 @@ function MissingVehicleCard({
           <div className="flex items-start justify-between mb-4 shrink-0 gap-3">
             <div className="min-w-0">
               <h3 className="text-lg font-semibold text-foreground leading-tight truncate">
-                {request.make} {request.model}
+                {request.name || `${request.make} ${request.model}`}
               </h3>
               {request.modelYear && (
                 <span className="inline-flex items-center rounded-full border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-foreground mt-1">
@@ -616,25 +614,6 @@ function MissingVehicleCard({
               </div>
             ))}
           </div>
-
-          {/* Price info */}
-          {(request.minPrice != null || request.maxPrice != null) && (
-            <div className="mt-3 flex items-center gap-3 rounded-xl border bg-card p-3 shrink-0">
-              <div className="flex-1">
-                <p className="text-xs text-foreground">Min Price</p>
-                <p className="text-sm font-semibold text-foreground">
-                  {request.minPrice != null ? formatCurrency(request.minPrice) : '—'}
-                </p>
-              </div>
-              <div className="h-8 w-px bg-border" />
-              <div className="flex-1">
-                <p className="text-xs text-foreground">Max Price</p>
-                <p className="text-sm font-semibold text-foreground">
-                  {request.maxPrice != null ? formatCurrency(request.maxPrice) : '—'}
-                </p>
-              </div>
-            </div>
-          )}
 
           {/* Scrape info */}
           {request.scrapeStatus && request.scrapeStatus !== 'Pending' && (
@@ -981,8 +960,6 @@ export function AdminMissingVehiclesPage() {
                       <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Model</th>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Year</th>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Trim</th>
-                      <th className="px-3 py-3 text-right text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Min Price</th>
-                      <th className="px-3 py-3 text-right text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Max Price</th>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Status</th>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Scraped</th>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Requester</th>
@@ -1020,16 +997,6 @@ export function AdminMissingVehiclesPage() {
                           <p className="text-sm text-foreground truncate" title={req.trim}>
                             {req.trim || '—'}
                           </p>
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-right">
-                          <span className="text-sm font-medium text-foreground">
-                            {req.minPrice != null ? formatCurrency(req.minPrice) : '—'}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-right">
-                          <span className="text-sm font-medium text-foreground">
-                            {req.maxPrice != null ? formatCurrency(req.maxPrice) : '—'}
-                          </span>
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap">
                           <StatusBadge status={req.status} />
