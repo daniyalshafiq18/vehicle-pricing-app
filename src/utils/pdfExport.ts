@@ -27,10 +27,19 @@ export function downloadValuationPdf(data: PdfExportData): void {
   const { vehicle, pricing } = data;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
+  const teal: [number, number, number] = [25, 184, 165];
+  const tealDark: [number, number, number] = [8, 118, 108];
+  const navy: [number, number, number] = [7, 25, 54];
+  const muted: [number, number, number] = [100, 120, 135];
+  const border: [number, number, number] = [217, 226, 232];
+  const softSurface: [number, number, number] = [244, 248, 251];
+  const tealSurface: [number, number, number] = [236, 251, 248];
 
   // ── Brand header ──────────────────────────────────────────
-  doc.setFillColor(139, 92, 246); // violet-600
+  doc.setFillColor(...navy);
   doc.rect(0, 0, pageW, 18, 'F');
+  doc.setFillColor(...teal);
+  doc.rect(0, 17.2, pageW, 0.8, 'F');
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
@@ -38,7 +47,7 @@ export function downloadValuationPdf(data: PdfExportData): void {
 
   // ── Vehicle identity ──────────────────────────────────────
   let y = 30;
-  doc.setTextColor(30, 41, 59); // slate-800
+  doc.setTextColor(...navy);
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
   const title = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
@@ -46,13 +55,15 @@ export function downloadValuationPdf(data: PdfExportData): void {
   y += 8;
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 116, 139); // slate-500
+  doc.setTextColor(...muted);
   doc.text(vehicle.spec, 14, y);
   y += 14;
 
   // ── Price summary ──────────────────────────────────────────
-  doc.setFillColor(249, 250, 251); // slate-50
+  doc.setFillColor(...tealSurface);
   doc.roundedRect(14, y, pageW - 28, 28, 3, 3, 'F');
+  doc.setDrawColor(...border);
+  doc.roundedRect(14, y, pageW - 28, 28, 3, 3, 'S');
 
   // Colour each price box
   const priceCols = [
@@ -64,11 +75,11 @@ export function downloadValuationPdf(data: PdfExportData): void {
   for (const col of priceCols) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
-    doc.setTextColor(100, 116, 139);
+    doc.setTextColor(...muted);
     doc.text(col.label, col.x + 4, y + 8);
 
     doc.setFontSize(12);
-    doc.setTextColor(30, 41, 59);
+    doc.setTextColor(...tealDark);
     doc.setFont('helvetica', 'bold');
     const formatted = `AED ${col.value.toLocaleString('en-AE', { maximumFractionDigits: 0 })}`;
     doc.text(formatted, col.x + 4, y + 21);
@@ -97,20 +108,28 @@ export function downloadValuationPdf(data: PdfExportData): void {
     body: specRows,
     theme: 'grid',
     headStyles: {
-      fillColor: [139, 92, 246],
+      fillColor: teal,
       textColor: [255, 255, 255],
       fontStyle: 'bold',
       fontSize: 9,
     },
     bodyStyles: {
       fontSize: 8,
-      textColor: [30, 41, 59],
+      textColor: navy,
+      lineColor: border,
+      lineWidth: 0.1,
     },
     alternateRowStyles: {
-      fillColor: [249, 250, 251],
+      fillColor: softSurface,
+    },
+    styles: {
+      font: 'helvetica',
+      cellPadding: 2.5,
+      lineColor: border,
+      lineWidth: 0.1,
     },
     columnStyles: {
-      0: { cellWidth: 60, fontStyle: 'bold' },
+      0: { cellWidth: 60, fontStyle: 'bold', textColor: muted },
       1: { cellWidth: 'auto' },
     },
     margin: { left: 14, right: 14 },
@@ -119,7 +138,7 @@ export function downloadValuationPdf(data: PdfExportData): void {
   // ── Footer ────────────────────────────────────────────────
   const lastY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY ?? y + 100;
   doc.setFontSize(7);
-  doc.setTextColor(148, 163, 184);
+  doc.setTextColor(...muted);
   doc.setFont('helvetica', 'italic');
   doc.text(
     `Generated on ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`,

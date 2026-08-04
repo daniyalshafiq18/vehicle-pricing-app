@@ -81,6 +81,22 @@
 
 ## 2026-07-31
 
+### Valuation
+- Fixed the valuation request-submitted success state so the title, vehicle name, and email render with readable dark-mode text contrast.
+
+### Theme
+- Made the full-screen loading screen light-first with explicit light/dark colors so portal uploads no longer show a black splash before the app theme initializes.
+
+### Admin Vehicles
+- Added colored spec/trim capsules in Vehicles table and card views, including named colors for common trims and deterministic fallback colors for unknown specs.
+
+### Admin UI
+- Strengthened admin page headings to bold across Dashboard, Vehicles, Queries, Missing Vehicles, and Price Suggestions.
+- Refined Vehicles, Missing Vehicles, and Price Suggestions card views with unified white/dark surfaces, soft metadata tiles, cleaner price hierarchy, and consistent teal action states.
+- Restored the admin header platform title link and refined vehicle spec/status capsules across tables, cards, and dashboard status summaries with UI-matched light/dark colors.
+- Retinted the admin header platform title link to the teal brand palette in light and dark mode.
+- Updated neutral Vehicles spec capsules to use the requested `#F6F5F2` background.
+
 ### Flow 3 — MVR Option-Set Mapping Fixed (Fuel + Body Type)
 - **User verified the actual Dataverse option sets** for the Missing Vehicle Request table → the code maps were WRONG (assumed values, never verified against Dataverse).
 - **Fuel Type (`vpi_fueltype`)** — actual: `Petrol`=1, `Diesel`=2, `Hybrid`=3, `Electric`=4. The old code map was copied from the Vehicle *Powertrain* set (Electric=1, Hybrid=2, Petrol/Diesel=3) → scraped `Petrol` was written as value 3 = **Hybrid** in Dataverse. Fixed `MISSING_VEHICLE_FUEL_TYPE` + `mapFuelType()` (Petrol→Petrol, Diesel→Diesel, Hybrid→Hybrid, Electric→Electric).
@@ -160,6 +176,19 @@
 
 ## 2026-07-30
 
+### Public Navigation
+- Locked public navigation visited-link states to the teal UI palette so selected/visited links no longer fall back to browser blue.
+
+### Admin Dashboard
+- Removed the admin dashboard header search and period pill, moved query/missing-vehicle KPI drill-downs directly under Weekly Stats, fixed KPI text wrapping, improved Powertrain center-label contrast in dark mode, and cleaned the leaderboard by removing TSV export, natural-casing headers, and tightening the table width after Max Price.
+- Removed the remaining blank leaderboard table surface after Max Price, made KPI drill-down cards span the dashboard row, improved sidebar item line-height so lower menu labels are not clipped, and changed the default app theme from system-driven dark mode to light mode.
+- Updated the premium leaderboard to use only Year, Make, Model, Spec, Min Price, and Max Price columns across the full table width, removed the Top 100 pill, improved modal header/body contrast in dark mode, and removed the vehicle modal price-range bar plus Comparable Vehicles section.
+- Cleaned landing navbar hover underlines, removed the Vehicles detail modal Pricing Overview section, added resilient phone/location fallbacks for Queries table and detail modal, and corrected dark-mode styling for the Query detail modal header and valuation cards.
+- Standardized Missing Vehicle and Price Suggestion modal sizing/header surfaces, removed the Price Suggestion modal vehicle banner, centered public header/footer wrappers on ultra-wide zoomed views, and migrated persisted default theme state back to light mode.
+- Removed formatted currency preview text from Price Suggestion modal inputs, removed Market Insights from the valuation wizard result step, and improved valuation result label contrast in dark mode.
+- Bumped the persisted theme store migration so existing saved dark/system theme preferences reset to the light default on next load.
+- Rethemed generated valuation PDFs from the old violet report styling to the current navy/teal enterprise UI palette with matching price summary and table surfaces.
+
 ### Flow 3 Deep Scrape — Detail Page Verification & Doc Update
 - **Manual detail page verification** — Confirmed all spec fields present on individual listing page (`used-mercedes-benz-c-class-2021-sharjah-2104988`).
 - **Raw JSON-LD analyzed** — compared extraction patterns against actual page source → found 3 mismatches:
@@ -168,7 +197,6 @@
   - **Added Seats note** (§9b iv-h): Not present in verified JSON-LD, may need DOM extraction or graceful omission.
 - **Added Test 5 entry** — Full "Vehicle Highlights" table with JSON-LD cross-reference: 8/10 fields in JSON-LD, 2 fields (Cylinders, Seats) HTML-only.
 - **Doc clarity fixes**: Renamed `Listing URL Found?` → `Is Listing URL Found`. Clarified that `(empty)` means leave the value field blank (not type "empty"). Clarified that no action is needed in the "If no" branch (DetailResponseBody stays empty automatically). Added explicit placement note: extraction steps go AFTER the condition, not inside its branches.
-
 ## 2026-07-29
 
 ### Git Workflow — Hassan PR Merge (165 conflicts)

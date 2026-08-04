@@ -35,26 +35,26 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; clas
   Pending: {
     label: 'Pending',
     icon: <Clock className="h-3 w-3" />,
-    className: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c]',
+    className: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c] dark:border-[#19b8a5]/35 dark:bg-[#0f3f43] dark:text-[#5eead4]',
     dot: 'bg-[#19b8a5]',
   },
   Approved: {
     label: 'Approved',
     icon: <CheckCircle2 className="h-3 w-3" />,
-    className: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c]',
-    dot: 'bg-[#19b8a5]',
+    className: 'border-[#b7ead4] bg-[#eefbf5] text-[#067647] dark:border-[#34d399]/35 dark:bg-[#0f3328] dark:text-[#86efac]',
+    dot: 'bg-[#22c55e]',
   },
   'In Progress': {
     label: 'In Progress',
     icon: <AlertCircle className="h-3 w-3" />,
-    className: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c]',
-    dot: 'bg-[#19b8a5]',
+    className: 'border-[#c9d8ff] bg-[#eef4ff] text-[#315caa] dark:border-[#5b7cc8]/40 dark:bg-[#102748] dark:text-[#9db8ff]',
+    dot: 'bg-[#5b7cc8]',
   },
   Reject: {
     label: 'Reject',
     icon: <XCircle className="h-3 w-3" />,
-    className: 'border-destructive/20 bg-destructive/10 text-destructive',
-    dot: 'bg-destructive',
+    className: 'border-[#f4c7c7] bg-[#fff0f0] text-[#b42323] dark:border-[#fca5a5]/35 dark:bg-[#3a161a] dark:text-[#fca5a5]',
+    dot: 'bg-[#ef4444]',
   },
 };
 
@@ -63,33 +63,33 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; clas
 const SCRAPE_STATUS_CONFIG: Record<string, { label: string; className: string; dot: string }> = {
   Pending: {
     label: 'Pending',
-    className: 'border-muted-foreground/20 bg-muted text-muted-foreground',
-    dot: 'bg-muted-foreground',
+    className: 'border-[#e5edf2] bg-[#F6F9FB] text-[#647887] dark:border-[#31545a] dark:bg-[#071936] dark:text-[#8fb6cc]',
+    dot: 'bg-[#8aa0ad]',
   },
   Testing: {
     label: 'Testing',
-    className: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c]',
-    dot: 'bg-[#19b8a5]',
+    className: 'border-[#c9d8ff] bg-[#eef4ff] text-[#315caa] dark:border-[#5b7cc8]/40 dark:bg-[#102748] dark:text-[#9db8ff]',
+    dot: 'bg-[#5b7cc8]',
   },
   'In Progress': {
     label: 'In Progress',
-    className: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c]',
-    dot: 'bg-[#19b8a5]',
+    className: 'border-[#c9d8ff] bg-[#eef4ff] text-[#315caa] dark:border-[#5b7cc8]/40 dark:bg-[#102748] dark:text-[#9db8ff]',
+    dot: 'bg-[#5b7cc8]',
   },
   Scraped: {
     label: 'Scraped',
-    className: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c]',
-    dot: 'bg-[#19b8a5]',
+    className: 'border-[#b7ead4] bg-[#eefbf5] text-[#067647] dark:border-[#34d399]/35 dark:bg-[#0f3328] dark:text-[#86efac]',
+    dot: 'bg-[#22c55e]',
   },
   Failed: {
     label: 'Failed',
-    className: 'border-destructive/20 bg-destructive/10 text-destructive',
-    dot: 'bg-destructive',
+    className: 'border-[#f4c7c7] bg-[#fff0f0] text-[#b42323] dark:border-[#fca5a5]/35 dark:bg-[#3a161a] dark:text-[#fca5a5]',
+    dot: 'bg-[#ef4444]',
   },
   Unreachable: {
     label: 'Unreachable',
-    className: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c]',
-    dot: 'bg-[#19b8a5]',
+    className: 'border-[#f4c7c7] bg-[#fff0f0] text-[#b42323] dark:border-[#fca5a5]/35 dark:bg-[#3a161a] dark:text-[#fca5a5]',
+    dot: 'bg-[#ef4444]',
   },
 };
 
@@ -264,23 +264,23 @@ function MissingVehicleDetailModal({
       onClose={onClose}
       title=""
       description=""
-      size="lg"
+      size="xl"
       hideCloseButton
     >
-      <div className="flex max-h-[85vh] flex-col gap-0">
+      <div className="flex max-h-[75vh] flex-col gap-0 text-[#071936] dark:text-white">
         {/* Header */}
-        <div className="shrink-0 -mx-6 -mt-6 rounded-t-2xl bg-gradient-to-br from-[#ecfbf8] via-[#f4fbfa] to-transparent px-6 pb-4 pt-5">
+        <div className="shrink-0 -mx-6 -mt-6 rounded-t-2xl border-b border-[#d9e2e8] bg-white px-6 pb-4 pt-5 dark:border-[#31545a] dark:bg-[#0c2530]">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3.5">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#ecfbf8] shadow-sm">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#ecfbf8] shadow-sm dark:bg-[#0f3f43]">
                 <SearchX className="h-6 w-6 text-[#19b8a5]" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-foreground">
+                <h2 className="text-lg font-semibold text-[#071936] dark:text-white">
                   {request.name ||
                     [request.make, request.model, request.trim].filter(Boolean).join(' ')}
                 </h2>
-                <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
+                <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-[#647887] dark:text-[#b8cbd4]">
                   <Calendar className="h-3 w-3" />
                   Requested {request.createdOn ? formatDate(request.createdOn) : 'Unknown date'}
                 </p>
@@ -290,7 +290,7 @@ function MissingVehicleDetailModal({
               <StatusSelect request={request} />
               <button
                 onClick={onClose}
-                className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-background/80 hover:text-foreground"
+                className="rounded-lg p-1.5 text-[#647887] transition-colors hover:bg-[#ecfbf8] hover:text-[#08766c] dark:text-[#b8cbd4] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -598,8 +598,7 @@ function MissingVehicleCard({
       animate={{ opacity: 1, y: 0 }}
       className="group h-full"
     >
-      <UICard className="overflow-hidden border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 h-full">
-        <div className="brand-gradient h-1" />
+      <UICard className="h-full overflow-hidden border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.07)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(18,38,63,0.11)] dark:bg-[#0c2530] dark:shadow-[0_18px_38px_rgba(0,0,0,0.25)]">
         <CardContent className="p-5 flex flex-col h-full">
           {/* Header: make model trim (+ year badge) + status */}
           <div className="flex items-start justify-between mb-4 shrink-0 gap-3">
@@ -608,7 +607,7 @@ function MissingVehicleCard({
                 {request.name || [request.make, request.model, request.trim].filter(Boolean).join(' ')}
               </h3>
               {request.modelYear && (
-                <span className="inline-flex items-center rounded-full border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-foreground mt-1">
+                <span className="mt-1 inline-flex items-center rounded-full border border-[#d9e2e8] bg-[#f4f8fb] px-2.5 py-0.5 text-xs font-semibold text-[#071936] dark:border-[#31545a] dark:bg-[#071936] dark:text-white">
                   {request.modelYear}
                 </span>
               )}
@@ -629,8 +628,8 @@ function MissingVehicleCard({
               { label: 'Transmission', value: request.transmissionType },
               { label: 'Drive Type', value: request.driveType },
             ].map((spec) => (
-              <div key={spec.label} className="rounded-xl bg-muted/40 p-3 transition-colors hover:bg-muted/60">
-                <p className="text-xs font-medium text-foreground">{spec.label}</p>
+              <div key={spec.label} className="rounded-lg bg-[#f7fafc] p-3 transition-colors hover:bg-[#eef6f7] dark:bg-[#071936] dark:hover:bg-[#0f3440]">
+                <p className="text-xs font-medium text-[#7d93a5] dark:text-[#9fb8c5]">{spec.label}</p>
                 <p className="mt-0.5 text-sm font-semibold text-foreground truncate">
                   {spec.value || '—'}
                 </p>
@@ -646,22 +645,22 @@ function MissingVehicleCard({
                 <ScrapedListingCount listings={request.scrapedListings} />
               </div>
               {(request.scrapedMinPrice != null || request.scrapedMaxPrice != null) && (
-                <div className="flex items-center gap-3 rounded-xl border bg-card p-3">
+                <div className="flex items-center gap-3 rounded-lg border border-[#d9e2e8] bg-[#f7fafc] p-3 dark:border-[#31545a] dark:bg-[#071936]">
                   {request.scrapedMinPrice != null && (
                     <div className="flex-1">
-                      <p className="text-xs text-foreground">Scraped Min</p>
-                      <p className="text-sm font-semibold text-success">
+                      <p className="text-xs font-medium text-[#7d93a5] dark:text-[#9fb8c5]">Scraped Min</p>
+                      <p className="text-sm font-semibold text-[#08766c] tabular-nums dark:text-[#19b8a5]">
                         {formatCurrency(request.scrapedMinPrice)}
                       </p>
                     </div>
                   )}
                   {request.scrapedMinPrice != null && request.scrapedMaxPrice != null && (
-                    <div className="h-8 w-px bg-border" />
+                    <div className="h-8 w-px bg-[#d9e2e8] dark:bg-[#31545a]" />
                   )}
                   {request.scrapedMaxPrice != null && (
                     <div className="flex-1">
-                      <p className="text-xs text-foreground">Scraped Max</p>
-                      <p className="text-sm font-semibold text-success">
+                      <p className="text-xs font-medium text-[#7d93a5] dark:text-[#9fb8c5]">Scraped Max</p>
+                      <p className="text-sm font-semibold text-[#08766c] tabular-nums dark:text-[#19b8a5]">
                         {formatCurrency(request.scrapedMaxPrice)}
                       </p>
                     </div>
@@ -688,9 +687,9 @@ function MissingVehicleCard({
           <div className="flex-1" />
 
           {/* Footer: requested by + action */}
-          <div className="mt-3 flex items-center justify-between border-t pt-3 shrink-0">
+          <div className="mt-3 flex items-center justify-between border-t border-[#e4edf1] pt-3 shrink-0 dark:border-[#244852]">
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-foreground">Requested by</p>
+              <p className="text-xs font-semibold text-[#071936] dark:text-white">Requested by</p>
               <p className="text-sm font-medium text-foreground truncate" title={request.contactName || request.contactEmail || ''}>
                 <User className="mr-1 inline h-3 w-3 text-muted-foreground/60" />
                 {request.contactName || request.contactEmail || '—'}
@@ -701,7 +700,7 @@ function MissingVehicleCard({
                 </p>
               )}
             </div>
-            <Button variant="ghost" size="icon-sm" title="View details" onClick={onClick}>
+            <Button variant="ghost" size="icon-sm" title="View details" onClick={onClick} className="text-[#071936] hover:bg-[#dff7f4] hover:text-[#08766c] dark:text-white dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]">
               <Eye className="h-4 w-4" />
             </Button>
           </div>
@@ -715,7 +714,7 @@ function MissingVehicleCard({
 
 function MissingVehicleCardSkeleton() {
   return (
-    <div className="h-[380px] animate-pulse rounded-2xl border bg-card p-5">
+    <div className="h-[380px] animate-pulse rounded-lg border-0 bg-white p-5 shadow-[0_10px_28px_rgba(18,38,63,0.07)] dark:bg-[#0c2530]">
       <div className="mb-4 flex items-start justify-between">
         <div className="space-y-2">
           <div className="h-6 w-36 rounded bg-muted" />
@@ -854,7 +853,7 @@ export function AdminMissingVehiclesPage() {
       <motion.div variants={itemVariants}>
         <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h1 className="text-lg font-semibold tracking-tight text-foreground">Missing Vehicles</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Missing Vehicles</h1>
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{requests?.length ?? 0}</span> total requests
               {statusCounts.pending > 0 && (

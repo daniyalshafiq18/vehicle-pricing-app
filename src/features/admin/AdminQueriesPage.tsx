@@ -38,25 +38,25 @@ const STATUS_CONFIG: Record<InquiryStatus, { label: string; icon: React.ReactNod
   pending: {
     label: 'Pending',
     icon: <Clock className="h-3 w-3" />,
-    className: 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]',
+    className: 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2] dark:text-[#5eead4] dark:bg-[#0f3f43] dark:border-[#19b8a5]/35',
     dot: 'bg-[#19b8a5]',
   },
   reviewed: {
     label: 'Reviewed',
     icon: <Eye className="h-3 w-3" />,
-    className: 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]',
-    dot: 'bg-[#19b8a5]',
+    className: 'text-[#427189] bg-[#f0f7fa] border-[#d8e7ef] dark:text-[#b8cbd4] dark:bg-[#102d38] dark:border-[#8fb6cc]/35',
+    dot: 'bg-[#8fb6cc]',
   },
   contacted: {
     label: 'Contacted',
     icon: <MessageSquare className="h-3 w-3" />,
-    className: 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]',
-    dot: 'bg-[#19b8a5]',
+    className: 'text-[#315caa] bg-[#eef4ff] border-[#c9d8ff] dark:text-[#9db8ff] dark:bg-[#102748] dark:border-[#5b7cc8]/40',
+    dot: 'bg-[#5b7cc8]',
   },
   closed: {
     label: 'Closed',
     icon: <CheckCircle2 className="h-3 w-3" />,
-    className: 'text-muted-foreground bg-muted/50 border-border/50',
+    className: 'text-[#647887] bg-[#f4f8fb] border-[#d9e2e8] dark:text-[#b8cbd4] dark:bg-[#071936] dark:border-[#31545a]',
     dot: 'bg-muted-foreground',
   },
 };
@@ -108,6 +108,25 @@ function formatShortDate(date: Date | string): string {
   if (days === 1) return 'Yesterday';
   if (days < 7) return `${days}d ago`;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+type InquiryContactFields = Inquiry & Partial<{
+  mobile: string;
+  contactNumber: string;
+  phoneNumber: string;
+}>;
+
+function getInquiryPhone(inquiry: Inquiry): string {
+  const item = inquiry as InquiryContactFields;
+  return [item.phone, item.mobile, item.contactNumber, item.phoneNumber]
+    .find((value) => typeof value === 'string' && value.trim().length > 0)
+    ?.trim() ?? 'N/A';
+}
+
+function formatInquiryLocation(inquiry: Inquiry): string {
+  return [inquiry.city, inquiry.country]
+    .filter((part) => typeof part === 'string' && part.trim().length > 0)
+    .join(', ') || 'N/A';
 }
 
 // ─── Status Select ───────────────────────────────────────────────
@@ -186,6 +205,8 @@ function InquiryDetailModal({
 }) {
   const vehicle = inquiry.selectedVehicle;
   const vehicleDisplay = `${vehicle.year} ${vehicle.make} ${vehicle.model} ${vehicle.spec}`.trim();
+  const phone = getInquiryPhone(inquiry);
+  const location = formatInquiryLocation(inquiry);
 
   return (
     <Dialog
@@ -196,19 +217,19 @@ function InquiryDetailModal({
       size="xl"
       hideCloseButton
     >
-      <div className="flex max-h-[75vh] flex-col gap-0">
-        {/* Header section with gradient */}
-        <div className="shrink-0 -mx-6 -mt-6 rounded-t-2xl bg-gradient-to-br from-[#ecfbf8] via-[#f4fbfa] to-transparent px-6 pb-4 pt-5">
+      <div className="flex max-h-[75vh] flex-col gap-0 text-[#071936] dark:text-white">
+        {/* Header */}
+        <div className="shrink-0 -mx-6 -mt-6 rounded-t-2xl border-b border-[#d9e2e8] bg-white px-6 pb-4 pt-5 dark:border-[#31545a] dark:bg-[#0c2530]">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3.5">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#ecfbf8] shadow-sm">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#ecfbf8] shadow-sm dark:bg-[#0f3f43]">
                 <User className="h-6 w-6 text-[#19b8a5]" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-foreground">
+                <h2 className="text-lg font-semibold text-[#071936] dark:text-white">
                   {inquiry.firstName} {inquiry.lastName}
                 </h2>
-                <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <p className="mt-0.5 flex items-center gap-1.5 text-xs font-medium text-[#647887] dark:text-[#b8cbd4]">
                   <Calendar className="h-3 w-3" />
                   Submitted {formatDate(inquiry.createdAt)}
                 </p>
@@ -218,7 +239,7 @@ function InquiryDetailModal({
               <StatusSelect inquiry={inquiry} />
               <button
                 onClick={onClose}
-                className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-background/80 hover:text-foreground"
+                className="rounded-lg p-1.5 text-[#647887] transition-colors hover:bg-[#ecfbf8] hover:text-[#08766c] dark:text-[#b8cbd4] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -230,31 +251,29 @@ function InquiryDetailModal({
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {/* Contact Info */}
           <div className="mb-4 grid grid-cols-2 gap-4">
-            <div className="rounded-xl border bg-card p-3.5">
-              <p className="flex items-center gap-1.5 text-xs text-foreground">
+            <div className="rounded-xl border border-[#d9e2e8] bg-white p-3.5 dark:border-[#31545a] dark:bg-[#071936]">
+              <p className="flex items-center gap-1.5 text-xs font-medium text-[#647887] dark:text-[#b8cbd4]">
                 <Mail className="h-3 w-3" />
                 Email
               </p>
-              <p className="mt-1 text-sm font-medium text-foreground truncate">{inquiry.email}</p>
+              <p className="mt-1 truncate text-sm font-medium text-[#071936] dark:text-white">{inquiry.email}</p>
             </div>
-            <div className="rounded-xl border bg-card p-3.5">
-              <p className="flex items-center gap-1.5 text-xs text-foreground">
+            <div className="rounded-xl border border-[#d9e2e8] bg-white p-3.5 dark:border-[#31545a] dark:bg-[#071936]">
+              <p className="flex items-center gap-1.5 text-xs font-medium text-[#647887] dark:text-[#b8cbd4]">
                 <Phone className="h-3 w-3" />
                 Phone
               </p>
-              <p className="mt-1 text-sm font-medium text-foreground">{inquiry.phone}</p>
+              <p className="mt-1 text-sm font-medium text-[#071936] dark:text-white">{phone}</p>
             </div>
           </div>
 
           {/* Location */}
-          <div className="mb-4 rounded-xl border bg-card p-3.5">
-            <p className="flex items-center gap-1.5 text-xs text-foreground">
+          <div className="mb-4 rounded-xl border border-[#d9e2e8] bg-white p-3.5 dark:border-[#31545a] dark:bg-[#071936]">
+            <p className="flex items-center gap-1.5 text-xs font-medium text-[#647887] dark:text-[#b8cbd4]">
               <MapPin className="h-3 w-3" />
               Location
             </p>
-            <p className="mt-1 text-sm font-medium text-foreground">
-              {inquiry.city}, {inquiry.country}
-            </p>
+            <p className="mt-1 text-sm font-medium text-[#071936] dark:text-white">{location}</p>
           </div>
 
           {/* Selected Vehicle */}
@@ -288,9 +307,9 @@ function InquiryDetailModal({
                 <span className="text-xs font-medium uppercase tracking-wider text-foreground">Valuation Result</span>
               </div>
               <div className="grid grid-cols-3 divide-x divide-border">
-                <div className="bg-gradient-to-br from-[#ecfbf8] to-transparent p-4">
-                  <p className="text-xs text-foreground">Min Price</p>
-                  <p className="mt-0.5 text-lg font-semibold text-[#08766c]">
+                <div className="bg-white p-4 dark:bg-[#071936]">
+                  <p className="text-xs text-[#647887] dark:text-[#b8cbd4]">Min Price</p>
+                  <p className="mt-0.5 text-lg font-semibold text-[#08766c] dark:text-[#19b8a5]">
                     {formatCurrency(inquiry.valuationResult.pricing.minimumPrice)}
                   </p>
                 </div>
@@ -352,7 +371,7 @@ export function AdminQueriesPage() {
       inq.firstName.toLowerCase().includes(q) ||
       inq.lastName.toLowerCase().includes(q) ||
       inq.email.toLowerCase().includes(q) ||
-      inq.phone.includes(q) ||
+      getInquiryPhone(inq).toLowerCase().includes(q) ||
       `${inq.selectedVehicle.year} ${inq.selectedVehicle.make} ${inq.selectedVehicle.model} ${inq.selectedVehicle.spec}`.toLowerCase().includes(q)
     );
   });
@@ -402,7 +421,7 @@ export function AdminQueriesPage() {
       <motion.div variants={itemVariants}>
         <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Queries</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Queries</h1>
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{inquiries?.length ?? 0}</span> total inquiries
               {statusCounts.pending > 0 && (
@@ -510,6 +529,7 @@ export function AdminQueriesPage() {
                 <tbody className="divide-y">
                   {paginated.map((inquiry, i) => {
                     const vehicleDisplay = `${inquiry.selectedVehicle.year} ${inquiry.selectedVehicle.make} ${inquiry.selectedVehicle.model}`.trim();
+                    const phone = getInquiryPhone(inquiry);
                     return (
                       <tr
                         key={inquiry.id}
@@ -545,7 +565,7 @@ export function AdminQueriesPage() {
                             </p>
                             <p className="text-xs text-foreground/80 whitespace-nowrap flex items-center gap-1.5">
                               <Phone className="h-3 w-3 text-muted-foreground/50" />
-                              {inquiry.phone}
+                              {phone}
                             </p>
                           </div>
                         </td>

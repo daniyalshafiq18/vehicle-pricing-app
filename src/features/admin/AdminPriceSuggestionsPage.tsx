@@ -35,23 +35,23 @@ import { cn, formatCurrency } from '@utils';
 const STATUS_VISUALS: Record<number, { icon: React.ReactNode; className: string; dot: string }> = {
   4: {
     icon: <Clock className="h-3 w-3" />,
-    className: 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]',
+    className: 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2] dark:text-[#5eead4] dark:bg-[#0f3f43] dark:border-[#19b8a5]/35',
     dot: 'bg-[#19b8a5]',
   },
   1: {
     icon: <CheckCircle2 className="h-3 w-3" />,
-    className: 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]',
-    dot: 'bg-[#19b8a5]',
+    className: 'text-[#067647] bg-[#eefbf5] border-[#b7ead4] dark:text-[#86efac] dark:bg-[#0f3328] dark:border-[#34d399]/35',
+    dot: 'bg-[#22c55e]',
   },
   2: {
     icon: <XCircle className="h-3 w-3" />,
-    className: 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]',
-    dot: 'bg-[#19b8a5]',
+    className: 'text-[#b42323] bg-[#fff0f0] border-[#f4c7c7] dark:text-[#fca5a5] dark:bg-[#3a161a] dark:border-[#fca5a5]/35',
+    dot: 'bg-[#ef4444]',
   },
   3: {
     icon: <Edit className="h-3 w-3" />,
-    className: 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]',
-    dot: 'bg-[#19b8a5]',
+    className: 'text-[#315caa] bg-[#eef4ff] border-[#c9d8ff] dark:text-[#9db8ff] dark:bg-[#102748] dark:border-[#5b7cc8]/40',
+    dot: 'bg-[#5b7cc8]',
   },
 };
 
@@ -218,22 +218,22 @@ function PriceSuggestionDetailModal({
       onClose={onClose}
       title=""
       description=""
-      size="lg"
+      size="xl"
       hideCloseButton
     >
-      <div className="flex max-h-[85vh] flex-col gap-0">
+      <div className="flex max-h-[75vh] flex-col gap-0 text-[#071936] dark:text-white">
         {/* Header */}
-        <div className="shrink-0 -mx-6 -mt-6 rounded-t-2xl bg-gradient-to-br from-[#ecfbf8] via-[#f4fbfa] to-transparent px-6 pb-4 pt-5">
+        <div className="shrink-0 -mx-6 -mt-6 rounded-t-2xl border-b border-[#d9e2e8] bg-white px-6 pb-4 pt-5 dark:border-[#31545a] dark:bg-[#0c2530]">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3.5">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#ecfbf8] shadow-sm">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#ecfbf8] shadow-sm dark:bg-[#0f3f43]">
                 <DollarSign className="h-6 w-6 text-[#19b8a5]" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-foreground">
+                <h2 className="text-lg font-semibold text-[#071936] dark:text-white">
                   Price Suggestion
                 </h2>
-                <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <p className="mt-0.5 flex items-center gap-1.5 text-xs font-medium text-[#647887] dark:text-[#b8cbd4]">
                   <Calendar className="h-3 w-3" />
                   Submitted {suggestion.createdOn ? formatDate(suggestion.createdOn) : 'Unknown date'}
                 </p>
@@ -243,7 +243,7 @@ function PriceSuggestionDetailModal({
               <StatusSelect suggestion={suggestion} options={statusOptions} />
               <button
                 onClick={onClose}
-                className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-background/80 hover:text-foreground"
+                className="rounded-lg p-1.5 text-[#647887] transition-colors hover:bg-[#ecfbf8] hover:text-[#08766c] dark:text-[#b8cbd4] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -253,17 +253,6 @@ function PriceSuggestionDetailModal({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          {/* Vehicle info */}
-          {suggestion.vehicleName && (
-            <div className="mb-4 rounded-xl border bg-gradient-to-r from-blue-500/5 to-transparent p-3.5">
-              <p className="text-xs text-slate-800 dark:text-slate-200">Vehicle</p>
-              <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-foreground">
-                <DollarSign className="h-4 w-4 text-blue-500" />
-                {suggestion.vehicleName}
-              </p>
-            </div>
-          )}
-
           <div className="grid grid-cols-2 gap-3">
             {/* Submitted By (read-only) */}
             <div className="rounded-xl border bg-card p-3.5">
@@ -289,11 +278,6 @@ function PriceSuggestionDetailModal({
                   className="h-9 w-full rounded-[10px] border border-[#d9e2e8] bg-white pl-10 pr-3 text-sm font-medium text-[#071936] outline-none transition-colors focus:border-[#19b8a5]/60 focus:ring-2 focus:ring-[#19b8a5]/15 dark:border-[#31545a] dark:bg-[#0c2530] dark:text-white dark:placeholder:text-[#6f8d99]"
                 />
               </div>
-              {editMinPrice > 0 && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Formatted: <span className="font-medium text-foreground/80">{formatCurrency(editMinPrice)}</span>
-                </p>
-              )}
             </div>
 
             {/* Max Price (editable) */}
@@ -308,11 +292,6 @@ function PriceSuggestionDetailModal({
                   className="h-9 w-full rounded-[10px] border border-[#d9e2e8] bg-white pl-10 pr-3 text-sm font-medium text-[#071936] outline-none transition-colors focus:border-[#19b8a5]/60 focus:ring-2 focus:ring-[#19b8a5]/15 dark:border-[#31545a] dark:bg-[#0c2530] dark:text-white dark:placeholder:text-[#6f8d99]"
                 />
               </div>
-              {editMaxPrice > 0 && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Formatted: <span className="font-medium text-foreground/80">{formatCurrency(editMaxPrice)}</span>
-                </p>
-              )}
             </div>
 
             {/* Source URL (read-only) */}
@@ -394,7 +373,7 @@ function PriceSuggestionCard({
       animate={{ opacity: 1, y: 0 }}
       className="group h-full"
     >
-      <UICard className="overflow-hidden border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 h-full">
+      <UICard className="h-full overflow-hidden border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.07)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(18,38,63,0.11)] dark:bg-[#0c2530] dark:shadow-[0_18px_38px_rgba(0,0,0,0.25)]">
         <CardContent className="p-5 flex flex-col h-full">
           {/* Header: vehicle name + status */}
           <div className="flex items-start justify-between mb-4 shrink-0 gap-3">
@@ -417,15 +396,15 @@ function PriceSuggestionCard({
 
           {/* Price details */}
           <div className="flex items-stretch gap-3">
-            <div className="flex-1 rounded-xl border bg-gradient-to-br from-emerald-500/10 to-transparent p-3.5">
-              <p className="text-xs text-slate-800 dark:text-slate-200">Min Price</p>
-              <p className="mt-1 text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+            <div className="flex-1 rounded-lg border border-[#d9e2e8] bg-[#f7fafc] p-3.5 dark:border-[#31545a] dark:bg-[#071936]">
+              <p className="text-xs font-medium text-[#7d93a5] dark:text-[#9fb8c5]">Min Price</p>
+              <p className="mt-1 text-lg font-semibold text-[#08766c] tabular-nums dark:text-[#19b8a5]">
                 {suggestion.minPrice ? formatCurrency(suggestion.minPrice) : '—'}
               </p>
             </div>
-            <div className="flex-1 rounded-xl border bg-gradient-to-br from-blue-500/10 to-transparent p-3.5">
-              <p className="text-xs text-slate-800 dark:text-slate-200">Max Price</p>
-              <p className="mt-1 text-lg font-semibold text-blue-600 dark:text-blue-400">
+            <div className="flex-1 rounded-lg border border-[#d9e2e8] bg-[#f7fafc] p-3.5 dark:border-[#31545a] dark:bg-[#071936]">
+              <p className="text-xs font-medium text-[#7d93a5] dark:text-[#9fb8c5]">Max Price</p>
+              <p className="mt-1 text-lg font-semibold text-[#071936] tabular-nums dark:text-white">
                 {suggestion.maxPrice ? formatCurrency(suggestion.maxPrice) : '—'}
               </p>
             </div>
@@ -433,9 +412,9 @@ function PriceSuggestionCard({
 
           {/* Source URL */}
           {suggestion.sourceUrl && (
-            <div className="mt-3 rounded-xl bg-muted/40 p-3 shrink-0">
-              <p className="text-xs text-slate-800 dark:text-slate-200">Source</p>
-              <p className="mt-0.5 truncate text-xs text-[#08766c]">{suggestion.sourceUrl}</p>
+            <div className="mt-3 rounded-lg bg-[#f7fafc] p-3 shrink-0 dark:bg-[#071936]">
+              <p className="text-xs font-medium text-[#7d93a5] dark:text-[#9fb8c5]">Source</p>
+              <p className="mt-0.5 truncate text-xs font-medium text-[#08766c] dark:text-[#19b8a5]">{suggestion.sourceUrl}</p>
             </div>
           )}
 
@@ -452,16 +431,16 @@ function PriceSuggestionCard({
           <div className="flex-1" />
 
           {/* Footer: date + action */}
-          <div className="mt-3 flex items-center justify-between border-t pt-3 shrink-0">
+          <div className="mt-3 flex items-center justify-between border-t border-[#e4edf1] pt-3 shrink-0 dark:border-[#244852]">
             <div>
-              <p className="text-xs font-medium text-slate-800 dark:text-slate-200">Submitted</p>
-              <p className="text-xs text-foreground">
+              <p className="text-xs font-semibold text-[#071936] dark:text-white">Submitted</p>
+              <p className="text-xs text-[#607587] tabular-nums dark:text-[#9fb8c5]">
                 {suggestion.createdOn
                   ? new Date(suggestion.createdOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                   : '—'}
               </p>
             </div>
-            <Button variant="ghost" size="icon-sm" title="View details" onClick={onClick}>
+            <Button variant="ghost" size="icon-sm" title="View details" onClick={onClick} className="text-[#071936] hover:bg-[#dff7f4] hover:text-[#08766c] dark:text-white dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]">
               <Eye className="h-4 w-4" />
             </Button>
           </div>
@@ -475,7 +454,7 @@ function PriceSuggestionCard({
 
 function PriceSuggestionCardSkeleton() {
   return (
-    <div className="h-[340px] animate-pulse rounded-2xl border bg-card p-5">
+    <div className="h-[340px] animate-pulse rounded-lg border-0 bg-white p-5 shadow-[0_10px_28px_rgba(18,38,63,0.07)] dark:bg-[#0c2530]">
       <div className="mb-4 flex items-start justify-between">
         <div className="space-y-2">
           <div className="h-6 w-40 rounded bg-muted" />
@@ -591,7 +570,7 @@ export function AdminPriceSuggestionsPage() {
       <motion.div variants={itemVariants}>
         <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">Price Suggestions</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Price Suggestions</h1>
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{suggestions?.length ?? 0}</span> total suggestions
               {(() => {

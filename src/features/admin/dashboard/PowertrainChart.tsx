@@ -58,8 +58,8 @@ export function PowertrainChart({ data, className }: PowertrainChartProps) {
                 y="47%"
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fill="#071936"
-                style={{ fontSize: 22, fontWeight: 700 }}
+                className="fill-[#071936] dark:fill-white"
+                style={{ fontSize: 22, fontWeight: 600 }}
               >
                 {compactNumber(total)}
               </text>
@@ -68,8 +68,8 @@ export function PowertrainChart({ data, className }: PowertrainChartProps) {
                 y="57%"
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fill="#8aa0ad"
-                style={{ fontSize: 11 }}
+                className="fill-[#647887] dark:fill-[#b8cbd4]"
+                style={{ fontSize: 11, fontWeight: 500 }}
               >
                 Vehicles
               </text>

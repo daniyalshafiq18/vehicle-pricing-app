@@ -13,7 +13,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   LogOut,
-  Search,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -122,7 +121,7 @@ function AdminLayoutContent() {
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 overflow-y-hidden px-2 pb-2 pt-2">
+        <nav className="flex-1 overflow-y-auto px-2 pb-3 pt-2">
           <div className={cn(
             'mb-1 px-2 text-xs font-medium uppercase leading-5 text-slate-400 dark:text-[#6f8d99]',
             collapsed && 'sr-only',
@@ -139,7 +138,7 @@ function AdminLayoutContent() {
                 key={item.path}
                 onClick={() => handleNavigate(item.path)}
                 className={cn(
-                  'group relative mb-1 flex h-9 w-full items-center gap-2.5 rounded-[3px] px-2 text-left text-sm font-medium leading-none transition-colors duration-150',
+                  'group relative mb-1 flex min-h-10 w-full items-center gap-2.5 rounded-[3px] px-2 py-2 text-left text-sm font-medium leading-5 transition-colors duration-150',
                   collapsed && 'justify-center px-0',
                   isActive
                     ? 'bg-slate-100 text-slate-950 dark:bg-[#0f3f43] dark:text-white'
@@ -183,7 +182,7 @@ function AdminLayoutContent() {
           <button
             onClick={() => navigate('/')}
             className={cn(
-              'flex h-9 w-full items-center gap-2.5 rounded-[3px] px-2 text-sm font-medium leading-none text-slate-600 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-950 dark:text-[#b8cbd4] dark:hover:bg-[#0c2530] dark:hover:text-white',
+                  'flex min-h-10 w-full items-center gap-2.5 rounded-[3px] px-2 py-2 text-sm font-medium leading-5 text-slate-600 transition-colors duration-150 hover:bg-slate-50 hover:text-slate-950 dark:text-[#b8cbd4] dark:hover:bg-[#0c2530] dark:hover:text-white',
               collapsed && 'justify-center px-0',
             )}
             title={collapsed ? 'Back to site' : undefined}
@@ -201,16 +200,13 @@ function AdminLayoutContent() {
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-[#d9e2e8] bg-white px-6 dark:border-[#17383d] dark:bg-[#071936]">
-          <div className="flex min-w-0 items-center">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aabb5]" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="h-10 w-[260px] rounded-[10px] border border-[#d9e2e8] bg-white pl-10 pr-3 text-sm text-[#071936] outline-none transition-colors placeholder:text-[#b8c5cc] hover:border-[#b7cbd5] focus:border-[#19b8a5]/60 focus:bg-white focus:ring-2 focus:ring-[#19b8a5]/15 dark:border-[#31545a] dark:bg-[#0c2530] dark:text-white dark:placeholder:text-[#6f8d99] dark:hover:border-[#19b8a5]/50 dark:focus:bg-[#0c2530] sm:w-[360px] lg:w-[500px]"
-              />
-            </div>
-          </div>
+          <a
+            href="https://vehicle-pricing-intelligence.powerappsportals.com/"
+            className="truncate text-sm font-semibold text-[#08766c] transition-colors hover:text-[#19b8a5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#19b8a5]/30 dark:text-[#19b8a5] dark:hover:text-[#5eead4]"
+            title="Vehicle Pricing Intelligence Platform"
+          >
+            Vehicle Pricing Intelligence Platform
+          </a>
           <div className="flex items-center gap-3">
             {/* Unified Notification Bell Dropdown */}
             <NotificationDropdown />

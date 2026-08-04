@@ -4,14 +4,11 @@ import { useInquiryStore } from '@stores';
 import { useValuation, useSaveInquiry, useUpsertMissingVehicleRequest } from '@hooks';
 import { useVehicleStore } from '@stores';
 import type { Inquiry } from '@types';
-import { Button, Card, CardContent, Badge, Skeleton } from '@components/ui';
+import { Button, Card, CardContent, Skeleton } from '@components/ui';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   Download,
-  TrendingUp,
-  TrendingDown,
-  Minus,
   Car,
   Gauge,
   Cpu,
@@ -136,14 +133,14 @@ export function Step3Result() {
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-success/10">
               <Heart className="h-10 w-10 text-success" />
             </div>
-            <h2 className="mb-2 text-lg font-semibold tracking-tight">Request Submitted!</h2>
-            <p className="mb-6 text-muted-foreground">
+            <h2 className="mb-2 text-lg font-semibold tracking-tight text-[#071936] dark:text-white">Request Submitted!</h2>
+            <p className="mb-6 text-[#647887] dark:text-[#b8cbd4]">
               We've received your request for the{' '}
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold text-[#071936] dark:text-white">
                 {vehicleSelection.year} {vehicleSelection.make} {vehicleSelection.model}
               </span>
               . Our team will review it and get back to you at{' '}
-              <span className="font-semibold text-foreground">
+              <span className="font-semibold text-[#071936] dark:text-white">
                 {personalInfo.email || 'your email'}
               </span>
               .
@@ -254,7 +251,7 @@ export function Step3Result() {
   }
 
   // ── Valuation ────────────────────────────────────────────────
-  const { vehicle, pricing, marketInsights } = valuationResult;
+  const { vehicle, pricing } = valuationResult;
 
   return (
     <motion.div
@@ -269,14 +266,14 @@ export function Step3Result() {
           <h2 className="text-lg font-semibold">
             {vehicle.year} {vehicle.make} {vehicle.model}
           </h2>
-          <p className="text-muted-foreground">{vehicle.spec}</p>
+          <p className="text-sm font-medium text-[#647887] dark:text-[#b8cbd4]">{vehicle.spec}</p>
         </div>
       </div>
 
       {/* Price Range */}
       <Card className="border-[#bfe9e2] bg-[#ecfbf8] dark:border-[#31545a] dark:bg-[#0f3f43]">
         <CardContent className="p-6 text-center">
-          <p className="mb-1 text-sm text-muted-foreground">Market Price Range</p>
+          <p className="mb-1 text-sm font-medium text-[#647887] dark:text-[#b8cbd4]">Market Price Range</p>
           <p className="text-3xl font-semibold text-[#08766c] dark:text-[#19b8a5]">
             {formatCurrency(pricing.minimumPrice)} — {formatCurrency(pricing.maximumPrice)}
           </p>
@@ -284,9 +281,9 @@ export function Step3Result() {
       </Card>
 
       {/* Vehicle Specs */}
-      <Card>
+      <Card className="border-[#d9e2e8] bg-white dark:border-[#31545a] dark:bg-[#0c2530]">
         <CardContent className="p-6">
-          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
+          <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[#071936] dark:text-white">
             <Car className="h-5 w-5 text-[#19b8a5]" />
             Vehicle Specifications
           </h3>
@@ -309,66 +306,17 @@ export function Step3Result() {
                   key={spec.label}
                   className="rounded-xl bg-[#f4f8fb] p-4 transition-colors hover:bg-[#ecfbf8] dark:bg-[#071936] dark:hover:bg-[#0f3f43]"
                 >
-                  <div className="mb-2 flex items-center gap-2 text-muted-foreground">
-                    <Icon className="h-4 w-4" />
-                    <p className="text-sm">{spec.label}</p>
+                  <div className="mb-2 flex items-center gap-2 text-[#647887] dark:text-[#b8cbd4]">
+                    <Icon className="h-4 w-4 text-[#8fb6cc] dark:text-[#19b8a5]" />
+                    <p className="text-sm font-medium">{spec.label}</p>
                   </div>
-                  <p className="text-sm font-semibold">{spec.value}</p>
+                  <p className="text-sm font-semibold text-[#071936] dark:text-white">{spec.value}</p>
                 </div>
               );
             })}
           </div>
         </CardContent>
       </Card>
-
-      {/* Market Insights */}
-      {marketInsights.length > 0 && (
-        <Card>
-          <CardContent className="p-6">
-            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
-              <TrendingUp className="h-5 w-5 text-[#19b8a5]" />
-              Market Insights
-            </h3>
-            <div className="space-y-3">
-              {marketInsights.map((insight, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 rounded-lg border bg-card p-4"
-                >
-                  <div
-                    className={`mt-0.5 rounded-full p-1 ${
-                      insight.severity === 'positive'
-                        ? 'bg-success/10 text-success'
-                        : insight.severity === 'negative'
-                          ? 'bg-destructive/10 text-destructive'
-                          : 'bg-[#ecfbf8] text-[#08766c] dark:bg-[#0f3f43] dark:text-[#19b8a5]'
-                    }`}
-                  >
-                    {insight.severity === 'positive' ? (
-                      <TrendingUp className="h-4 w-4" />
-                    ) : insight.severity === 'negative' ? (
-                      <TrendingDown className="h-4 w-4" />
-                    ) : (
-                      <Minus className="h-4 w-4" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">{insight.title}</p>
-                      {insight.value && (
-                        <Badge variant="secondary" size="sm">
-                          {insight.value}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground">{insight.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Actions */}
       <div className="flex flex-wrap items-center justify-between gap-4">

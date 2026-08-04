@@ -1,4 +1,4 @@
-import { useVehicle, usePricing, useComparableVehicles } from '@hooks';
+import { useVehicle, usePricing } from '@hooks';
 import { useDashboardStore } from '@stores';
 import { Dialog } from '@components/ui';
 import { formatCurrency } from '@utils';
@@ -14,12 +14,13 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  ArrowUpRight,
   Car,
 } from 'lucide-react';
 
 const statCardClass = 'rounded-[8px] border-0 bg-white p-3 shadow-[0_8px_20px_rgba(18,38,63,0.05)] dark:bg-[#071936] dark:shadow-none';
-const sectionTitleClass = 'mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-normal text-[#7e95a3] dark:text-[#8fb6cc]';
+const sectionTitleClass = 'mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-normal text-[#647887] dark:text-[#b8cbd4]';
+const labelClass = 'text-xs font-medium text-[#7e95a3] dark:text-[#b8cbd4]';
+const valueClass = 'mt-0.5 font-semibold text-[#071936] dark:text-white';
 
 export function VehicleIntelligenceModal() {
   const selectedVehicleId = useDashboardStore((s) => s.selectedVehicleId);
@@ -28,7 +29,6 @@ export function VehicleIntelligenceModal() {
 
   const { data: vehicle, isLoading: vehicleLoading } = useVehicle(selectedVehicleId ?? undefined);
   const { data: pricing, isLoading: pricingLoading } = usePricing(selectedVehicleId ?? undefined);
-  const { data: comparables } = useComparableVehicles(selectedVehicleId ?? undefined, 5);
 
   const isLoading = vehicleLoading || pricingLoading;
 
@@ -40,7 +40,7 @@ export function VehicleIntelligenceModal() {
     ? 'text-[#19b8a5]'
     : pricing?.marketTrend.direction === 'down'
       ? 'text-[#8fb6cc]'
-      : 'text-[#8aa0ad]';
+      : 'text-[#b8cbd4]';
 
   const TrendIcon = pricing?.marketTrend.direction === 'up'
     ? TrendingUp
@@ -60,10 +60,10 @@ export function VehicleIntelligenceModal() {
       <div className="max-h-[70vh] space-y-5 overflow-y-auto pr-1">
         {isLoading ? (
           <div className="animate-pulse space-y-4 p-4">
-            <div className="h-6 w-48 rounded-[8px] bg-white/80" />
+            <div className="h-6 w-48 rounded-[8px] bg-white/80 dark:bg-[#071936]" />
             <div className="grid grid-cols-2 gap-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-14 rounded-[8px] bg-white/70" />
+                <div key={i} className="h-14 rounded-[8px] bg-white/70 dark:bg-[#071936]" />
               ))}
             </div>
           </div>
@@ -82,8 +82,8 @@ export function VehicleIntelligenceModal() {
                   { label: 'Spec', value: vehicle.spec || '-' },
                 ].map((s) => (
                   <div key={s.label} className={statCardClass}>
-                    <p className="text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">{s.label}</p>
-                    <p className="mt-0.5 font-semibold text-[#071936] dark:text-white">{s.value}</p>
+                    <p className={labelClass}>{s.label}</p>
+                    <p className={valueClass}>{s.value}</p>
                   </div>
                 ))}
               </div>
@@ -103,49 +103,26 @@ export function VehicleIntelligenceModal() {
                     { label: 'Median', value: formatCurrency(pricing.medianPrice || 0) },
                   ].map((p) => (
                     <div key={p.label} className={statCardClass}>
-                      <p className="text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">{p.label}</p>
-                      <p className="mt-0.5 font-semibold text-[#071936] dark:text-white">{p.value}</p>
+                      <p className={labelClass}>{p.label}</p>
+                      <p className={valueClass}>{p.value}</p>
                     </div>
                   ))}
                 </div>
 
-                <div className={`${statCardClass} mt-3`}>
-                  <div className="flex items-center justify-between text-xs font-medium text-[#7e95a3] dark:text-[#8fb6cc]">
-                    <span>{formatCurrency(pricing.priceRange.min)}</span>
-                    <span className="text-[#071936]/70 dark:text-white/70">Price Range</span>
-                    <span>{formatCurrency(pricing.priceRange.max)}</span>
-                  </div>
-                  <div className="relative mt-2 h-2 overflow-hidden rounded-full bg-[#eaf2f6]">
-                    <div
-                      className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-[#8bded4] via-[#19b8a5] to-[#8bded4]"
-                      style={{
-                        left: `${((pricing.priceRange.p25 - pricing.priceRange.min) / (pricing.priceRange.max - pricing.priceRange.min)) * 100}%`,
-                        right: `${100 - ((pricing.priceRange.p75 - pricing.priceRange.min) / (pricing.priceRange.max - pricing.priceRange.min)) * 100}%`,
-                      }}
-                    />
-                    <div
-                      className="absolute top-1/2 h-full w-0.5 -translate-y-1/2 rounded-full bg-[#071936] dark:bg-white"
-                      style={{
-                        left: `${((pricing.averagePrice - pricing.priceRange.min) / (pricing.priceRange.max - pricing.priceRange.min)) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-
                 <div className={`${statCardClass} mt-3 flex items-center gap-2 px-4 py-2.5`}>
                   <TrendIcon className={`h-4 w-4 ${trendColor}`} />
-                  <span className="text-xs font-medium text-[#7e95a3] dark:text-[#8fb6cc]">Market Trend:</span>
+                  <span className="text-xs font-medium text-[#647887] dark:text-[#b8cbd4]">Market Trend:</span>
                   <span className={`flex items-center gap-1 text-sm font-semibold ${trendColor}`}>
                     {pricing.marketTrend.direction === 'up'
                       ? 'Appreciating'
                       : pricing.marketTrend.direction === 'down'
                         ? 'Depreciating'
                         : 'Stable'}
-                    <span className="text-xs opacity-70">
+                    <span className="text-xs opacity-80">
                       ({pricing.marketTrend.percentage > 0 ? '+' : ''}{pricing.marketTrend.percentage}%)
                     </span>
                   </span>
-                  <span className="ml-auto text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">
+                  <span className="ml-auto text-xs font-medium text-[#7e95a3] dark:text-[#b8cbd4]">
                     Sample: {pricing.sampleSize} vehicles
                   </span>
                 </div>
@@ -168,9 +145,9 @@ export function VehicleIntelligenceModal() {
                 ].map((t) => (
                   <div key={t.label} className={statCardClass}>
                     <div className="flex items-center gap-3">
-                      <t.icon className="h-5 w-5 shrink-0 text-[#8fb6cc]" />
+                      <t.icon className="h-5 w-5 shrink-0 text-[#8fb6cc] dark:text-[#19b8a5]" />
                       <div className="min-w-0">
-                        <p className="text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">{t.label}</p>
+                        <p className={labelClass}>{t.label}</p>
                         <p className="truncate font-semibold text-[#071936] dark:text-white">{t.value}</p>
                       </div>
                     </div>
@@ -193,8 +170,8 @@ export function VehicleIntelligenceModal() {
                   { label: 'Seats', value: vehicle.seats },
                 ].map((d) => (
                   <div key={d.label} className={statCardClass}>
-                    <p className="text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">{d.label}</p>
-                    <p className="mt-0.5 font-semibold text-[#071936] dark:text-white">{d.value}</p>
+                    <p className={labelClass}>{d.label}</p>
+                    <p className={valueClass}>{d.value}</p>
                   </div>
                 ))}
               </div>
@@ -202,42 +179,18 @@ export function VehicleIntelligenceModal() {
 
             {vehicle.description && (
               <div>
-                <h4 className="mb-2 text-xs font-medium uppercase tracking-normal text-[#7e95a3] dark:text-[#8fb6cc]">Description</h4>
-                <p className="text-sm leading-relaxed text-[#647887] dark:text-[#b8cbd4]">{vehicle.description}</p>
-              </div>
-            )}
-
-            {comparables && comparables.length > 0 && (
-              <div>
                 <h4 className={sectionTitleClass}>
-                  <ArrowUpRight className="h-4 w-4 text-[#19b8a5]" />
-                  Comparable Vehicles
+                  <Info className="h-4 w-4 text-[#19b8a5]" />
+                  Description
                 </h4>
-                <div className="space-y-2">
-                  {comparables.map((c, i) => (
-                    <div key={i} className={`${statCardClass} flex items-center justify-between px-4 py-2.5`}>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-[#071936] dark:text-white">
-                          {c.vehicle.year} {c.vehicle.make} {c.vehicle.model}
-                        </p>
-                        <p className="text-xs font-medium text-[#8aa0ad]">{c.vehicle.spec} · {c.vehicle.bodyType}</p>
-                      </div>
-                      <div className="ml-4 shrink-0 text-right">
-                        <p className="text-sm font-semibold text-[#071936] dark:text-white">{formatCurrency(c.pricing.averagePrice)}</p>
-                        <p className="text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">
-                          {c.priceDifferencePercentage > 0 ? '+' : ''}{c.priceDifferencePercentage.toFixed(1)}% diff
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <p className="text-sm leading-relaxed text-[#4f6775] dark:text-[#d8e7ef]">{vehicle.description}</p>
               </div>
             )}
           </>
         ) : (
           <div className="flex flex-col items-center justify-center py-12">
             <p className="text-lg font-semibold text-[#071936] dark:text-white">Vehicle not found</p>
-            <p className="mt-1 text-sm font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">The requested vehicle could not be loaded.</p>
+            <p className="mt-1 text-sm font-medium text-[#8aa0ad] dark:text-[#b8cbd4]">The requested vehicle could not be loaded.</p>
           </div>
         )}
       </div>
