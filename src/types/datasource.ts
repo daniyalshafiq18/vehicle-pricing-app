@@ -70,8 +70,6 @@ export interface IDataSource {
     contactName?: string;
     minPrice?: number;
     maxPrice?: number;
-    minMileage?: number;
-    maxMileage?: number;
     // Scrape result fields (from Flow 3)
     scrapedMinPrice?: number;
     scrapedMaxPrice?: number;
@@ -98,6 +96,7 @@ export interface IDataSource {
     doorsValue?: number;
     seatsValue?: number;
     categoryValue?: number;
+    mileageValue?: number;
   }): Promise<void>;
   approveAndCreateVehicle(mvr: MissingVehicleRequest): Promise<void>;
 

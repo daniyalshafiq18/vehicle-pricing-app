@@ -130,6 +130,8 @@ export function useTriggerScrape() {
       const seatsValue = result.seats ? lookupSeatsValue(result.seats) : undefined;
       const categoryLabel = result.regionalSpecs ? mapCategory(result.regionalSpecs) : undefined;
       const categoryValue = categoryLabel ? (CATEGORY[categoryLabel] ?? undefined) : undefined;
+      const mileageValue =
+        result.mileage != null && result.mileage !== '' ? Number(result.mileage) || undefined : undefined;
 
       await missingVehicleRepository.updateScrapeResult(params.id, {
         scrapedMinPrice: result.minPrice,
@@ -165,6 +167,7 @@ export function useTriggerScrape() {
         ...(doorsValue !== undefined && { doorsValue }),
         ...(seatsValue !== undefined && { seatsValue }),
         ...(categoryValue !== undefined && { categoryValue }),
+        ...(mileageValue !== undefined && { mileageValue }),
       });
 
       return result;

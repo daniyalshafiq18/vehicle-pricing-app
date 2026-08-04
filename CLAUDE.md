@@ -143,6 +143,7 @@ All docs live in `docs/`:
 - `path-b-scraper-microservice-postmortem.md` — Full retrospective on the abandoned Puppeteer approach
 - `power-automate-cloud-only-design.md` — Power Automate Cloud flow design for YallaMotor scraping (Flow 1 ✅ built, Flow 2 ✅ built, Flow 3 ✅ built with SAS token + Try/Catch Scope)
 - `flow3-deep-scrape-debugging-retrospective.md` — Complete narrative of the Flow 3 deep-scrape debugging journey (2026-07-31): every test, root cause, and fix, plus the final verified extraction expressions
+- `azure-functions-scraper-guide.md` — Implementation guide (from scratch) for migrating the scraper to multi-source Azure Functions: pre-requisites, feasibility probe, adapter pattern, anti-bot layer, Dataverse write-back, durable orchestration, deployment, testing, migration
 
 ## Environment Variables
 Defined in `.env.example`. All vars are reserved for future configuration — Dataverse is the hard-coded default.

@@ -1,16 +1,77 @@
 
 # Changelog
 
+## 2026-08-04
+
+### Category into Vehicle Data — Live Verified
+- Re-tested the MVR → Vehicle Data approval flow after the Cloudflare cooldown and confirmed the **Category field populates successfully** in the Vehicle Data table. The Aug 03 raw option-set integer threading fix (label round-trip bug) is now **verified end-to-end live** — the last open item from the approval-flow work is closed.
+- Docs/memory updated: `memory/recent-work-summary.md` (Category moved to ✅ Verified), `memory/learned-conventions.md` (entry annotated with live verification date).
+
+### Azure Functions Multi-Source Scraper — Implementation Guide Added
+- **Added `docs/azure-functions-scraper-guide.md`** — a complete from-scratch implementation guide for replacing the single-source Power Automate scraping setup (Flows 1–3 → YallaMotor) with a code-first, multi-source Azure Functions scraper.
+- **Why:** the user is evaluating Azure Functions to scrape additional marketplaces (Dubizzle, Drive Arabia) that Power Automate cannot handle (no browser rendering, no proxies, fixed/truncated HTTP headers, serial execution, expression debugging vs 30-min Cloudflare cooldowns).
+- **Key insight encoded:** Azure Functions runs on the same Microsoft/Azure IP family as Power Automate (which is NOT Cloudflare-blocked for YallaMotor per the design doc), so the Cloudflare "win" transfers — but it must be proven per-IP with a Phase 1 feasibility probe before any real work.
+- **Guide covers, in 12 phases:** pre-requisites + pre-flight checks → feasibility probe (the make-or-break Cloudflare test) → project scaffold/structure → adapter pattern (`IScraperAdapter`, `NormalizedListing`, per-source registry) → anti-bot layer (exact working Flow 3 headers, retry/backoff, Cloudflare detection, proxy hook) → YallaMotor adapter (ports the 9 verified spec-field extractions + HTML tile parsing + `slugify` URL logic) → HTTP trigger functions (drop-in `Flow3ScrapeResult` contract, timer sync, debug endpoint) → Dataverse write-back (managed identity vs app registration, label→integer normalization that prevents the Aug-03 label round-trip bug) → Durable orchestration → deployment/CI/CD (Consumption vs Premium, fixed IPs) → monitoring → testing (fixtures-based, contract tests) → migration/rollback plan (frontend swap is a one-line URL change).
+- **Reuses existing assets:** Flow 3's confirmed working headers, `Flow3ScrapeResult` shape from `src/lib/yallaMotorHttpScraper.ts`, option-set maps from `src/data/dataverseOptionSets.ts`, Path B postmortem lessons (test target early, keep debug endpoints). Typecheck N/A (doc only).
+- Files: `docs/azure-functions-scraper-guide.md`, `docs/CHANGELOG.md`, `CLAUDE.md` (Documentation list).
+
 ## 2026-08-03
+
+### Admin Missing Vehicle Card — Trim Card Removed (redundant with header)
+- The card/grid header already shows the composite `Make Model Trim` title, so the dedicated **Trim** card in the details grid was redundant. Removed it; the freed slot was filled with **Engine Size** (`NNN cc`, mirroring the modal's Vehicle Specifications order) so the 2-column grid stays balanced at 6 cards: Body Type, Engine Size, Cylinders, Fuel Type, Transmission, Drive Type.
+- Card header fallback updated to `[make, model, trim]` (was `[make, model]`) so legacy records without a `vpi_name` still show the trim in the header.
+- Files: `features/admin/AdminMissingVehiclesPage.tsx`. Typecheck passes.
+
+### MVR → Vehicle Data — Category Not Recording (label round-trip bug)
+- **Bug:** Category was silently dropped when approving an MVR into Vehicle Data.
+- **Root cause:** the scrape writes `vpi_category` to the MVR as an **integer** (1/2/3); `parseRawRecord` reads it back as the formatted **label**; `approveAndCreateVehicle` then converted the label back to an integer via `categoryValue()` which uses **exact-match** `toValue` against map keys `"NON-GCC"` / `"OTHER/STANDARD"`. Dataverse returns `"Non-GCC"` / `"Other/Standard"` (title-case/dash), so the lookup returned `null` and the field was silently skipped.
+- **Fix:** capture the **raw option-set integer** (`categoryValue`) on read (coercing string-typed values), and in `approveAndCreateVehicle` prefer it directly, falling back to the label lookup. No label round-trip fragility.
+- Files: `types/missingVehicleRequest.ts`, `lib/missingVehicleApi.ts`. Typecheck passes.
+
+### Flow 4 Email — Trigger Changed from Scrape Complete → Vehicle Data Approval
+- **Flow 4 (`MVR - Customer Email Notification`) previously emailed the user when the scrape completed** (`vpi_scrapestatus eq 4`). That meant users got notified before any human review and regardless of whether their request was approved.
+- **Trigger changed to `vpi_status eq 2` (Approved)** — the email now fires only when the admin approves the MVR and it's pushed to the master **Vehicle Data** table. The frontend `approveAndCreateVehicle` action creates the Vehicle Data record *and then* sets MVR status to `Approved`, so the trigger lands at exactly the right moment.
+- Email body wording updated: "Your request has been processed" → "Good news — your requested vehicle has been approved and is now available on our platform."
+- **Power Automate-side change (user must re-save Flow 4 in make.powerautomate.com):** update the trigger's Filter rows expression from `vpi_scrapestatus eq 4` to `vpi_status eq 2`.
+- Files: `docs/power-automate-cloud-only-design.md` (Flow 4 purpose, data-flow diagram, trigger filter, email body, test steps, checklist, status summary). No app code changed — email is server-side.
+
+### MVR → Vehicle Data — Engine Size, Doors, Category Wired + Name Convention Aligned
+- **Previously dropped fields now mapped** in `approveAndCreateVehicle`: Engine Size → `vpi_enginesize` (plain decimal), Doors → `vpi_doors` (via `DOORS` label map), Category → `vpi_category` (via `categoryValue`, `GCC/NON-GCC/OTHER-STANDARD`). Only set when a value exists and resolves.
+- **Price mapping** — `approveAndCreateVehicle` now writes the Flow 3 scraped market range onto the new Vehicle Data record: `scrapedMinPrice` → `vpi_minprice`, `scrapedMaxPrice` → `vpi_maxprice` (only when the scrape returned prices). `vpi_avgprice` / `vpi_pricespreadpct` are left empty.
+- **Name convention** — Vehicle Data NAME was `MVR-{make}-{model}-{modelYear}` (MVR- prefix, hyphen/space-mixed separators, no trim). Existing Vehicle Data records use `Make Model Trim` **without the Year**, so both Vehicle Data NAME and MVR `vpi_name` now use that exact convention (space-joined, e.g. `Mercedes Benz C-Class C 200`). This keeps approved vehicles, their source MVR, and the existing seed records all reading identically. Modal heading fallback updated to match.
+- Doc comment updated to list the full field mapping.
+- Files: `lib/missingVehicleApi.ts`, `features/admin/AdminMissingVehiclesPage.tsx`. Typecheck passes.
 
 ### Missing Vehicle `vpi_name` — Now Populated + Shown in UI
 - **`vpi_name` (Primary Name) was never set** on MVR creation → records had blank titles in Dataverse views/lookups/Power Automate. The Inquiry table already composed its `vpi_name`; MVR was the one that didn't.
-- **Create** (`missingVehicleApi.upsertMissingVehicleRequest`) now sets `vpi_name` = composite vehicle title (`Make Model Trim Year`, e.g. `Mercedes Benz C-Class C 200 2021`), matching the Inquiry pattern.
+- **Create** (`missingVehicleApi.upsertMissingVehicleRequest`) now sets `vpi_name` = composite vehicle title `Make Model Trim` (no Year, matching the existing Vehicle Data convention — see the later "Name convention" entry this date), e.g. `Mercedes Benz C-Class C 200`.
 - **Read** — added `NAME: 'vpi_name'` to `MISSING_VEHICLE_REQUEST_FIELDS`, mapped it in `parseRawRecord`, added the field to both `$select` lists.
 - **Type** — `MissingVehicleRequest` gains `name?: string`.
 - **UI** — detail-modal heading and card heading now show `request.name` (fallback to `Make Model` for legacy records).
 - Schema doc: MVR table now documents `vpi_name` as Primary Name.
 - Files: `dataverseConfig.ts`, `types/missingVehicleRequest.ts`, `lib/missingVehicleApi.ts`, `features/admin/AdminMissingVehiclesPage.tsx`, `docs/dataverse-schema.md`. Typecheck passes.
+
+### Admin Missing Vehicle Detail Modal — Grouped Spec Order
+- Split the detail-modal grid into two labelled groups: **Vehicle Specifications** and **Requester** (Requested By, Contact Email).
+- Added the previously-unshown Engine Size card (`${engineSize} cc`); **removed** the Category (Regional Spec) card.
+- **Mileage relocated** from the Scrape Results section into the Vehicle Specifications grid (after Doors), formatted as `80,000 km` (thousand-separated, lowercase `km` matching `cc`). Prefers `vpi_mileage`, falls back to parsed JSON, else `—`.
+- Vehicle Specifications order: Body Type → Engine Size → Cylinders → Fuel Type → Transmission → Drive Type → Doors → Mileage.
+- Files: `features/admin/AdminMissingVehiclesPage.tsx`. Typecheck passes.
+
+### MVR Mileage — Min/Max Columns Replaced with Single `vpi_mileage`
+- **Dataverse (maker-side, 2026-08-03):** removed the unused `vpi_minmilage` / `vpi_maxmilage` (Decimal) columns; added a single `vpi_mileage` (Decimal, scale 0) for the scraped listing mileage. Neither min/max value was ever populated by the wizard or any Flow.
+- **App wiring** (`missingVehicleApi`, `dataverseConfig`, `types`, repo, datasource, hook): dropped all `minMileage`/`maxMileage` references; `MISSING_VEHICLE_REQUEST_FIELDS.MILEAGE = 'vpi_mileage'`; `parseRawRecord` reads `mileage`; both `$select` lists now request `vpi_mileage` instead of the removed columns (required — the old columns no longer exist, so selecting them would error the API calls).
+- **Type:** `MissingVehicleRequest.minMileage/maxMileage` → `mileage?: number`.
+- **UI:** modal Mileage card shows `request.mileage` (formatted with thousand separators) when set, falling back to the parsed scraped-listings JSON for records not yet populating the column.
+- Files: `dataverseConfig.ts`, `types/missingVehicleRequest.ts`, `types/datasource.ts`, `lib/missingVehicleApi.ts`, `repositories/missingVehicleRepository.ts`, `hooks/useMissingVehicleRequests.ts`, `data/dataverseDataSource.ts`, `features/admin/AdminMissingVehiclesPage.tsx`, `docs/dataverse-schema.md`. Typecheck passes.
+- **Scrape now writes mileage:** `useTriggerScrape` maps `result.mileage` → `mileageValue` and `updateMissingVehicleScrapeResult` PATCHes it into `vpi_mileage` (was previously only embedded in the `scrapedListings` JSON, so the column stayed empty). Added `mileageValue?: number` through repo → datasource → `datasource.ts` → api. Files: `useTriggerScrape.ts`, `missingVehicleApi.ts`, `missingVehicleRepository.ts`, `dataverseDataSource.ts`, `types/datasource.ts`. Typecheck passes.
+
+### Admin Missing Vehicle Detail Modal — Refined Grid
+- **Removed** the redundant identity cards (`Make`, `Model`, `Year`, `Spec / Trim`) — now carried by the heading — and the `Status` card (already editable via the header `StatusSelect`). Grid is spec-only + contact.
+- **Added** previously-hidden scraped specs: `Doors` and `Category` (Regional Spec) cards.
+- **Mileage** now shown in the Scrape Results section from the parsed scraped-listings JSON (`parsed.mileage`) — no schema change needed. (Forward plan: single `Mileage` column replacing the dead Min/Max Mileage once added in Dataverse.)
+- **Heading fallback upgraded** to `Make Model Trim` (no Year, aligned with the final `vpi_name` convention) so legacy records (no `vpi_name`) keep full identity in the title.
+- Files: `features/admin/AdminMissingVehiclesPage.tsx`. Typecheck passes.
 
 ### Admin Missing Vehicles — Removed Dead Min/Max Price Fields
 - **`AdminMissingVehiclesPage.tsx`** — Removed the user-suggestion `Min Price` / `Max Price` displays, which are never populated for missing-vehicle (MVR) records (the scrape writes to `vpi_scraped_minprice`/`maxprice` instead).

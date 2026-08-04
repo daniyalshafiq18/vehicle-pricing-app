@@ -14,12 +14,12 @@ export interface MissingVehicleRequest {
   doors?: string;
   seats?: string;
   category?: string;
+  categoryValue?: number;
   status?: string;
   statusValue?: number;
   minPrice?: number;
   maxPrice?: number;
-  minMileage?: number;
-  maxMileage?: number;
+  mileage?: number; // scraped mileage (vpi_mileage, decimal)
   createdOn?: Date;
   contactName?: string;
   contactEmail?: string;

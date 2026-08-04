@@ -26,6 +26,8 @@ import {
   powertrainValue,
   transmissionValue,
   driveTypeValue,
+  categoryValue,
+  DOORS,
 } from '@data/dataverseOptionSets';
 import type { MissingVehicleRequest } from '@types';
 import { safeFetch, safeFetchWithMeta } from './safeAjax';
@@ -71,11 +73,17 @@ function parseRawRecord(raw: Record<string, unknown>): MissingVehicleRequest {
     doors: (raw[doorsKey] as string) ?? undefined,
     seats: (raw[seatsKey] as string) ?? undefined,
     category: (raw[categoryKey] as string) ?? undefined,
+    // Keep the raw option-set integer too — the label may differ in casing/separators
+    // from the CATEGORY map keys, so round-tripping the label is fragile (see approve).
+    categoryValue: (() => {
+      const v = raw[MISSING_VEHICLE_REQUEST_FIELDS.CATEGORY];
+      const n = typeof v === 'string' ? Number(v) : v;
+      return typeof n === 'number' && !isNaN(n) ? n : undefined;
+    })(),
     status: missingVehicleStatusLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.STATUS]),
     minPrice: raw[MISSING_VEHICLE_REQUEST_FIELDS.MIN_PRICE] as number | undefined,
     maxPrice: raw[MISSING_VEHICLE_REQUEST_FIELDS.MAX_PRICE] as number | undefined,
-    minMileage: raw[MISSING_VEHICLE_REQUEST_FIELDS.MIN_MILEAGE] as number | undefined,
-    maxMileage: raw[MISSING_VEHICLE_REQUEST_FIELDS.MAX_MILEAGE] as number | undefined,
+    mileage: raw[MISSING_VEHICLE_REQUEST_FIELDS.MILEAGE] as number | undefined,
     createdOn: raw[MISSING_VEHICLE_REQUEST_FIELDS.CREATED_ON]
       ? new Date(raw[MISSING_VEHICLE_REQUEST_FIELDS.CREATED_ON] as string)
       : undefined,
@@ -110,8 +118,6 @@ export async function upsertMissingVehicleRequest(payload: {
   contactName?: string;
   minPrice?: number;
   maxPrice?: number;
-  minMileage?: number;
-  maxMileage?: number;
   // Scrape result fields (from Flow 3)
   scrapedMinPrice?: number;
   scrapedMaxPrice?: number;
@@ -122,9 +128,10 @@ export async function upsertMissingVehicleRequest(payload: {
   const baseUrl = `${API_BASE}/${ENTITIES.MISSING_VEHICLE_REQUEST}`;
 
   // vpi_name is the table's Primary Name — set a composite title so the record
-  // is identifiable in Dataverse views / lookups / Power Automate, not just in the app
+  // is identifiable in Dataverse views / lookups / Power Automate, not just in the app.
+  // "Make Model Trim" (no Year) matches the established Vehicle Data Name convention.
   const record: Record<string, unknown> = {
-    [MISSING_VEHICLE_REQUEST_FIELDS.NAME]: [payload.make, payload.model, payload.trim, payload.modelYear]
+    [MISSING_VEHICLE_REQUEST_FIELDS.NAME]: [payload.make, payload.model, payload.trim]
       .filter(Boolean)
       .join(' '),
     [MISSING_VEHICLE_REQUEST_FIELDS.MAKE]: payload.make,
@@ -216,14 +223,6 @@ export async function upsertMissingVehicleRequest(payload: {
     }
   }
 
-  if (payload.minMileage !== undefined) {
-    record[MISSING_VEHICLE_REQUEST_FIELDS.MIN_MILEAGE] = payload.minMileage;
-  }
-
-  if (payload.maxMileage !== undefined) {
-    record[MISSING_VEHICLE_REQUEST_FIELDS.MAX_MILEAGE] = payload.maxMileage;
-  }
-
   const { meta } = await safeFetchWithMeta<Record<string, unknown>>({
     url: baseUrl,
     method: 'POST',
@@ -264,8 +263,7 @@ export async function fetchMissingVehicleRequests(): Promise<MissingVehicleReque
     MISSING_VEHICLE_REQUEST_FIELDS.STATUS,
     MISSING_VEHICLE_REQUEST_FIELDS.MIN_PRICE,
     MISSING_VEHICLE_REQUEST_FIELDS.MAX_PRICE,
-    MISSING_VEHICLE_REQUEST_FIELDS.MIN_MILEAGE,
-    MISSING_VEHICLE_REQUEST_FIELDS.MAX_MILEAGE,
+    MISSING_VEHICLE_REQUEST_FIELDS.MILEAGE,
     MISSING_VEHICLE_REQUEST_FIELDS.CREATED_ON,
     MISSING_VEHICLE_REQUEST_FIELDS.SCRAPE_STATUS,
     MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_LISTINGS,
@@ -308,8 +306,7 @@ export async function fetchMissingVehicleRequestById(id: string): Promise<Missin
     MISSING_VEHICLE_REQUEST_FIELDS.STATUS,
     MISSING_VEHICLE_REQUEST_FIELDS.MIN_PRICE,
     MISSING_VEHICLE_REQUEST_FIELDS.MAX_PRICE,
-    MISSING_VEHICLE_REQUEST_FIELDS.MIN_MILEAGE,
-    MISSING_VEHICLE_REQUEST_FIELDS.MAX_MILEAGE,
+    MISSING_VEHICLE_REQUEST_FIELDS.MILEAGE,
     MISSING_VEHICLE_REQUEST_FIELDS.CREATED_ON,
     MISSING_VEHICLE_REQUEST_FIELDS.SCRAPE_STATUS,
     MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_LISTINGS,
@@ -408,6 +405,7 @@ export async function updateMissingVehicleScrapeResult(
     doorsValue?: number;
     seatsValue?: number;
     categoryValue?: number;
+    mileageValue?: number;
   },
 ): Promise<void> {
   const baseUrl = `${API_BASE}/${ENTITIES.MISSING_VEHICLE_REQUEST}`;
@@ -430,6 +428,7 @@ export async function updateMissingVehicleScrapeResult(
   if (fields.doorsValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.DOORS] = fields.doorsValue;
   if (fields.seatsValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.SEATS] = fields.seatsValue;
   if (fields.categoryValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.CATEGORY] = fields.categoryValue;
+  if (fields.mileageValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.MILEAGE] = fields.mileageValue;
 
   await safeFetch<void>({
     url: `${baseUrl}(${id})`,
@@ -461,7 +460,10 @@ function mvrFuelToPowertrainLabel(fuelType: string): string | undefined {
  * Field mapping (MVR → Vehicle Data):
  *   Make → Make, Model → Model, Model Year → Year, Trim → Spec,
  *   Body Type → Body Type, Cylinders → Cylinders, Fuel Type → Powertrain Type,
- *   Transmission Type → Transmission, Drive Type → Drive Type
+ *   Transmission Type → Transmission, Drive Type → Drive Type,
+ *   Engine Size → Engine Size, Doors → Doors, Category → Category,
+ *   Scraped Min/Max Price → Min/Max Price (market range from Flow 3).
+ *   Name → composite "Make Model Trim" (no Year — matches existing Vehicle Data records and MVR vpi_name).
  */
 export async function approveAndCreateVehicle(mvr: MissingVehicleRequest): Promise<void> {
   const vehicleEntity = `${API_BASE}/${ENTITIES.VEHICLE}`;
@@ -469,7 +471,7 @@ export async function approveAndCreateVehicle(mvr: MissingVehicleRequest): Promi
 
   // Build vehicle data record using label-based optionset conversion
   const vehicle: Record<string, unknown> = {
-    [VEHICLE_FIELDS.NAME]: `MVR-${mvr.make}-${mvr.model}-${mvr.modelYear}`,
+    [VEHICLE_FIELDS.NAME]: [mvr.make, mvr.model, mvr.trim].filter(Boolean).join(' '),
     [VEHICLE_FIELDS.MAKE]: mvr.make,
     [VEHICLE_FIELDS.MODEL]: mvr.model,
     [VEHICLE_FIELDS.YEAR]: String(mvr.modelYear),
@@ -497,6 +499,30 @@ export async function approveAndCreateVehicle(mvr: MissingVehicleRequest): Promi
   if (mvr.driveType) {
     const dt = driveTypeValue(mvr.driveType);
     if (dt !== null) vehicle[VEHICLE_FIELDS.DRIVE_TYPE] = dt;
+  }
+  if (mvr.engineSize) {
+    // Plain decimal — no optionset conversion needed
+    vehicle[VEHICLE_FIELDS.ENGINE_SIZE] = mvr.engineSize;
+  }
+  if (mvr.doors) {
+    const d = DOORS[mvr.doors];
+    if (d !== undefined) vehicle[VEHICLE_FIELDS.DOORS] = d;
+  }
+  // Prefer the raw option-set integer captured at read time — round-tripping the
+  // label is fragile because MVR labels ("Non-GCC", "Other/Standard") can differ in
+  // casing/separators from the CATEGORY map keys ("NON-GCC", "OTHER/STANDARD").
+  if (mvr.categoryValue !== undefined) {
+    vehicle[VEHICLE_FIELDS.CATEGORY] = mvr.categoryValue;
+  } else if (mvr.category) {
+    const cat = categoryValue(mvr.category);
+    if (cat !== null) vehicle[VEHICLE_FIELDS.CATEGORY] = cat;
+  }
+  // Market price range from the Flow 3 scrape (only when the scrape returned prices)
+  if (mvr.scrapedMinPrice) {
+    vehicle[VEHICLE_FIELDS.MIN_PRICE] = mvr.scrapedMinPrice;
+  }
+  if (mvr.scrapedMaxPrice) {
+    vehicle[VEHICLE_FIELDS.MAX_PRICE] = mvr.scrapedMaxPrice;
   }
 
   // Step 1: Create the vehicle data record

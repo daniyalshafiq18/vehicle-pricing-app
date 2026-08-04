@@ -870,8 +870,6 @@ export class DataverseDataSource implements IDataSource {
     contactName?: string;
     minPrice?: number;
     maxPrice?: number;
-    minMileage?: number;
-    maxMileage?: number;
     scrapedMinPrice?: number;
     scrapedMaxPrice?: number;
     scrapedListings?: string;
@@ -914,6 +912,7 @@ export class DataverseDataSource implements IDataSource {
       doorsValue?: number;
       seatsValue?: number;
       categoryValue?: number;
+      mileageValue?: number;
     },
   ): Promise<void> {
     return updateMissingVehicleScrapeResult(id, fields);

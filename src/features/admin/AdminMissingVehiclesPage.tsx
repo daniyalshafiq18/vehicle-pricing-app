@@ -251,6 +251,13 @@ function MissingVehicleDetailModal({
   isOpen: boolean;
   onClose: () => void;
 }) {
+  const scrape = parseScrapedListings(request.scrapedListings);
+  // Prefer the dedicated vpi_mileage column; fall back to the scraped-listings JSON value.
+  const mileageLabel = (() => {
+    if (request.mileage != null) return `${request.mileage.toLocaleString()} km`;
+    const raw = scrape && scrape.mileage != null ? String(scrape.mileage).replace(/\D/g, '') : '';
+    return raw ? `${Number(raw).toLocaleString()} km` : null;
+  })();
   return (
     <Dialog
       isOpen={isOpen}
@@ -270,7 +277,8 @@ function MissingVehicleDetailModal({
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-foreground">
-                  {request.name || `${request.make} ${request.model}`}
+                  {request.name ||
+                    [request.make, request.model, request.trim].filter(Boolean).join(' ')}
                 </h2>
                 <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Calendar className="h-3 w-3" />
@@ -292,29 +300,44 @@ function MissingVehicleDetailModal({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          {/* Vehicle details grid */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Vehicle details (grouped) */}
+          <div className="space-y-4">
             {[
-              { label: 'Make', value: request.make },
-              { label: 'Model', value: request.model },
-              { label: 'Year', value: request.modelYear },
-              { label: 'Spec / Trim', value: request.trim },
-              { label: 'Body Type', value: request.bodyType },
-              { label: 'Cylinders', value: request.cylinders },
-              { label: 'Fuel Type', value: request.fuelType },
-              { label: 'Transmission', value: request.transmissionType },
-              { label: 'Drive Type', value: request.driveType },
-              { label: 'Status', value: request.status },
-              { label: 'Requested By', value: request.contactName || request.contactEmail },
-              { label: 'Contact Email', value: request.contactEmail },
-            ].map((item) => (
-              <div key={item.label} className="rounded-xl border bg-card p-3.5">
-                <p className="text-xs text-foreground">
-                  {item.label}
+              {
+                title: 'Vehicle Specifications',
+                items: [
+                  { label: 'Body Type', value: request.bodyType },
+                  { label: 'Engine Size', value: request.engineSize ? `${request.engineSize} cc` : null },
+                  { label: 'Cylinders', value: request.cylinders },
+                  { label: 'Fuel Type', value: request.fuelType },
+                  { label: 'Transmission', value: request.transmissionType },
+                  { label: 'Drive Type', value: request.driveType },
+                  { label: 'Doors', value: request.doors },
+                  { label: 'Mileage', value: mileageLabel },
+                ],
+              },
+              {
+                title: 'Requester',
+                items: [
+                  { label: 'Requested By', value: request.contactName || request.contactEmail },
+                  { label: 'Contact Email', value: request.contactEmail },
+                ],
+              },
+            ].map((group) => (
+              <div key={group.title}>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {group.title}
                 </p>
-                <p className="mt-1 text-sm font-medium text-foreground break-words">
-                  {item.value ? String(item.value) : '—'}
-                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {group.items.map((item) => (
+                    <div key={item.label} className="rounded-xl border bg-card p-3.5">
+                      <p className="text-xs text-foreground">{item.label}</p>
+                      <p className="mt-1 text-sm font-medium text-foreground break-words">
+                        {item.value ? String(item.value) : '—'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
@@ -344,7 +367,7 @@ function MissingVehicleDetailModal({
                           <p className="text-xs text-foreground">Source</p>
                           <p className="mt-1 text-sm font-medium text-foreground">{String(parsed.source ?? '—')}</p>
                         </div>
-                      </>
+                        </>
                     );
                   }
                   return null;
@@ -578,11 +601,11 @@ function MissingVehicleCard({
       <UICard className="overflow-hidden border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 h-full">
         <div className="brand-gradient h-1" />
         <CardContent className="p-5 flex flex-col h-full">
-          {/* Header: make model year + status */}
+          {/* Header: make model trim (+ year badge) + status */}
           <div className="flex items-start justify-between mb-4 shrink-0 gap-3">
             <div className="min-w-0">
               <h3 className="text-lg font-semibold text-foreground leading-tight truncate">
-                {request.name || `${request.make} ${request.model}`}
+                {request.name || [request.make, request.model, request.trim].filter(Boolean).join(' ')}
               </h3>
               {request.modelYear && (
                 <span className="inline-flex items-center rounded-full border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-foreground mt-1">
@@ -599,8 +622,8 @@ function MissingVehicleCard({
           {/* Details grid */}
           <div className="grid grid-cols-2 gap-2">
             {[
-              { label: 'Trim', value: request.trim },
               { label: 'Body Type', value: request.bodyType },
+              { label: 'Engine Size', value: request.engineSize ? `${request.engineSize} cc` : null },
               { label: 'Cylinders', value: request.cylinders ? String(request.cylinders) : null },
               { label: 'Fuel Type', value: request.fuelType },
               { label: 'Transmission', value: request.transmissionType },

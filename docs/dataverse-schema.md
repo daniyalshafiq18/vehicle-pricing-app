@@ -75,7 +75,7 @@ The solution now consists of five primary tables:
 | Display Name | Logical Name | Type | Notes |
 |---|---|---|---|
 | Vehicle Data | `vpi_vehicledataid` | Unique Identifier (GUID) | Primary key |
-| Name | `vpi_name` | Single Line Text | Not used by the application |
+| Name | `vpi_name` | Single Line Text | Set by the app when an MVR is approved — composite `Make Model Trim` (no Year), e.g. "Mercedes Benz C-Class C 200" |
 
 ### Identity & Classification Fields
 
@@ -430,7 +430,7 @@ This table records vehicles that users searched for but do not currently exist i
 
 | Display Name | Logical Name | Type | Usage |
 |---|---|---|---|
-| Name | `vpi_name` | Single Line Text | **Primary Name** — composite vehicle title (`Make Model Trim Year`, e.g. "Mercedes Benz C-Class C 200 2021"), set on creation so records are identifiable in Dataverse views/lookups |
+| Name | `vpi_name` | Single Line Text | **Primary Name** — composite vehicle title `Make Model Trim` (no Year, matching the Vehicle Data naming convention), e.g. "Mercedes Benz C-Class C 200", set on creation so records are identifiable in Dataverse views/lookups |
 | Make | `vpi_make` | Single Line Text | Vehicle make/brand searched by user |
 | Model | `vpi_model` | Single Line Text | Vehicle model searched by user |
 | Model Year | `vpi_modelyear` | Whole Number | Model year of the searched vehicle |
@@ -445,10 +445,9 @@ This table records vehicles that users searched for but do not currently exist i
 | Seats | `vpi_seats` | Choice | Number of seats |
 | Transmission Type | `vpi_transmissiontype` | Choice | Automatic, Manual, CVT, etc. |
 | **Category** | `vpi_category` | Choice | Regional spec: GCC (1), Non-GCC (2), Other/Standard (3) |
-| Min Price | `vpi_minprice` | Currency | Estimated minimum market price (user or scraped) |
-| Max Price | `vpi_maxprice` | Currency | Estimated maximum market price (user or scraped) |
-| Min Mileage | `vpi_minmilage` | Decimal | Minimum mileage supplied by user |
-| Max Mileage | `vpi_maxmilage` | Decimal | Maximum mileage supplied by user |
+| Min Price | `vpi_minprice` | Currency | Estimated minimum market price (user-suggested; scraped range lives in `vpi_scraped_minprice`) |
+| Max Price | `vpi_maxprice` | Currency | Estimated maximum market price (user-suggested; scraped range lives in `vpi_scraped_maxprice`) |
+| Mileage | `vpi_mileage` | Decimal | Scraped mileage from listing (was Min/Max Mileage) |
 | Comments | `vpi_user_comment` | Single Line Text | User's comment or note about the vehicle |
 | Source URL | `vpi_user_sourceurl` | Single Line Text | URL the user provided as a reference |
 | Contact | `vpi_contact` | Lookup | Lookup to Contact table |

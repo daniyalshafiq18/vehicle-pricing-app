@@ -16,8 +16,6 @@ export class MissingVehicleRepository {
     contactName?: string;
     minPrice?: number;
     maxPrice?: number;
-    minMileage?: number;
-    maxMileage?: number;
     scrapedMinPrice?: number;
     scrapedMaxPrice?: number;
     scrapedListings?: string;
@@ -65,6 +63,7 @@ export class MissingVehicleRepository {
       doorsValue?: number;
       seatsValue?: number;
       categoryValue?: number;
+      mileageValue?: number;
     },
   ): Promise<void> {
     const ds = getDataSource();

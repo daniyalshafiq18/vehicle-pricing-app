@@ -14,7 +14,7 @@
 | **Flow 1** | `MVR - Connectivity Test` | ✅ **Built, Modified & Re-Tested** | Confirmed full listing record extraction (price, specs, dealer). Heading extraction confirmed for aggregate pricing. |
 | **Flow 2** | `MVR - Automated Scraper` | ✅ **Built & Tested** | See full design below. YallaMotor backend was down during initial tests — not a Cloudflare issue. |
 | **Flow 3** | `MVR - On-Demand Scraper` | ✅ **Built, Tested & Verified** | Headers with `sec-ch-ua*` confirmed working (Cloudflare 403 resolved). **Deep scrape partial test** (Jul 29): Body Type, Fuel Type, Transmission, Mileage extracted from search page JSON-LD. **Detail page verification** (Jul 30): All 5 missing fields confirmed present on listing page — Drive Type (`Rear Wheel Drive`), Cylinders (`4`), Engine Size (`2000`), Doors (`4`), Regional Specs (`GCC Specs`) visible. Option B needs implementation in the actual flow. |
-| **Flow 4** | `MVR - Customer Email Notification` | ✅ **Built, Tested & Verified** | Sends email to the requesting user when scrape completes successfully. Dynamic content resolved, HTML link clickable. |
+| **Flow 4** | `MVR - Customer Email Notification` | ✅ **Built, Tested & Verified** | Sends email to the requesting user when the MVR is **approved and pushed to Vehicle Data** (trigger changed from `vpi_scrapestatus eq 4` → `vpi_status eq 2`). Dynamic content resolved, HTML link clickable. |
 
 ### Key Findings from Flow 1 Test (Original + Modified)
 
@@ -1712,7 +1712,10 @@ See `src/data/dataverseOptionSets.ts` and `docs/dataverse-schema.md` for full op
 
 ## FLOW 4: MVR - Customer Email Notification (Dataverse Trigger)
 
-**Purpose:** When an MVR's scrape status changes to `Scraped (4)`, send an email to the requesting user notifying them that their vehicle data is available.
+**Purpose:** When an MVR is **approved and pushed to Vehicle Data** (status changes to `Approved` = 2), send an email to the requesting user notifying them that their requested vehicle has been added to the platform.
+
+> **Why `vpi_status eq 2` (Approved) instead of `vpi_scrapestatus eq 4` (Scraped)?**
+> The email should only go out once the admin has reviewed the request and the MVR has actually been pushed to the master **Vehicle Data** table. Firing on the scrape status would email the user before any human review and regardless of whether the vehicle was approved. The frontend approval action (`approveAndCreateVehicle`) creates the Vehicle Data record *and then* sets MVR `vpi_status` to `Approved (2)`, so this trigger fires at exactly the right moment.
 
 **Why Power Automate (not frontend):**
 - Server-side execution — guaranteed to fire regardless of who has the admin page open
@@ -1722,10 +1725,11 @@ See `src/data/dataverseOptionSets.ts` and `docs/dataverse-schema.md` for full op
 ### Data Flow
 
 ```
-[Flow 3 completes / Admin triggers scrape → vpi_scrapestatus = 4 (Scraped)]
-    │
+[Admin approves MVR in admin panel → approveAndCreateVehicle runs]
+    │  creates Vehicle Data record
+    │  then sets MVR vpi_status = 2 (Approved)
     ▼
-[Dataverse Trigger: MVR row modified with filter vpi_scrapestatus eq 4]
+[Dataverse Trigger: MVR row modified with filter vpi_status eq 2]
     │
     ▼
 [Get Contact: Resolve _vpi_contact_value lookup → contact email + name]
@@ -1737,7 +1741,7 @@ See `src/data/dataverseOptionSets.ts` and `docs/dataverse-schema.md` for full op
     → Body: HTML template
 ```
 
-> **Recommended approach:** Use the **Filter rows** setting on the trigger instead of a separate Condition step. This keeps the flow clean at just 3 steps (Trigger → Get Contact → Send Email) and the trigger only fires when the status is exactly 4 (Scraped).
+> **Recommended approach:** Use the **Filter rows** setting on the trigger instead of a separate Condition step. This keeps the flow clean at just 3 steps (Trigger → Get Contact → Send Email) and the trigger only fires when the status is exactly `2 (Approved)`.
 
 ### Create the Flow
 
@@ -1755,7 +1759,7 @@ See `src/data/dataverseOptionSets.ts` and `docs/dataverse-schema.md` for full op
    - Scope: **Organization**
    - **Filter rows:** paste the following OData filter:
      ```
-     vpi_scrapestatus eq 4
+     vpi_status eq 2
      ```
    - **Select columns:** click → add these columns:
      - `vpi_missingvehiclerequestsid`
@@ -1765,7 +1769,7 @@ See `src/data/dataverseOptionSets.ts` and `docs/dataverse-schema.md` for full op
      - `vpi_trim`
      - `vpi_contact`
 
-> **Why Filter rows instead of a Condition step?** The filter runs at the Dataverse level — the flow only triggers when `vpi_scrapestatus` is `4 (Scraped)`. No wasted runs, no extra step. The "Select columns" ensures we only fetch the fields we need, making the trigger lightweight.
+> **Why Filter rows instead of a Condition step?** The filter runs at the Dataverse level — the flow only triggers when `vpi_status` is `2 (Approved)`. No wasted runs, no extra step. The "Select columns" ensures we only fetch the fields we need, making the trigger lightweight.
 
 ### Step 2: Get the Linked Contact Record
 
@@ -1795,7 +1799,7 @@ See `src/data/dataverseOptionSets.ts` and `docs/dataverse-schema.md` for full op
      ```html
      <p>Hi [Insert First Name from step 2 — use Dynamic content picker],</p>
      <p>Thank you for reaching out to us regarding the vehicle you were looking for.</p>
-     <p>Your request has been processed and the following vehicle data is now available on our platform:</p>
+     <p>Good news — your requested vehicle has been approved and is now available on our platform:</p>
      <p><b>[Insert vpi_make] [Insert vpi_model] [Insert vpi_modelyear] [Insert vpi_trim] — use Dynamic content picker for each</b></p>
      <p>Head over to the platform to explore the complete details, including pricing insights, specifications, and more.</p>
      <p><a href="[YOUR-POWER-PAGES-URL]">Click here to visit the site</a></p>
@@ -1809,15 +1813,15 @@ See `src/data/dataverseOptionSets.ts` and `docs/dataverse-schema.md` for full op
 
 11. Click **Save** (top-left)
 12. To test:
-    - Trigger a scrape on any MVR via the admin panel
-    - Or manually update an MVR's `vpi_scrapestatus` to `4` in Dataverse
+    - Approve any MVR via the admin panel (this creates the Vehicle Data record and sets `vpi_status` to `2`)
+    - Or manually update an MVR's `vpi_status` to `2` in Dataverse
     - The flow should fire and send the email to the linked contact
 
 ### Initial Setup Checklist
 
 - [x] Flow created with name `MVR - Customer Email Notification`
 - [x] Trigger configured: Modified, Missing Vehicle Requests, Organization
-- [x] **Filter rows:** `vpi_scrapestatus eq 4`
+- [x] **Filter rows:** `vpi_status eq 2`
 - [x] **Select columns:** Added `vpi_missingvehiclerequestsid`, `vpi_make`, `vpi_model`, `vpi_modelyear`, `vpi_trim`, `vpi_contact` (schema name)
 - [x] Get Contact step: uses `_vpi_contact_value` expression (internal field name)
 - [x] Email step: To = Contact's Email, Subject = "Requested Vehicle and its data now available"
