@@ -15,8 +15,8 @@ function resolveIsDark(mode: ThemeMode): boolean {
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
-      mode: 'system',
-      isDark: getSystemDark(),
+      mode: 'light',
+      isDark: false,
 
       setMode: (mode: ThemeMode) => {
         const isDark = resolveIsDark(mode);
@@ -34,7 +34,15 @@ export const useThemeStore = create<ThemeState>()(
     }),
     {
       name: 'vehicle-pricing-theme',
+      version: 3,
       partialize: (state) => ({ mode: state.mode }),
+      migrate: (persistedState: unknown) => {
+        const state = persistedState as Partial<ThemeState> | undefined;
+        if (state?.mode !== 'light') {
+          return { ...state, mode: 'light' as ThemeMode };
+        }
+        return persistedState;
+      },
       onRehydrateStorage: () => (state) => {
         if (state) {
           const isDark = resolveIsDark(state.mode);

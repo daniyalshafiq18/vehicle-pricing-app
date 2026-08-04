@@ -1,6 +1,39 @@
 
 # Changelog
 
+## 2026-07-30
+
+### Public Navigation
+- Locked public navigation visited-link states to the teal UI palette so selected/visited links no longer fall back to browser blue.
+
+### Admin Dashboard
+- Removed the admin dashboard header search and period pill, moved query/missing-vehicle KPI drill-downs directly under Weekly Stats, fixed KPI text wrapping, improved Powertrain center-label contrast in dark mode, and cleaned the leaderboard by removing TSV export, natural-casing headers, and tightening the table width after Max Price.
+- Removed the remaining blank leaderboard table surface after Max Price, made KPI drill-down cards span the dashboard row, improved sidebar item line-height so lower menu labels are not clipped, and changed the default app theme from system-driven dark mode to light mode.
+- Updated the premium leaderboard to use only Year, Make, Model, Spec, Min Price, and Max Price columns across the full table width, removed the Top 100 pill, improved modal header/body contrast in dark mode, and removed the vehicle modal price-range bar plus Comparable Vehicles section.
+- Cleaned landing navbar hover underlines, removed the Vehicles detail modal Pricing Overview section, added resilient phone/location fallbacks for Queries table and detail modal, and corrected dark-mode styling for the Query detail modal header and valuation cards.
+- Standardized Missing Vehicle and Price Suggestion modal sizing/header surfaces, removed the Price Suggestion modal vehicle banner, centered public header/footer wrappers on ultra-wide zoomed views, and migrated persisted default theme state back to light mode.
+- Removed formatted currency preview text from Price Suggestion modal inputs, removed Market Insights from the valuation wizard result step, and improved valuation result label contrast in dark mode.
+- Bumped the persisted theme store migration so existing saved dark/system theme preferences reset to the light default on next load.
+- Rethemed generated valuation PDFs from the old violet report styling to the current navy/teal enterprise UI palette with matching price summary and table surfaces.
+
+## 2026-07-31
+
+### Valuation
+- Fixed the valuation request-submitted success state so the title, vehicle name, and email render with readable dark-mode text contrast.
+
+### Theme
+- Made the full-screen loading screen light-first with explicit light/dark colors so portal uploads no longer show a black splash before the app theme initializes.
+
+### Admin Vehicles
+- Added colored spec/trim capsules in Vehicles table and card views, including named colors for common trims and deterministic fallback colors for unknown specs.
+
+### Admin UI
+- Strengthened admin page headings to bold across Dashboard, Vehicles, Queries, Missing Vehicles, and Price Suggestions.
+- Refined Vehicles, Missing Vehicles, and Price Suggestions card views with unified white/dark surfaces, soft metadata tiles, cleaner price hierarchy, and consistent teal action states.
+- Restored the admin header platform title link and refined vehicle spec/status capsules across tables, cards, and dashboard status summaries with UI-matched light/dark colors.
+- Retinted the admin header platform title link to the teal brand palette in light and dark mode.
+- Updated neutral Vehicles spec capsules to use the requested `#F6F5F2` background.
+
 ## 2026-07-29
 
 ### Typography System

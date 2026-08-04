@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { useVehicles, useVehicleHierarchy, usePricing, useBatchPricing } from '@hooks';
+import { useVehicles, useVehicleHierarchy, useBatchPricing } from '@hooks';
 import { useVehicleStore } from '@stores';
 import { useDebounce } from '@utils';
 import {
@@ -31,10 +31,6 @@ import {
   Filter,
   X,
   RotateCcw,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Minus,
   AlertCircle,
   Zap,
   LayoutList,
@@ -45,127 +41,47 @@ import type { Vehicle } from '@types';
 import { formatCurrency, formatNumber, cn } from '@utils';
 
 const specColors: Record<string, string> = {
-  'SPIDER': 'bg-[#ecfbf8] text-[#08766c] border-[#bfe9e2]',
-  'COMPETIZIONE': 'bg-[#ecfbf8] text-[#08766c] border-[#bfe9e2]',
-  'MULTIAIR': 'bg-[#ecfbf8] text-[#08766c] border-[#bfe9e2]',
-  'LUXURY': 'bg-[#ecfbf8] text-[#08766c] border-[#bfe9e2]',
-  'PREMIUM': 'bg-[#ecfbf8] text-[#08766c] border-[#bfe9e2]',
-  'SPORT': 'bg-[#ecfbf8] text-[#08766c] border-[#bfe9e2]',
-  'STANDARD': 'bg-[#ecfbf8] text-[#08766c] border-[#bfe9e2]',
+  STD: 'border-[#dedbd4] bg-[#F6F5F2] text-[#4f6775] dark:border-[#31545a] dark:bg-[#071936] dark:text-[#b8cbd4]',
+  STANDARD: 'border-[#dedbd4] bg-[#F6F5F2] text-[#4f6775] dark:border-[#31545a] dark:bg-[#071936] dark:text-[#b8cbd4]',
+  PREMIUM: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c] dark:border-[#19b8a5]/35 dark:bg-[#0f3f43] dark:text-[#5eead4]',
+  PERFORMANCE: 'border-[#c9d8ff] bg-[#eef4ff] text-[#315caa] dark:border-[#5b7cc8]/40 dark:bg-[#102748] dark:text-[#9db8ff]',
+  DESIGN: 'border-[#e4d4ff] bg-[#f6f0ff] text-[#6d3fb8] dark:border-[#8f6bd1]/40 dark:bg-[#2a1b45] dark:text-[#d6c4ff]',
+  COMFORT: 'border-[#d8e7ef] bg-[#f0f7fa] text-[#427189] dark:border-[#8fb6cc]/35 dark:bg-[#102d38] dark:text-[#b8cbd4]',
+  FLAGSHIP: 'border-[#f3d9a9] bg-[#fff8e8] text-[#8a5a12] dark:border-[#d8a33a]/35 dark:bg-[#3b2a0c] dark:text-[#ffd98a]',
+  AMG: 'border-[#f4c7c7] bg-[#fff0f0] text-[#b42323] dark:border-[#fca5a5]/35 dark:bg-[#3a161a] dark:text-[#fca5a5]',
+  '4MATIC': 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c] dark:border-[#19b8a5]/35 dark:bg-[#0f3f43] dark:text-[#5eead4]',
+  SPORT: 'border-[#c9d8ff] bg-[#eef4ff] text-[#315caa] dark:border-[#5b7cc8]/40 dark:bg-[#102748] dark:text-[#9db8ff]',
+  SPIDER: 'border-[#e4d4ff] bg-[#f6f0ff] text-[#6d3fb8] dark:border-[#8f6bd1]/40 dark:bg-[#2a1b45] dark:text-[#d6c4ff]',
+  COMPETIZIONE: 'border-[#f4c7c7] bg-[#fff0f0] text-[#b42323] dark:border-[#fca5a5]/35 dark:bg-[#3a161a] dark:text-[#fca5a5]',
+  MULTIAIR: 'border-[#d8e7ef] bg-[#f0f7fa] text-[#427189] dark:border-[#8fb6cc]/35 dark:bg-[#102d38] dark:text-[#b8cbd4]',
+  LUXURY: 'border-[#f3d9a9] bg-[#fff8e8] text-[#8a5a12] dark:border-[#d8a33a]/35 dark:bg-[#3b2a0c] dark:text-[#ffd98a]',
 };
 
-const trendIcons: Record<string, React.ReactNode> = {
-  up: <TrendingUp className="h-3 w-3 text-[#19b8a5]" />,
-  down: <TrendingDown className="h-3 w-3 text-[#08766c]" />,
-  stable: <Minus className="h-3 w-3 text-muted-foreground" />,
-};
+const specFallbackColors = [
+  'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c] dark:border-[#19b8a5]/35 dark:bg-[#0f3f43] dark:text-[#5eead4]',
+  'border-[#d8e7ef] bg-[#f0f7fa] text-[#427189] dark:border-[#8fb6cc]/35 dark:bg-[#102d38] dark:text-[#b8cbd4]',
+  'border-[#c9d8ff] bg-[#eef4ff] text-[#315caa] dark:border-[#5b7cc8]/40 dark:bg-[#102748] dark:text-[#9db8ff]',
+  'border-[#e4d4ff] bg-[#f6f0ff] text-[#6d3fb8] dark:border-[#8f6bd1]/40 dark:bg-[#2a1b45] dark:text-[#d6c4ff]',
+  'border-[#f3d9a9] bg-[#fff8e8] text-[#8a5a12] dark:border-[#d8a33a]/35 dark:bg-[#3b2a0c] dark:text-[#ffd98a]',
+];
+
+function getSpecBadgeClass(spec: string | undefined): string {
+  const normalized = spec?.trim().toUpperCase();
+  if (!normalized) {
+    return specColors.STD!;
+  }
+  const direct = specColors[normalized];
+  if (direct) {
+    return direct;
+  }
+  const hash = [...normalized].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return specFallbackColors[hash % specFallbackColors.length]!;
+}
 
 const GRID_BATCH_SIZE = 18;
 
 // ─── Confidence Badge ────────────────────────────────────────
-function ConfidenceBadge({ score }: { score: number }) {
-  const color = score >= 85 ? 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]'
-    : score >= 70 ? 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]'
-    : score >= 50 ? 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]'
-    : 'text-[#08766c] bg-[#ecfbf8] border-[#bfe9e2]';
-
-  return (
-    <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium', color)}>
-      <Zap className="h-2.5 w-2.5" />
-      {score}%
-    </span>
-  );
-}
-
 // ─── Pricing Detail ──────────────────────────────────────────
-function PricingDetailSection({ vehicleId }: { vehicleId: string }) {
-  const { data: pricing, isLoading } = usePricing(vehicleId);
-
-  if (isLoading) return (
-    <div className="animate-pulse space-y-3">
-      <div className="h-4 w-32 rounded bg-muted" />
-      <div className="grid grid-cols-2 gap-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-14 rounded-xl bg-muted/50" />
-        ))}
-      </div>
-    </div>
-  );
-
-  if (!pricing) return <p className="text-sm text-muted-foreground">No pricing data available</p>;
-
-  const trend = pricing.marketTrend;
-  const trendColor = trend.direction === 'up' ? 'text-[#19b8a5]'
-    : trend.direction === 'down' ? 'text-[#08766c]' : 'text-muted-foreground';
-
-  const range = pricing.priceRange;
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h4 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <DollarSign className="h-4 w-4" />
-          Pricing Overview
-        </h4>
-        <ConfidenceBadge score={pricing.confidenceScore} />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: 'Market Price', value: formatCurrency(pricing.averagePrice) },
-          { label: 'Median', value: formatCurrency(pricing.medianPrice) },
-          { label: 'Range (Low)', value: formatCurrency(pricing.minimumPrice) },
-          { label: 'Range (High)', value: formatCurrency(pricing.maximumPrice) },
-          { label: 'P10', value: formatCurrency(range.p10) },
-          { label: 'P25', value: formatCurrency(range.p25) },
-          { label: 'P75', value: formatCurrency(range.p75) },
-          { label: 'P90', value: formatCurrency(range.p90) },
-        ].map((item) => (
-          <div key={item.label} className="rounded-[8px] border-0 bg-white p-3 shadow-[0_8px_20px_rgba(18,38,63,0.05)] dark:bg-[#071936] dark:shadow-none">
-            <p className="text-xs text-foreground">{item.label}</p>
-            <p className="mt-0.5 text-sm font-semibold text-foreground">{item.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Price range bar */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{formatCurrency(range.min)}</span>
-          <span className="text-foreground/60">Price Range</span>
-          <span>{formatCurrency(range.max)}</span>
-        </div>
-        <div className="relative h-2 overflow-hidden rounded-full bg-muted">
-          <div className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-[#19b8a5]/40 via-[#19b8a5]/70 to-[#19b8a5]/40"
-            style={{ left: `${((range.p25 - range.min) / (range.max - range.min)) * 100}%`, right: `${100 - ((range.p75 - range.min) / (range.max - range.min)) * 100}%` }}
-          />
-          <div className="absolute top-1/2 h-full w-0.5 -translate-y-1/2 rounded-full bg-foreground"
-            style={{ left: `${((pricing.averagePrice - range.min) / (range.max - range.min)) * 100}%` }}
-          />
-        </div>
-        <div className="flex items-center justify-between text-xs text-muted-foreground/60">
-          <span>P25</span>
-          <span className="font-medium text-foreground/60">AVG</span>
-          <span>P75</span>
-        </div>
-      </div>
-
-      {/* Market trend */}
-      <div className="flex items-center gap-4 rounded-[8px] border-0 bg-white p-3 shadow-[0_8px_20px_rgba(18,38,63,0.05)] dark:bg-[#071936] dark:shadow-none">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Market Trend:</span>
-          <span className={cn('flex items-center gap-1 text-sm font-medium', trendColor)}>
-            {trendIcons[trend.direction]}
-            {trend.direction === 'up' ? 'Appreciating' : trend.direction === 'down' ? 'Depreciating' : 'Stable'}
-            <span className="text-xs opacity-70">({trend.percentage > 0 ? '+' : ''}{trend.percentage}% / {trend.periodMonths}mo)</span>
-          </span>
-        </div>
-        <span className="ml-auto text-xs text-muted-foreground">Sample: {formatNumber(pricing.sampleSize)} vehicles</span>
-      </div>
-    </div>
-  );
-}
-
 // ─── Vehicle Detail Dialog ───────────────────────────────────
 function VehicleDetailDialog({
   vehicle,
@@ -223,8 +139,6 @@ function VehicleDetailDialog({
             ))}
           </div>
         </div>
-
-        <PricingDetailSection vehicleId={vehicle.id} />
 
         <div>
           <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -701,7 +615,7 @@ function VehicleCard({ vehicle, pricing, onClick }: {
   pricing?: import('@types').VehiclePricing;
   onClick: () => void;
 }) {
-  const specBadgeColor = specColors[vehicle.spec] ?? '';
+  const specBadgeColor = getSpecBadgeClass(vehicle.spec);
 
   return (
     <motion.div
@@ -709,11 +623,11 @@ function VehicleCard({ vehicle, pricing, onClick }: {
       animate={{ opacity: 1, y: 0 }}
       className="group h-full"
     >
-      <Card className="overflow-hidden border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 h-full">
+      <Card className="h-full overflow-hidden border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.07)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(18,38,63,0.11)] dark:bg-[#0c2530] dark:shadow-[0_18px_38px_rgba(0,0,0,0.25)]">
         <CardContent className="p-5 flex flex-col h-full">
           {/* Header row: year + spec badge */}
           <div className="flex items-center justify-between mb-4 shrink-0">
-            <span className="inline-flex items-center rounded-full border bg-muted/50 px-2.5 py-0.5 text-xs font-medium text-foreground">
+            <span className="inline-flex items-center rounded-full border border-[#d9e2e8] bg-[#f4f8fb] px-2.5 py-0.5 text-xs font-semibold text-[#071936] dark:border-[#31545a] dark:bg-[#071936] dark:text-white">
               {vehicle.year}
             </span>
             <Badge variant="outline" size="default" className={specBadgeColor}>
@@ -734,10 +648,10 @@ function VehicleCard({ vehicle, pricing, onClick }: {
               { icon: Cog, label: 'Trans', value: vehicle.transmission },
               { icon: Shield, label: 'Drive', value: vehicle.driveType },
             ].map((spec) => (
-              <div key={spec.label} className="rounded-xl bg-muted/40 p-3 transition-colors hover:bg-muted/60">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
+              <div key={spec.label} className="rounded-lg bg-[#f7fafc] p-3 transition-colors hover:bg-[#eef6f7] dark:bg-[#071936] dark:hover:bg-[#0f3440]">
+                <div className="flex items-center gap-1.5 text-[#7d93a5] dark:text-[#9fb8c5]">
                   <spec.icon className="h-3 w-3" />
-                  <span className="text-xs">{spec.label}</span>
+                  <span className="text-xs font-medium">{spec.label}</span>
                 </div>
                 <p className="mt-0.5 text-sm font-semibold text-foreground">{spec.value}</p>
               </div>
@@ -746,15 +660,15 @@ function VehicleCard({ vehicle, pricing, onClick }: {
 
           {/* Classification tags */}
           <div className="mt-3 flex flex-wrap items-center gap-1.5 shrink-0">
-            <span className="inline-flex items-center rounded-lg border bg-card px-2 py-0.5 text-xs text-muted-foreground">
+            <span className="inline-flex items-center rounded-full border border-[#d9e2e8] bg-white px-2 py-0.5 text-xs font-medium text-[#607587] dark:border-[#31545a] dark:bg-[#071936] dark:text-[#b8cbd4]">
               <Car className="mr-1 h-2.5 w-2.5" />
               {vehicle.bodyType}
             </span>
-            <span className="inline-flex items-center rounded-lg border bg-card px-2 py-0.5 text-xs text-muted-foreground">
+            <span className="inline-flex items-center rounded-full border border-[#d9e2e8] bg-white px-2 py-0.5 text-xs font-medium text-[#607587] dark:border-[#31545a] dark:bg-[#071936] dark:text-[#b8cbd4]">
               <Layers className="mr-1 h-2.5 w-2.5" />
               {vehicle.category}
             </span>
-            <span className="inline-flex items-center rounded-lg border bg-card px-2 py-0.5 text-xs text-muted-foreground">
+            <span className="inline-flex items-center rounded-full border border-[#d9e2e8] bg-white px-2 py-0.5 text-xs font-medium text-[#607587] dark:border-[#31545a] dark:bg-[#071936] dark:text-[#b8cbd4]">
               <Zap className="mr-1 h-2.5 w-2.5" />
               {vehicle.powertrain}
             </span>
@@ -764,19 +678,19 @@ function VehicleCard({ vehicle, pricing, onClick }: {
           <div className="flex-1" />
 
           {/* Bottom: price + actions */}
-          <div className="mt-4 flex items-center justify-between border-t pt-4 shrink-0">
+          <div className="mt-4 flex items-center justify-between border-t border-[#e4edf1] pt-4 shrink-0 dark:border-[#244852]">
             <div>
-              <p className="text-xs font-medium text-foreground">Market Price</p>
-              <p className="text-lg font-semibold text-[#08766c]">
+              <p className="text-xs font-semibold text-[#071936] dark:text-white">Market Price</p>
+              <p className="text-lg font-semibold text-[#08766c] tabular-nums dark:text-[#19b8a5]">
                 {pricing?.averagePrice ? formatCurrency(pricing.averagePrice) : '—'}
               </p>
               {pricing && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-[#607587] tabular-nums dark:text-[#9fb8c5]">
                   {formatCurrency(pricing.minimumPrice)} — {formatCurrency(pricing.maximumPrice)}
                 </p>
               )}
             </div>
-            <Button variant="ghost" size="icon-sm" title="View details" onClick={onClick}>
+            <Button variant="ghost" size="icon-sm" title="View details" onClick={onClick} className="text-[#071936] hover:bg-[#dff7f4] hover:text-[#08766c] dark:text-white dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]">
               <Eye className="h-4 w-4" />
             </Button>
           </div>
@@ -943,7 +857,7 @@ export function AdminVehiclesPage() {
       {/* Header */}
       <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Vehicles</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Vehicles</h1>
           <p className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{formatNumber(data?.total ?? 0)}</span> vehicles in the database
           </p>
@@ -1071,7 +985,7 @@ export function AdminVehiclesPage() {
                         {vehicle.model}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <Badge variant="outline" size="default" className={specColors[vehicle.spec] ?? ''}>
+                        <Badge variant="outline" size="default" className={getSpecBadgeClass(vehicle.spec)}>
                           {vehicle.spec}
                         </Badge>
                       </td>

@@ -47,25 +47,24 @@ export function LoadingScreen({ message = 'Loading...', className, progress }: L
   return (
     <div
       className={cn(
-        'fixed inset-0 z-50 flex flex-col items-center justify-center bg-background',
+        'fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#f3f7f7] text-[#071936] dark:bg-[#061821] dark:text-white',
         className,
       )}
     >
       {/* Technical grid background */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.03]"
+        className="pointer-events-none absolute inset-0 opacity-[0.14] dark:opacity-[0.03]"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)
+            linear-gradient(rgba(25,184,165,.18) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(25,184,165,.18) 1px, transparent 1px)
           `,
           backgroundSize: '60px 60px',
         }}
       />
 
-      {/* Ambient glow orbs */}
-      <div className="absolute left-1/4 top-1/4 h-72 w-72 rounded-full bg-[#19b8a5]/10 blur-3xl" />
-      <div className="absolute bottom-1/3 right-1/4 h-56 w-56 rounded-full bg-[#8fb6cc]/12 blur-3xl" />
+      {/* Ambient wash */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(25,184,165,0.12),transparent_58%)] dark:bg-[radial-gradient(ellipse_at_center,rgba(25,184,165,0.10),transparent_58%)]" />
 
       <div className="relative flex flex-col items-center gap-8">
         {/* Car icon with rotating ring */}
@@ -100,25 +99,25 @@ export function LoadingScreen({ message = 'Loading...', className, progress }: L
 
         {/* Brand title with tagline */}
         <div className="space-y-1 text-center">
-          <p className="text-lg font-semibold text-foreground">
+          <p className="text-lg font-semibold text-[#071936] dark:text-white">
             Vehicle Pricing Intelligence Platform
           </p>
-          <p className="text-xs tracking-widest text-muted-foreground/60 uppercase">
+          <p className="text-xs uppercase tracking-widest text-[#7e95a3] dark:text-[#8fb6cc]">
             UAE Market Analysis
           </p>
         </div>
 
         {/* Progress bar with percentage */}
         <div className="w-72 space-y-3">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#d9e2e8] dark:bg-[#17383d]">
             <div
               className="h-full rounded-full bg-gradient-to-r from-[#19b8a5] via-[#8fb6cc] to-[#19b8a5]"
               style={{ width: `${display}%` }}
             />
           </div>
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">{message}</p>
-            <span className="text-xs font-medium text-muted-foreground tabular-nums">
+            <p className="text-sm font-medium text-[#647887] dark:text-[#b8cbd4]">{message}</p>
+            <span className="text-xs font-medium text-[#647887] tabular-nums dark:text-[#b8cbd4]">
               {Math.round(display)}%
             </span>
           </div>

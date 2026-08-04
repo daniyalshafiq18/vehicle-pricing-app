@@ -39,11 +39,11 @@ const itemVariants = {
 
 const statusColors: Record<string, string> = {
   Pending: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c] dark:border-[#19b8a5]/35 dark:bg-[#0f3f43] dark:text-[#5eead4]',
-  Approved: 'border-[#cdebe6] bg-[#ecfbf8] text-[#08766c] dark:border-[#19b8a5]/35 dark:bg-[#0f3f43] dark:text-[#5eead4]',
-  'In Progress': 'border-[#cfe0ea] bg-[#f0f7fa] text-[#427189] dark:border-[#8fb6cc]/35 dark:bg-[#102d38] dark:text-[#b8cbd4]',
+  Approved: 'border-[#b7ead4] bg-[#eefbf5] text-[#067647] dark:border-[#34d399]/35 dark:bg-[#0f3328] dark:text-[#86efac]',
+  'In Progress': 'border-[#c9d8ff] bg-[#eef4ff] text-[#315caa] dark:border-[#5b7cc8]/40 dark:bg-[#102748] dark:text-[#9db8ff]',
   Reject: 'border-[#f4c7c7] bg-[#fff0f0] text-[#b42323] dark:border-[#fca5a5]/35 dark:bg-[#3a161a] dark:text-[#fca5a5]',
-  Reviewed: 'border-[#cdebe6] bg-[#ecfbf8] text-[#08766c] dark:border-[#19b8a5]/35 dark:bg-[#0f3f43] dark:text-[#5eead4]',
-  Contacted: 'border-[#cfe0ea] bg-[#f0f7fa] text-[#427189] dark:border-[#8fb6cc]/35 dark:bg-[#102d38] dark:text-[#b8cbd4]',
+  Reviewed: 'border-[#d8e7ef] bg-[#f0f7fa] text-[#427189] dark:border-[#8fb6cc]/35 dark:bg-[#102d38] dark:text-[#b8cbd4]',
+  Contacted: 'border-[#c9d8ff] bg-[#eef4ff] text-[#315caa] dark:border-[#5b7cc8]/40 dark:bg-[#102748] dark:text-[#9db8ff]',
   Closed: 'border-[#e5edf2] bg-[#f6f9fb] text-[#647887] dark:border-[#31545a] dark:bg-[#071936] dark:text-[#8fb6cc]',
   Unknown: 'border-[#e5edf2] bg-[#f6f9fb] text-[#7e95a3] dark:border-[#31545a] dark:bg-[#071936] dark:text-[#8fb6cc]',
 };
@@ -140,6 +140,8 @@ export function AdminDashboardPage() {
     navigate(linkTo);
   };
 
+  const activeStatusRows = activeView === 'queries' ? inquiriesByStatus : missingVehiclesByStatus;
+
   return (
     <motion.div
       className="-m-6 min-h-[calc(100vh-4rem)] bg-[#e5e7eb] p-4 text-[#071936] dark:bg-[#061821] dark:text-white sm:p-5 lg:-m-8 lg:p-6"
@@ -149,7 +151,7 @@ export function AdminDashboardPage() {
     >
       <motion.div variants={itemVariants} className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold leading-7 text-[#071936] dark:text-white sm:text-3xl">
+          <h1 className="text-2xl font-bold leading-7 text-[#071936] dark:text-white sm:text-3xl">
             Overall Performance Dashboard
           </h1>
           <p className="mt-1 text-xs font-medium text-[#7e95a3] dark:text-[#8fb6cc]">
@@ -161,53 +163,52 @@ export function AdminDashboardPage() {
             <span className="text-[#9aabb5]"> · Updated {new Date(overview.lastUpdated).toLocaleDateString()}</span>
           </p>
         </div>
-        <div className="flex items-center gap-2 self-start rounded-[8px] bg-white px-3 py-2 text-xs font-medium text-[#071936] shadow-[0_8px_24px_rgba(18,38,63,0.05)] dark:bg-[#0c2530] dark:text-white dark:shadow-none sm:self-auto">
-          <span className="text-[#8aa0ad] dark:text-[#8fb6cc]">Period</span>
-          <span>Week till date</span>
-        </div>
       </motion.div>
 
       <div className="grid gap-3 xl:grid-cols-12">
         <motion.div variants={itemVariants} className="xl:col-span-4">
-          <Card className="h-full border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.06)] hover:translate-y-0 hover:border-transparent dark:bg-[#0c2530] dark:shadow-none">
-            <CardContent className="p-4 sm:p-5">
-              <div className="mb-5">
-                <h2 className="text-sm font-semibold leading-5 text-[#071936] dark:text-white">Weekly Stats</h2>
-              </div>
+          <div className="space-y-3">
+            <Card className="border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.06)] hover:translate-y-0 hover:border-transparent dark:bg-[#0c2530] dark:shadow-none">
+              <CardContent className="p-4 sm:p-5">
+                <div className="mb-5">
+                  <h2 className="text-sm font-semibold leading-5 text-[#071936] dark:text-white">Weekly Stats</h2>
+                </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                {kpiCards.map((kpi) => {
-                  const selected =
-                    (activeView === 'queries' && kpi.label === 'Queries') ||
-                    (activeView === 'missing_vehicles' && kpi.label === 'Missing Vehicles');
-                  return (
-                    <button
-                      key={kpi.label}
-                      type="button"
-                      onClick={() => handleKpiAction(kpi.label, kpi.linkTo)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleKpiAction(kpi.label, kpi.linkTo);
-                        }
-                      }}
-                      className={cn(
-                        'group min-h-[76px] rounded-[4px] bg-[#f7fafc] p-3 text-left transition-colors hover:bg-[#edf5f7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#19b8a5]/35 dark:bg-[#071936] dark:hover:bg-[#0f3f43]',
-                        selected && 'bg-[#e7f8f5] ring-2 ring-[#19b8a5]/30 dark:bg-[#0f3f43]',
-                      )}
-                    >
-                      <div className="mb-2 flex items-center justify-between gap-2">
-                        <span className="truncate text-xs font-medium leading-4 text-[#8aa0ad] dark:text-[#8fb6cc]">{kpi.label}</span>
-                        <kpi.icon className="h-3.5 w-3.5 shrink-0 text-[#8fb6cc] group-hover:text-[#19b8a5]" />
-                      </div>
-                      <p className="text-xl font-semibold leading-6 text-[#071936] tabular-nums dark:text-white">{kpi.value}</p>
-                      <p className="mt-1 truncate text-xs font-medium leading-4 text-[#647887] dark:text-[#8fb6cc]">{kpi.subtitle}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                <div className="grid grid-cols-2 gap-3">
+                  {kpiCards.map((kpi) => {
+                    const selected =
+                      (activeView === 'queries' && kpi.label === 'Queries') ||
+                      (activeView === 'missing_vehicles' && kpi.label === 'Missing Vehicles');
+                    return (
+                      <button
+                        key={kpi.label}
+                        type="button"
+                        onClick={() => handleKpiAction(kpi.label, kpi.linkTo)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleKpiAction(kpi.label, kpi.linkTo);
+                          }
+                        }}
+                        className={cn(
+                          'group min-h-[88px] rounded-[4px] bg-[#f7fafc] p-3 text-left transition-colors hover:bg-[#edf5f7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#19b8a5]/35 dark:bg-[#071936] dark:hover:bg-[#0f3f43]',
+                          selected && 'bg-[#e7f8f5] ring-2 ring-[#19b8a5]/30 dark:bg-[#0f3f43]',
+                        )}
+                      >
+                        <div className="mb-2 flex items-start justify-between gap-2">
+                          <span className="min-w-0 text-xs font-medium leading-4 text-[#8aa0ad] dark:text-[#8fb6cc]">{kpi.label}</span>
+                          <kpi.icon className="h-3.5 w-3.5 shrink-0 text-[#8fb6cc] group-hover:text-[#19b8a5]" />
+                        </div>
+                        <p className="text-xl font-semibold leading-6 text-[#071936] tabular-nums dark:text-white">{kpi.value}</p>
+                        <p className="mt-1 text-xs font-medium leading-4 text-[#647887] dark:text-[#8fb6cc]">{kpi.subtitle}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+          </div>
         </motion.div>
 
         <motion.div variants={itemVariants} className="xl:col-span-4">
@@ -222,22 +223,16 @@ export function AdminDashboardPage() {
           </LazyChart>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="xl:col-span-12">
-          <LazyChart height={350} rootMargin="250px">
-            <ValueTrendChart data={valueTrend} />
-          </LazyChart>
-        </motion.div>
-
         {activeView !== 'default' && (
           <motion.div variants={itemVariants} className="xl:col-span-12">
             <Card className="border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.06)] hover:translate-y-0 hover:border-transparent dark:bg-[#0c2530] dark:shadow-none">
               <CardContent className="p-4 sm:p-5">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-semibold text-[#071936] dark:text-white">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-semibold leading-5 text-[#071936] dark:text-white">
                       {activeView === 'queries' ? 'Inquiries' : 'Missing Vehicle Requests'}
                     </h3>
-                    <p className="mt-0.5 text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">
+                    <p className="mt-0.5 text-xs font-medium leading-4 text-[#8aa0ad] dark:text-[#8fb6cc]">
                       {activeView === 'queries'
                         ? `${inquiries?.length ?? 0} total inquiries grouped by status`
                         : `${missingVehicles?.length ?? 0} total requests grouped by status`}
@@ -246,14 +241,14 @@ export function AdminDashboardPage() {
                   <button
                     type="button"
                     onClick={() => setActiveView('default')}
-                    className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#f4f8fb] text-[#7e95a3] transition-colors hover:bg-[#eaf2f6] hover:text-[#071936] dark:bg-[#071936] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#f4f8fb] text-[#7e95a3] transition-colors hover:bg-[#eaf2f6] hover:text-[#071936] dark:bg-[#071936] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]"
                     aria-label="Close status breakdown"
                   >
                     <X className="h-4 w-4" />
                   </button>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  {(activeView === 'queries' ? inquiriesByStatus : missingVehiclesByStatus).map(({ status, count }) => (
+                  {activeStatusRows.map(({ status, count }) => (
                     <div
                       key={status}
                       className={cn(
@@ -270,6 +265,12 @@ export function AdminDashboardPage() {
             </Card>
           </motion.div>
         )}
+
+        <motion.div variants={itemVariants} className="xl:col-span-12">
+          <LazyChart height={350} rootMargin="250px">
+            <ValueTrendChart data={valueTrend} />
+          </LazyChart>
+        </motion.div>
 
         {activeView === 'default' && (
           <>
@@ -290,14 +291,13 @@ export function AdminDashboardPage() {
           <LazyChart height={500} rootMargin="300px">
             <Card className="overflow-hidden border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.06)] hover:translate-y-0 hover:border-transparent dark:bg-[#0c2530] dark:shadow-none">
               <CardContent className="p-4 sm:p-5">
-                <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="mb-4">
                   <div>
                     <h3 className="text-sm font-semibold leading-5 text-[#071936] dark:text-white">Premium Vehicle Leaderboard</h3>
                     <p className="mt-0.5 text-xs font-medium text-[#8aa0ad] dark:text-[#8fb6cc]">
                       Top {premiumLeaderboard.length} vehicles by market value
                     </p>
                   </div>
-                  <span className="rounded-[8px] bg-[#ecfbf8] px-3 py-1 text-xs font-medium text-[#08766c]">Top 100</span>
                 </div>
                 <PremiumLeaderboard
                   data={premiumLeaderboard}
