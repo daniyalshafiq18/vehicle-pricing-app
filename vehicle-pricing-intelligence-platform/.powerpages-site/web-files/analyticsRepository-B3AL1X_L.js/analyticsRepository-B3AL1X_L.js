@@ -1,1 +1,0 @@
-import{w as t}from"./index-UcB258Wu.js";import"./vendor-Ax6QViq6.js";class c{async getAnalytics(){return t().getAnalytics()}async getAllVehiclesWithPricing(s){return t().getAllVehiclesWithPricing(s)}async getDashboardAnalytics(s){return t().getDashboardAnalytics(s)}}const r=new c;export{r as a};

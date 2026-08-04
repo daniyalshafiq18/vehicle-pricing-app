@@ -1,20 +1,83 @@
 
 # Changelog
 
-## 2026-07-30
+## 2026-08-04
 
-### Public Navigation
-- Locked public navigation visited-link states to the teal UI palette so selected/visited links no longer fall back to browser blue.
+### Category into Vehicle Data — Live Verified
+- Re-tested the MVR → Vehicle Data approval flow after the Cloudflare cooldown and confirmed the **Category field populates successfully** in the Vehicle Data table. The Aug 03 raw option-set integer threading fix (label round-trip bug) is now **verified end-to-end live** — the last open item from the approval-flow work is closed.
+- Docs/memory updated: `memory/recent-work-summary.md` (Category moved to ✅ Verified), `memory/learned-conventions.md` (entry annotated with live verification date).
 
-### Admin Dashboard
-- Removed the admin dashboard header search and period pill, moved query/missing-vehicle KPI drill-downs directly under Weekly Stats, fixed KPI text wrapping, improved Powertrain center-label contrast in dark mode, and cleaned the leaderboard by removing TSV export, natural-casing headers, and tightening the table width after Max Price.
-- Removed the remaining blank leaderboard table surface after Max Price, made KPI drill-down cards span the dashboard row, improved sidebar item line-height so lower menu labels are not clipped, and changed the default app theme from system-driven dark mode to light mode.
-- Updated the premium leaderboard to use only Year, Make, Model, Spec, Min Price, and Max Price columns across the full table width, removed the Top 100 pill, improved modal header/body contrast in dark mode, and removed the vehicle modal price-range bar plus Comparable Vehicles section.
-- Cleaned landing navbar hover underlines, removed the Vehicles detail modal Pricing Overview section, added resilient phone/location fallbacks for Queries table and detail modal, and corrected dark-mode styling for the Query detail modal header and valuation cards.
-- Standardized Missing Vehicle and Price Suggestion modal sizing/header surfaces, removed the Price Suggestion modal vehicle banner, centered public header/footer wrappers on ultra-wide zoomed views, and migrated persisted default theme state back to light mode.
-- Removed formatted currency preview text from Price Suggestion modal inputs, removed Market Insights from the valuation wizard result step, and improved valuation result label contrast in dark mode.
-- Bumped the persisted theme store migration so existing saved dark/system theme preferences reset to the light default on next load.
-- Rethemed generated valuation PDFs from the old violet report styling to the current navy/teal enterprise UI palette with matching price summary and table surfaces.
+### Azure Functions Multi-Source Scraper — Implementation Guide Added
+- **Added `docs/azure-functions-scraper-guide.md`** — a complete from-scratch implementation guide for replacing the single-source Power Automate scraping setup (Flows 1–3 → YallaMotor) with a code-first, multi-source Azure Functions scraper.
+- **Why:** the user is evaluating Azure Functions to scrape additional marketplaces (Dubizzle, Drive Arabia) that Power Automate cannot handle (no browser rendering, no proxies, fixed/truncated HTTP headers, serial execution, expression debugging vs 30-min Cloudflare cooldowns).
+- **Key insight encoded:** Azure Functions runs on the same Microsoft/Azure IP family as Power Automate (which is NOT Cloudflare-blocked for YallaMotor per the design doc), so the Cloudflare "win" transfers — but it must be proven per-IP with a Phase 1 feasibility probe before any real work.
+- **Guide covers, in 12 phases:** pre-requisites + pre-flight checks → feasibility probe (the make-or-break Cloudflare test) → project scaffold/structure → adapter pattern (`IScraperAdapter`, `NormalizedListing`, per-source registry) → anti-bot layer (exact working Flow 3 headers, retry/backoff, Cloudflare detection, proxy hook) → YallaMotor adapter (ports the 9 verified spec-field extractions + HTML tile parsing + `slugify` URL logic) → HTTP trigger functions (drop-in `Flow3ScrapeResult` contract, timer sync, debug endpoint) → Dataverse write-back (managed identity vs app registration, label→integer normalization that prevents the Aug-03 label round-trip bug) → Durable orchestration → deployment/CI/CD (Consumption vs Premium, fixed IPs) → monitoring → testing (fixtures-based, contract tests) → migration/rollback plan (frontend swap is a one-line URL change).
+- **Reuses existing assets:** Flow 3's confirmed working headers, `Flow3ScrapeResult` shape from `src/lib/yallaMotorHttpScraper.ts`, option-set maps from `src/data/dataverseOptionSets.ts`, Path B postmortem lessons (test target early, keep debug endpoints). Typecheck N/A (doc only).
+- Files: `docs/azure-functions-scraper-guide.md`, `docs/CHANGELOG.md`, `CLAUDE.md` (Documentation list).
+
+## 2026-08-03
+
+### Admin Missing Vehicle Card — Trim Card Removed (redundant with header)
+- The card/grid header already shows the composite `Make Model Trim` title, so the dedicated **Trim** card in the details grid was redundant. Removed it; the freed slot was filled with **Engine Size** (`NNN cc`, mirroring the modal's Vehicle Specifications order) so the 2-column grid stays balanced at 6 cards: Body Type, Engine Size, Cylinders, Fuel Type, Transmission, Drive Type.
+- Card header fallback updated to `[make, model, trim]` (was `[make, model]`) so legacy records without a `vpi_name` still show the trim in the header.
+- Files: `features/admin/AdminMissingVehiclesPage.tsx`. Typecheck passes.
+
+### MVR → Vehicle Data — Category Not Recording (label round-trip bug)
+- **Bug:** Category was silently dropped when approving an MVR into Vehicle Data.
+- **Root cause:** the scrape writes `vpi_category` to the MVR as an **integer** (1/2/3); `parseRawRecord` reads it back as the formatted **label**; `approveAndCreateVehicle` then converted the label back to an integer via `categoryValue()` which uses **exact-match** `toValue` against map keys `"NON-GCC"` / `"OTHER/STANDARD"`. Dataverse returns `"Non-GCC"` / `"Other/Standard"` (title-case/dash), so the lookup returned `null` and the field was silently skipped.
+- **Fix:** capture the **raw option-set integer** (`categoryValue`) on read (coercing string-typed values), and in `approveAndCreateVehicle` prefer it directly, falling back to the label lookup. No label round-trip fragility.
+- Files: `types/missingVehicleRequest.ts`, `lib/missingVehicleApi.ts`. Typecheck passes.
+
+### Flow 4 Email — Trigger Changed from Scrape Complete → Vehicle Data Approval
+- **Flow 4 (`MVR - Customer Email Notification`) previously emailed the user when the scrape completed** (`vpi_scrapestatus eq 4`). That meant users got notified before any human review and regardless of whether their request was approved.
+- **Trigger changed to `vpi_status eq 2` (Approved)** — the email now fires only when the admin approves the MVR and it's pushed to the master **Vehicle Data** table. The frontend `approveAndCreateVehicle` action creates the Vehicle Data record *and then* sets MVR status to `Approved`, so the trigger lands at exactly the right moment.
+- Email body wording updated: "Your request has been processed" → "Good news — your requested vehicle has been approved and is now available on our platform."
+- **Power Automate-side change (user must re-save Flow 4 in make.powerautomate.com):** update the trigger's Filter rows expression from `vpi_scrapestatus eq 4` to `vpi_status eq 2`.
+- Files: `docs/power-automate-cloud-only-design.md` (Flow 4 purpose, data-flow diagram, trigger filter, email body, test steps, checklist, status summary). No app code changed — email is server-side.
+
+### MVR → Vehicle Data — Engine Size, Doors, Category Wired + Name Convention Aligned
+- **Previously dropped fields now mapped** in `approveAndCreateVehicle`: Engine Size → `vpi_enginesize` (plain decimal), Doors → `vpi_doors` (via `DOORS` label map), Category → `vpi_category` (via `categoryValue`, `GCC/NON-GCC/OTHER-STANDARD`). Only set when a value exists and resolves.
+- **Price mapping** — `approveAndCreateVehicle` now writes the Flow 3 scraped market range onto the new Vehicle Data record: `scrapedMinPrice` → `vpi_minprice`, `scrapedMaxPrice` → `vpi_maxprice` (only when the scrape returned prices). `vpi_avgprice` / `vpi_pricespreadpct` are left empty.
+- **Name convention** — Vehicle Data NAME was `MVR-{make}-{model}-{modelYear}` (MVR- prefix, hyphen/space-mixed separators, no trim). Existing Vehicle Data records use `Make Model Trim` **without the Year**, so both Vehicle Data NAME and MVR `vpi_name` now use that exact convention (space-joined, e.g. `Mercedes Benz C-Class C 200`). This keeps approved vehicles, their source MVR, and the existing seed records all reading identically. Modal heading fallback updated to match.
+- Doc comment updated to list the full field mapping.
+- Files: `lib/missingVehicleApi.ts`, `features/admin/AdminMissingVehiclesPage.tsx`. Typecheck passes.
+
+### Missing Vehicle `vpi_name` — Now Populated + Shown in UI
+- **`vpi_name` (Primary Name) was never set** on MVR creation → records had blank titles in Dataverse views/lookups/Power Automate. The Inquiry table already composed its `vpi_name`; MVR was the one that didn't.
+- **Create** (`missingVehicleApi.upsertMissingVehicleRequest`) now sets `vpi_name` = composite vehicle title `Make Model Trim` (no Year, matching the existing Vehicle Data convention — see the later "Name convention" entry this date), e.g. `Mercedes Benz C-Class C 200`.
+- **Read** — added `NAME: 'vpi_name'` to `MISSING_VEHICLE_REQUEST_FIELDS`, mapped it in `parseRawRecord`, added the field to both `$select` lists.
+- **Type** — `MissingVehicleRequest` gains `name?: string`.
+- **UI** — detail-modal heading and card heading now show `request.name` (fallback to `Make Model` for legacy records).
+- Schema doc: MVR table now documents `vpi_name` as Primary Name.
+- Files: `dataverseConfig.ts`, `types/missingVehicleRequest.ts`, `lib/missingVehicleApi.ts`, `features/admin/AdminMissingVehiclesPage.tsx`, `docs/dataverse-schema.md`. Typecheck passes.
+
+### Admin Missing Vehicle Detail Modal — Grouped Spec Order
+- Split the detail-modal grid into two labelled groups: **Vehicle Specifications** and **Requester** (Requested By, Contact Email).
+- Added the previously-unshown Engine Size card (`${engineSize} cc`); **removed** the Category (Regional Spec) card.
+- **Mileage relocated** from the Scrape Results section into the Vehicle Specifications grid (after Doors), formatted as `80,000 km` (thousand-separated, lowercase `km` matching `cc`). Prefers `vpi_mileage`, falls back to parsed JSON, else `—`.
+- Vehicle Specifications order: Body Type → Engine Size → Cylinders → Fuel Type → Transmission → Drive Type → Doors → Mileage.
+- Files: `features/admin/AdminMissingVehiclesPage.tsx`. Typecheck passes.
+
+### MVR Mileage — Min/Max Columns Replaced with Single `vpi_mileage`
+- **Dataverse (maker-side, 2026-08-03):** removed the unused `vpi_minmilage` / `vpi_maxmilage` (Decimal) columns; added a single `vpi_mileage` (Decimal, scale 0) for the scraped listing mileage. Neither min/max value was ever populated by the wizard or any Flow.
+- **App wiring** (`missingVehicleApi`, `dataverseConfig`, `types`, repo, datasource, hook): dropped all `minMileage`/`maxMileage` references; `MISSING_VEHICLE_REQUEST_FIELDS.MILEAGE = 'vpi_mileage'`; `parseRawRecord` reads `mileage`; both `$select` lists now request `vpi_mileage` instead of the removed columns (required — the old columns no longer exist, so selecting them would error the API calls).
+- **Type:** `MissingVehicleRequest.minMileage/maxMileage` → `mileage?: number`.
+- **UI:** modal Mileage card shows `request.mileage` (formatted with thousand separators) when set, falling back to the parsed scraped-listings JSON for records not yet populating the column.
+- Files: `dataverseConfig.ts`, `types/missingVehicleRequest.ts`, `types/datasource.ts`, `lib/missingVehicleApi.ts`, `repositories/missingVehicleRepository.ts`, `hooks/useMissingVehicleRequests.ts`, `data/dataverseDataSource.ts`, `features/admin/AdminMissingVehiclesPage.tsx`, `docs/dataverse-schema.md`. Typecheck passes.
+- **Scrape now writes mileage:** `useTriggerScrape` maps `result.mileage` → `mileageValue` and `updateMissingVehicleScrapeResult` PATCHes it into `vpi_mileage` (was previously only embedded in the `scrapedListings` JSON, so the column stayed empty). Added `mileageValue?: number` through repo → datasource → `datasource.ts` → api. Files: `useTriggerScrape.ts`, `missingVehicleApi.ts`, `missingVehicleRepository.ts`, `dataverseDataSource.ts`, `types/datasource.ts`. Typecheck passes.
+
+### Admin Missing Vehicle Detail Modal — Refined Grid
+- **Removed** the redundant identity cards (`Make`, `Model`, `Year`, `Spec / Trim`) — now carried by the heading — and the `Status` card (already editable via the header `StatusSelect`). Grid is spec-only + contact.
+- **Added** previously-hidden scraped specs: `Doors` and `Category` (Regional Spec) cards.
+- **Mileage** now shown in the Scrape Results section from the parsed scraped-listings JSON (`parsed.mileage`) — no schema change needed. (Forward plan: single `Mileage` column replacing the dead Min/Max Mileage once added in Dataverse.)
+- **Heading fallback upgraded** to `Make Model Trim` (no Year, aligned with the final `vpi_name` convention) so legacy records (no `vpi_name`) keep full identity in the title.
+- Files: `features/admin/AdminMissingVehiclesPage.tsx`. Typecheck passes.
+
+### Admin Missing Vehicles — Removed Dead Min/Max Price Fields
+- **`AdminMissingVehiclesPage.tsx`** — Removed the user-suggestion `Min Price` / `Max Price` displays, which are never populated for missing-vehicle (MVR) records (the scrape writes to `vpi_scraped_minprice`/`maxprice` instead).
+- Removed in **3 places**: the two detail-modal grid cards, a dead `{/* Price info */}` block that was always guarded to no-render, and the table's two `Min Price`/`Max Price` columns (header + body cells) — table drops from 12 to 10 columns.
+- Used the `Scraped Min` / `Scraped Max` fields as the single source of price truth in the admin UI; user-suggested pricing still lives in the Vehicles + Price Suggestions flows.
+- `formatCurrency` retained (still used by scraped-price cells). Typecheck passes.
 
 ## 2026-07-31
 
@@ -34,7 +97,140 @@
 - Retinted the admin header platform title link to the teal brand palette in light and dark mode.
 - Updated neutral Vehicles spec capsules to use the requested `#F6F5F2` background.
 
+### Flow 3 — MVR Option-Set Mapping Fixed (Fuel + Body Type)
+- **User verified the actual Dataverse option sets** for the Missing Vehicle Request table → the code maps were WRONG (assumed values, never verified against Dataverse).
+- **Fuel Type (`vpi_fueltype`)** — actual: `Petrol`=1, `Diesel`=2, `Hybrid`=3, `Electric`=4. The old code map was copied from the Vehicle *Powertrain* set (Electric=1, Hybrid=2, Petrol/Diesel=3) → scraped `Petrol` was written as value 3 = **Hybrid** in Dataverse. Fixed `MISSING_VEHICLE_FUEL_TYPE` + `mapFuelType()` (Petrol→Petrol, Diesel→Diesel, Hybrid→Hybrid, Electric→Electric).
+- **Body Type (`vpi_bodytype`)** — actual: its own **68-option set** (Sedan=44, SUV=53, `SUV - Crossover`=57). The old code used a fabricated 62-option map (Sedan=42, Suv=47, plus labels that don't exist like "Convertable"/"Targah") → scraped `SUV / Crossover` matched nothing → body type was never written. Replaced with the real values + added a **normalised fallback lookup** (case/separator-insensitive) so YallaMotor `SUV / Crossover` matches Dataverse `SUV - Crossover`.
+- **User cleaned the labels in Dataverse** (acronym casing LWB/HR/MPV/SUV, uniform `SUV - ` separator for all SUV subtypes, `Electrical`→`Electric`). Code uses exactly those labels.
+- **Schema doc lie corrected:** MVR `vpi_bodytype` does NOT share the global Vehicle Data option set — it has its own 68-value set (previously documented as shared). Added the real `vpi_fueltype` table too.
+- Files: `src/data/dataverseOptionSets.ts`, `src/hooks/useTriggerScrape.ts`, `docs/dataverse-schema.md`, `docs/power-automate-cloud-only-design.md`.
+- ✅ **Verified live 2026-07-31** after publish — re-ran the scrape (Mercedes C-Class C 200 2021): Body Type + Fuel Type now record correctly in Dataverse.
+
+### Vehicle Data Option Sets — Body Type Fixed + Powertrain Approval Mapping
+- **User shared the real Vehicle Data option sets** — Body Type `vpi_bodytype` and Powertrain Type `vpi_powertraintype`.
+- **Body Type (`vpi_bodytype`)** — real set is 68 options with values **1:1 identical to the MVR set** (Sedan=44, SUV=53, `SUV Crossover`=57). Only label formatting differs: Vehicle Data has **no ` - ` separator** ("SUV Compact"…"SUV Crossover") and lowercase `Lwb` ("Mini Bus Lwb Wide Body HR"). The old `BODY_TYPE` map was FABRICATED (Sedan=46, SUV=55, labels like "Landaulet"/"Minivan"/"Pickup Truck") and shifted every value below 16 — replaced with the real set; `bodyTypeValue` now uses the normalised fallback lookup.
+- **Powertrain Type (`vpi_powertraintype`)** — was already correct (Electric=1, Hybrid=2, Petrol/Diesel=3); added a VERIFIED note.
+- **Approval flow fix:** `approveAndCreateVehicle()` mapped MVR `fuelType` directly through `powertrainValue()`, so MVR "Petrol"/"Diesel" → Vehicle powertrain was silently dropped (there is no exact "Petrol" label in the powertrain set). Added `mvrFuelToPowertrainLabel()` — Petrol/Diesel → `Petrol/Diesel` (3), Hybrid → 2, Electric → 1.
+- Files: `src/data/dataverseOptionSets.ts`, `src/lib/missingVehicleApi.ts`, `docs/dataverse-schema.md`.
+
+### Vehicle Data Body Type — Labels Synced with MVR + Maps Unified
+- **User cleaned the Vehicle Data labels in Dataverse** on 2026-07-31: `Mini Bus Lwb Wide Body HR` → `Mini Bus LWB Wide Body HR` (uppercase `LWB`), and the four SUV subtypes gained the ` - ` separator (`SUV - Compact`…`SUV - Crossover`).
+- The Vehicle Data and MVR body-type sets are now **fully identical** (labels AND values) — `MISSING_VEHICLE_BODY_TYPE` is now an alias of `BODY_TYPE` (single source of truth), replacing the duplicated 68-entry literal so the two can never drift again.
+- Docs: `docs/dataverse-schema.md` tables + notes updated.
+
+### Flow 3 Deep Scrape — Debugging Retrospective Documented
+- **Added `docs/flow3-deep-scrape-debugging-retrospective.md`** — a complete, self-contained narrative of the entire Flow 3 deep-scrape journey, per user request ("document it, as it is").
+- **Covers, in order:** where it started (patterns designed 2026-07-28 from *guessed* page structures), the full test timeline (Flow 1/2, Flow 3 Tests 1–7), the three live runs of 2026-07-31 (Doors `trim()` arity error → Cylinders Null-split crash → full clean sweep), root-cause analysis of each failure, a "where we were lacking → how we overcame" table, **the final verified extraction expressions** (all 9 fields, copied verbatim from the design doc), how the last run got every field, and the lessons learned.
+- **Key insight preserved:** the killer bug was the assumed `<th>/<td>` table — the real page is `<div title="LABEL">` tiles with zero `<td>` tags. A `contains()` diagnostic proved the label exists but not the markup.
+- **Documents the honesty audit** (evidence extraction is live, not hardcoded) and the remaining step: a second-vehicle credibility re-test after the Cloudflare cooldown.
+- Linked from CLAUDE.md Documentation section and from the design doc's Test 7 section.
+
+### Flow Expression Validator (`npm run validate:flows`)
+- **Added `scripts/validate-flow-expressions.mjs`** — extracts every Power Automate expression from `docs/power-automate-cloud-only-design.md` and validates paren balance (ignoring string literals) **and** single-argument function arity (`trim`/`first`/`last`/etc. must receive exactly one argument).
+- **Why:** The Flow 3 `Extract_Doors` `trim(first(...), '')` two-parameter error cost a Cloudflare-limited test cycle. Every live Flow test is expensive (~30 min cooldown), so catching expression typos locally before testing saves time.
+- **Validated 49 expression blocks** across Flow 1/2/3 sections — all currently pass. Verified the tool catches the exact `trim` bug and stray-paren cases, and skips non-expression blocks (HTML templates, ASCII diagrams, URL/JS samples).
+- **Workflow rule:** run `npm run validate:flows` before any live Flow test.
+- Added `"validate:flows"` npm script + CLAUDE.md Commands/Project Structure entries.
+
+### Flow 3 Deep Scrape — Live Retest (Mitsubishi Pajero)
+- **Retested Flow 3** against a Mitsubishi Pajero GLS V6 2020 listing after the Cloudflare cooldown.
+- **Now verified working:** Listing URL (`<article>` + `href` extraction), Body Type (SUV / Crossover), Fuel Type (Petrol), Transmission (Automatic), Drive Type (`https://schema.org/AllWheelDriveConfiguration`), Engine Size (`2972`).
+- **Cylinders `contains()` diagnostic passed** — confirmed `Number of Cylinders` exists in the HTML DOM, so the HTML extraction path is viable.
+- **Fixed `Extract Doors` expression** (§9b iv-g) — Power Automate error `InvalidTemplate: 'trim' must have only one parameter`. Root cause: a stray `, ''` was passed as a second argument to `trim(first(...), '')`. Corrected to `trim(first(...))`.
+- **Catch Scope verified** — error was gracefully caught without failing the flow.
+
+### Flow 3 Deep Scrape — Expression Hardening (pre-emptive, for next retest)
+- **Doors hardened** (§9b iv-g) — The `trim()` fix still split on `,` only; if `"numberOfDoors"` is the last JSON-LD property (`"value":4}` no trailing comma), it would return `4}`. New nested-if handles: nested `QuantitativeValue` number **and** plain `"numberOfDoors":` integer, using a `}`-then-`,` split in both branches.
+- **Mileage hardened** (§9b iv-i) — Old expression split on `,`, which breaks if the value is a quoted string (like verified engine size `"value":"2000"`). New nested-if tries the string pattern first, then the numeric pattern. Expected: `130161`.
+- **Regional Specs hardened** (§9b iv-j) — Old expression relied on `description` JSON-LD only. New version extracts from the HTML table row (`Regional Specs</th><td>`) first (same server-rendered table as Cylinders, confirmed present), with `description` as fallback. Expected: `GCC Specs`.
+- **All three expressions paren-validated** programmatically (Node script) before committing — DOORS/MILEAGE/REGIONAL all BALANCED.
+- **Still pending:** Doors value, Cylinders numeric value, Mileage value, Regional Specs value (all on next live retest).
+
+### Flow 3 Deep Scrape — Hardened Expressions Verified Against Real JSON-LD (Test 6)
+- **User pasted the real Pajero JSON-LD** — simulated all hardened expressions against it. **All extract correct values:** Doors=`4`, Mileage=`130161`, Regional=`GCC Specs`, plus all previously-working fields re-confirmed.
+- **Key structural findings recorded in the design doc (Test 6 section):**
+  - **Mileage value is an UNQUOTED number** (`"value":130161`) — unlike engine size (quoted string `"value":"2972"`). This validates the dual-path Mileage expression: string branch stays silent, numeric branch fires.
+  - **Doors has a `unitCode`** (`"value":4,"unitCode":"C62"`) — the old `,`-split would have worked *for this car*; the `}`-then-`,` hardening is insurance for listings where doors is the last property.
+  - **"Regional Specs" is absent from JSON-LD** (HTML table only, same as Cylinders) — but `description` contains `GCC Specs`, so both the HTML branch and the description fallback reach GCC.
+  - **JSON-LD wrapper is flat `["Product","Car"]`**, not `AutoDealer`/`itemOffered` — irrelevant to extraction, but recorded so future edits stop guessing.
+- **Residual risk noted:** regional HTML branch assumes the table row is the first `Regional Specs` occurrence in the page — confirmed next live test.
+- **Next step (user-side):** paste the 3 hardened expressions into Power Automate, run `npm run validate:flows` first, then retest (mind the ~30 min Cloudflare cooldown).
+
+### Flow 3 Deep Scrape — Cylinders & Regional Specs `<td>` Bug Root-Caused + Fixed
+- **Live retest failed at `Extract Cylinders`** with `InvalidTemplate: split expects first parameter of type string; provided value of type 'Null'`. The old expression split on `'Number of Cylinders'` → `<td>` → `</td>`.
+- **Root cause (view-source verified):** the YallaMotor Vehicle Highlights section is a grid of **`<div>` cards — there are NO `<td>` tags anywhere on the page**. The `<th>/<td>` table assumption was wrong (the `contains()` diagnostic had only proved the label string exists, not the markup). `first(skip(split(after, '<td>'), 1))` → Null.
+- **Real markup:** `<div class="mb-1 text-sm text-gray-600 capitalize" title="Number of Cylinders">Number of Cylinders</div><div class="text-base font-semibold text-gray-900 lg:text-base" title="6">6</div>` — label and value are sibling `<div>`s; the value's `title` attribute holds the data.
+- **Fix:** both Cylinders (§9b iv-e) and Regional Specs (§9b iv-j) rewritten to split on `title="LABEL"` → the next `title="` → `"`:
+  - Cylinders: `trim(first(split(first(skip(split(first(skip(split(body, 'title="Number of Cylinders"'), 1)), 'title="'), 1)), '"')))` → sim-verified `6`.
+  - Regional Specs: same `title="Regional Specs"` tile pattern primary, JSON-LD `description` fallback (verified contains `GCC Specs`) → either branch reaches GCC.
+- **Simulated all 10 extractions against a faithful reconstruction of the real page** (JSON-LD + Organization block + summary bar + tiles) — all correct: Doors=`4`, Mileage=`130161`, Engine=`2972`, Cylinders=`6`, Regional=`GCC Specs`, plus Body/Fuel/Transmission/Drive.
+- **Bonus finding:** the sticky summary bar contains `<span>GCC Specs</span>` — plain-text region value in the page.
+- **All 43 expressions re-validated** (paren + arity) after the edit.
+
+### Flow 3 Deep Scrape — ✅ FULL CLEAN SWEEP (Mitsubishi Pajero) — Flow 3 Verified End-to-End
+- **One live run, every field correct:** Listing URL ✅, Body Type `SUV / Crossover` ✅, Fuel `Petrol` ✅, Transmission `Automatic` ✅, Drive Type ✅, **Cylinders `6`** ✅, Engine Size `2972` ✅, **Doors `4`** ✅, **Mileage `130161`** ✅, **Regional Specs `GCC Specs`** ✅.
+- **Both `<td>`-bug fixes confirmed live** — Cylinders and Regional Specs extracted correctly via the `title="LABEL"` tile pattern (no Null-split errors).
+- **Full Response JSON correct** — all 9 specs + count=5, minPrice=54999, maxPrice=75500, heading, sourceUrl. No Catch Scope triggered.
+- **Doc:** Test 7 entry added to `docs/power-automate-cloud-only-design.md` recording the full pass.
+- **Flow 3 is now fully verified end-to-end** after the 2026-07-31 `<td>` bug journey (assumed table → Null split crash → view-source revealed `<div title="LABEL">` tiles → rewritten → sim-verified → live pass).
+
+## 2026-07-30
+
+### Public Navigation
+- Locked public navigation visited-link states to the teal UI palette so selected/visited links no longer fall back to browser blue.
+
+### Admin Dashboard
+- Removed the admin dashboard header search and period pill, moved query/missing-vehicle KPI drill-downs directly under Weekly Stats, fixed KPI text wrapping, improved Powertrain center-label contrast in dark mode, and cleaned the leaderboard by removing TSV export, natural-casing headers, and tightening the table width after Max Price.
+- Removed the remaining blank leaderboard table surface after Max Price, made KPI drill-down cards span the dashboard row, improved sidebar item line-height so lower menu labels are not clipped, and changed the default app theme from system-driven dark mode to light mode.
+- Updated the premium leaderboard to use only Year, Make, Model, Spec, Min Price, and Max Price columns across the full table width, removed the Top 100 pill, improved modal header/body contrast in dark mode, and removed the vehicle modal price-range bar plus Comparable Vehicles section.
+- Cleaned landing navbar hover underlines, removed the Vehicles detail modal Pricing Overview section, added resilient phone/location fallbacks for Queries table and detail modal, and corrected dark-mode styling for the Query detail modal header and valuation cards.
+- Standardized Missing Vehicle and Price Suggestion modal sizing/header surfaces, removed the Price Suggestion modal vehicle banner, centered public header/footer wrappers on ultra-wide zoomed views, and migrated persisted default theme state back to light mode.
+- Removed formatted currency preview text from Price Suggestion modal inputs, removed Market Insights from the valuation wizard result step, and improved valuation result label contrast in dark mode.
+- Bumped the persisted theme store migration so existing saved dark/system theme preferences reset to the light default on next load.
+- Rethemed generated valuation PDFs from the old violet report styling to the current navy/teal enterprise UI palette with matching price summary and table surfaces.
+
+### Flow 3 Deep Scrape — Detail Page Verification & Doc Update
+- **Manual detail page verification** — Confirmed all spec fields present on individual listing page (`used-mercedes-benz-c-class-2021-sharjah-2104988`).
+- **Raw JSON-LD analyzed** — compared extraction patterns against actual page source → found 3 mismatches:
+  - **Fixed Cylinders extraction** (§9b iv-e): **NOT in JSON-LD** at all. Changed from JSON-LD `"numberOfCylinders":"` → HTML DOM extraction (`Number of Cylinders</th>` → `<td>`).
+  - **Fixed Engine Size extraction** (§9b iv-f): Value is nested at `vehicleEngine.engineDisplacement.value`. Changed from `"engineDisplacement":"` (flat) → `"engineDisplacement":{"@type":"QuantitativeValue","value":"` (nested path).
+  - **Added Seats note** (§9b iv-h): Not present in verified JSON-LD, may need DOM extraction or graceful omission.
+- **Added Test 5 entry** — Full "Vehicle Highlights" table with JSON-LD cross-reference: 8/10 fields in JSON-LD, 2 fields (Cylinders, Seats) HTML-only.
+- **Doc clarity fixes**: Renamed `Listing URL Found?` → `Is Listing URL Found`. Clarified that `(empty)` means leave the value field blank (not type "empty"). Clarified that no action is needed in the "If no" branch (DetailResponseBody stays empty automatically). Added explicit placement note: extraction steps go AFTER the condition, not inside its branches.
 ## 2026-07-29
+
+### Git Workflow — Hassan PR Merge (165 conflicts)
+- **Merged `origin/hassan` into `main`** — Resolved 165 conflicts by categorizing: source files (manual), auto-generated build artifacts (accept theirs with `git checkout --theirs`), rename/delete edge cases (DD/UD → `git rm`, AU → `git add`).
+- **Removed auto-generated files from git tracking** — `web-files/`, `manifest.yml`, `org*.yml` now in `.gitignore` + removed from tracking via `git rm --cached`. Future merges won't conflict on these.
+- **Ran `npm run publish` post-merge** — SPA-Shell and Home.webpage auto-updated to the correct build hashes. Build succeeded: 3282 modules transformed.
+- **Pushed to origin/main** — 3 commits ahead of remote synced. Remote was on "Revert 'Final Ui Yo'", now at f7a1650.
+- **Key lesson learned**: After any merge, run `npm run publish` to regenerate asset references rather than manually fixing hashes.
+
+### Git Workflow — publish script & .gitignore
+- **Added `publish.ps1`**: Single PowerShell script that runs build → download portal state → upload to Power Pages.
+- **Added `npm run publish`**: Calls `publish.ps1` — one command for the full deploy cycle.
+- **Updated `.gitignore`**: Ignored `web-files/`, `manifest.yml`, and `org*.yml` — these auto-generated files caused merge conflicts when "accept both" was selected, leading to duplicate RecordIds and `PortalFileContentUploadFailed` errors.
+- **After any merge**: Instead of manually fixing conflicts, just run `npm run publish`.
+
+### Flow 3 Deep Scrape — Frontend Integration
+
+### Flow 3 Deep Scrape — Power Automate Test & Doc Update
+- **Tested deep scrape** from search results page: 4/10 fields extracted (Body Type, Fuel Type, Transmission, Mileage). Drive Type, Cylinders, Engine Size, Doors, Seats not available in search page JSON-LD.
+- **Updated design doc** — Rewrote §9b for Option B (second HTTP request to listing detail page). Added `DetailResponseBody` variable, `Extract First Listing URL` Compose, `Listing URL Found?` Condition, `HTTP Detail Page` action, and re-pointed all 10 spec extraction steps to use `variables('DetailResponseBody')`.
+- **Fixed heading expression** — Changed split delimiter from `'heading-h2-content'` to `'heading-h2-content">'` to strip the stray `">` prefix.
+- **Added Test 4 entry** documenting the 2026-07-29 partial test results with a field-by-field analysis table.
+- **Extended `Flow3ScrapeResult` interface** in `yallaMotorHttpScraper.ts`: Added `bodyType`, `fuelType`, `transmission`, `driveType`, `cylinders`, `engineSize`, `doors`, `seats`, `mileage`, and `regionalSpecs` fields. The `scrapeViaFlow3()` function now parses these from the Flow 3 JSON response.
+- **Added `asString()` helper**: Safely extracts string values from unknown Flow 3 response fields.
+- **Extended `MissingVehicleRequest` type**: Added `engineSize`, `doors`, `seats`, and `category` fields.
+- **Updated `MISSING_VEHICLE_REQUEST_FIELDS` config**: Added `ENGINE_SIZE`, `DOORS`, `SEATS`, and `CATEGORY` field mappings.
+- **Extended `updateMissingVehicleScrapeResult()`** through all layers (API → DataSource → IDataSource → Repository): Now accepts optional spec fields (`bodyTypeValue`, `fuelTypeValue`, `transmissionValue`, `driveTypeValue`, `cylindersValue`, `engineSizeValue`, `doorsValue`, `seatsValue`, `categoryValue`) and writes them to the MVR record in Dataverse.
+- **Updated `fetchMissingVehicleRequests()` and `fetchMissingVehicleRequestById()`**: Include new spec fields in `$select` queries.
+- **Added mapping logic in `useTriggerScrape.ts`**: 
+  - `mapDriveType()` — converts schema.org drive URLs (e.g., `RearWheelDriveConfiguration`) to short labels (`RWD`).
+  - `mapCategory()` — parses listing descriptions for regional-spec keywords (`GCC Specs`, etc.) → Dataverse category values.
+  - `mapFuelType()` — normalises `Petrol`/`Diesel` → `Petrol/Diesel`.
+  - `lookupDoorsValue()` / `lookupSeatsValue()` — look up DOORS/SEATS option set values.
+  - After a successful scrape, all mapped spec field values are persisted alongside pricing data.
 
 ### Typography System
 - Standardized the app on Inter as the single enterprise UI font, removed the mixed Plus Jakarta Sans/Montserrat/Roboto font stack, and added base typography inheritance for the full application.
@@ -59,6 +255,20 @@
 
 ## 2026-07-28
 
+### Manifest Rebuild for Current Build & SPA Shell Fix
+- **Root cause of blank screen**: The SPA Shell web template (`SPA-Shell.webtemplate.source.html`) had hard-coded `<script>` references to `index-CmbBBwOb.js`, `index-B3MGuNjE.js`, and `index-BxUExJa3.js` — two of which don't exist in the current build and one that's a code-split chunk, not the entry point.
+- **Updated SPA Shell**: Replaced stale script refs with the correct entry point (`index-K_KmhXy2.js`) and its modulepreloads (`vendor-C5Q43FSy.js`, `vendor-query-dtloYRUI.js`, `vendor-animation-B9wsIYe3.js`).
+- **Rebuilt manifest**: Added all 12 current build files (from `dist/assets/`) as `IsDeleted: false` entries with proper RecordIds from their `.webfile.yml` files.
+- **Marked old build files deleted**: 9 old entries (`analyticsRepository-*.js`, `index-*.js.map`, `vendor-animation-D39qNG4p.js`, `style-CVBBNNQb.css`) changed to `IsDeleted: true`.
+- **Added missing `index.html`**: The `index.html` webfile itself was absent from the manifest — added it.
+
+### Power Pages Deployment Fix — Duplicate Manifest Entries
+- Removed 9 duplicate `IsDeleted: true` stub entries from `manifest.yml` that had RecordIds also appearing as `IsDeleted: false` with real filenames — these were causing `PortalFileContentUploadFailed` errors during deployment.
+- Each duplicate was a GUID-as-DisplayName `IsDeleted: true` entry conflicting with the proper filename entry later in the file; Power Pages processed the stub first, tripping the upload conflict.
+
+### Flow 3 — Extract Mileage trim() Syntax Fix
+- Fixed `trim(first(...), '')` → `trim(first(...))` in Extract Mileage expression — the `trim()` function in Power Automate only accepts one parameter.
+
 ### User-Facing Teal Color Alignment
 - Retinted the public loader, landing page badge/hover/card/CTA colors, public header/footer hover states, valuation wizard progress indicator, Step 1 form borders/focus rings/city dropdown/consent card, vehicle-selection dropdown hover/selected states, and valuation result cards to match the dashboard teal palette.
 - Removed the remaining valuation-page old color hooks by retinting the valuation canvas/card shell, Step 2 dropdown focus rings/search surfaces, empty-result borders, and valuation spec-card hover states to teal.
@@ -79,6 +289,32 @@
 - Reduced the Top Models chart label gutter so the horizontal bars start further left with less empty space.
 - Removed the admin header page icon/title block so the search field sits further left, removed the Weekly Stats circular car icon, and strengthened the Overall Performance Dashboard title weight.
 
+### Power Automate — Flow 3 Deep Scrape for Vehicle Specs
+- **Deep scrape designed** for Flow 3 (`MVR - On-Demand Scraper`): extracts complete vehicle specs from first listing's detail page via JSON-LD
+- **New Flow 3 steps (inside Try/heading-found branch):**
+  - Extract First Listing URL from search results
+  - HTTP Deep Scrape → listing detail page
+  - Extract: Body Type, Fuel Type, Transmission, Drive Type, Cylinders, Engine Size, Doors, Seats, Mileage
+  - Updated Response to include all spec fields
+- **Design doc updated** with full deep scrape steps, extraction expressions, data flow diagram, and Dataverse option set mapping reference
+- **Frontend changes documented** — `yallaMotorHttpScraper.ts`, `useTriggerScrape.ts`, and repository need updates to write specs to Dataverse
+
+### 🐛 Flow 3 Fix — Deep Scrape URL + Cloudflare
+- **Removed step 9b(i) `Extract First Listing URL`** — extracted listing detail URLs (`/used-cars/{make}-{model}-{year}-{city}-{listingID}`) always return 404 on YallaMotor. That URL format is invalid.
+- **Removed `HTTP Deep Scrape` action entirely** — making a second HTTP request to YallaMotor triggers Cloudflare's JS challenge.
+- **All spec extraction now uses `variables('ResponseBody')`** — the response from Step 4 (HTTP Search) is cached here. All 10 extraction expressions changed from `body('HTTP_Deep_Scrape')` → `variables('ResponseBody')`, avoiding the Cloudflare issue entirely.
+- **Updated HTTP headers in Steps 4 & 7:** Added `sec-ch-ua`, `sec-ch-ua-mobile`, `sec-ch-ua-platform` (User-Agent Client Hints) and bumped Chrome 125 → 128. Cloudflare's managed challenge requires these Client Hint headers — without them, it returns a JS challenge page ("Just a moment..."). Applied to both Flow 1 and Flow 3 HTTP actions.
+- **Design doc updated** with new headers, Cloudflare explanation, and simplified no-second-request approach.
+
+### Power Automate — Flow 4 Built, Tested & Verified
+- **Flow 4 (`MVR - Customer Email Notification`) built & tested** — email sends successfully when scrape completes
+- **Fixed:** `vpi_contact` (schema name) vs `_vpi_contact_value` (internal field name) — Select columns uses schema name, expression uses internal name
+- **Fixed:** Dynamic content must be inserted via **Dynamic content picker**, not typed as literal expressions
+- **Fixed:** Email link text changed to "Click here to visit the site"
+- **Fixed:** Email body wording — "We've reviewed your request" → "Your request has been processed"
+- **Docs updated** with corrected template, accurate instructions, and checked-off setup checklist
+- **Memory saved:** Dataverse lookup field naming convention (schema vs internal)
+
 ## 2026-07-27
 
 ### Power Pages Upload Metadata Fix
@@ -93,6 +329,27 @@
 
 ### Admin Sidebar UI Revamp
 - Restyled the admin sidebar into a compact white layout matching the provided reference: slimmer width, smaller navigation rows, pale icons, subtle grey active state, compact brand area, and bottom "Back to site" link while preserving all existing navigation labels, routes, badges, and collapse behavior.
+
+### Power Automate — Flow 4 Design: Customer Email Notification
+- **New flow designed** — `MVR - Customer Email Notification` sends an email to the requesting user when their MVR's scrape status changes to `Scraped (4)`
+- **Trigger:** Dataverse "When a row is modified" on Missing Vehicle Requests with filter `vpi_scrapestatus eq 4`
+- **Actions:** Get Contact row (resolves `_vpi_contact_value` lookup) → Send Email (Office 365 Outlook)
+- **Email template:** Professional notification with vehicle details, platform link, and CTA — no pricing/listings in email body
+- **All flows renamed** with consistent `MVR -` prefixing:
+  - Flow 1: `MVR - Connectivity Test` (was `MVR - Test YallaMotor Accessibility`)
+  - Flow 2: `MVR - Automated Scraper` (was `MVR - Scrape YallaMotor (Automated)`)
+  - Flow 3: `MVR - On-Demand Scraper` (was `MVR - Scrape YallaMotor (HTTP)`)
+  - Flow 4: `MVR - Customer Email Notification` (new)
+- **`docs/power-automate-cloud-only-design.md`** — Updated status summary, renamed all flow headings, added complete Flow 4 design section with Filter rows approach (simpler, no extra Condition step)
+
+### Fixed — YallaMotor URL slug: periods now convert to hyphens
+- **Root cause:** Trim "2.4L" produced `vr_2.4l` in Flow 3's URL (period kept) and `vr_24l` in frontend slugify (period stripped). YallaMotor expects `vr_2-4l` (period → hyphen).
+- **`src/lib/yallaMotorHttpScraper.ts`** — Updated slugify: `toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')` — replaces any sequence of non-alphanumeric chars with a single hyphen instead of just stripping them
+- **Flow 3 URL builder expression** — Added nested `replace('.', '-')` for make, model, and trim segments
+- **Flow 2 URL builder expression** — Same fix applied
+- **Design doc** — Updated "Hyphen rule" → "Slug rule" to reflect broader character handling
+
+## 2026-07-26
 
 ### Power Automate — Flow 4 Design: Customer Email Notification
 - **New flow designed** — `MVR - Customer Email Notification` sends an email to the requesting user when their MVR's scrape status changes to `Scraped (4)`

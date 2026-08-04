@@ -94,6 +94,7 @@ export const INQUIRY_SELECT_FIELDS = Object.values(INQUIRY_FIELDS).join(',');
 // ─── Missing Vehicle Request Field Logical Names ─────────────
 export const MISSING_VEHICLE_REQUEST_FIELDS = {
   ID: 'vpi_missingvehiclerequestsid',
+  NAME: 'vpi_name',
   MAKE: 'vpi_make',
   MODEL: 'vpi_model',
   TRIM: 'vpi_trim',
@@ -108,9 +109,13 @@ export const MISSING_VEHICLE_REQUEST_FIELDS = {
   STATUS: 'vpi_status',
   MIN_PRICE: 'vpi_minprice',
   MAX_PRICE: 'vpi_maxprice',
-  MIN_MILEAGE: 'vpi_minmilage',
-  MAX_MILEAGE: 'vpi_maxmilage',
+  MILEAGE: 'vpi_mileage',
   CREATED_ON: 'createdon',
+  // Spec fields (user-submitted or deep-scraped)
+  ENGINE_SIZE: 'vpi_enginesize',
+  DOORS: 'vpi_doors',
+  SEATS: 'vpi_seats',
+  CATEGORY: 'vpi_category',
   // Scrape result fields
   SCRAPE_STATUS: 'vpi_scrapestatus',
   SCRAPED_LISTINGS: 'vpi_scraped_listings',

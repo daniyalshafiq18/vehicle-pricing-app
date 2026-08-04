@@ -81,9 +81,13 @@ All paths use `@` prefix, configured in both `tsconfig.json` and `vite.config.ts
 | `npm run test:run` | Vitest single run |
 | `npm run test:coverage` | Vitest with coverage |
 | `npm run test:e2e` | Playwright E2E |
+| `npm run validate:flows` | Check every Power Automate expression in `docs/power-automate-cloud-only-design.md` for paren balance + arity (run **before any live Flow test**) |
+| `npm run publish` | Full deploy: build → download portal state → upload to Power Pages |
 
 ## Project Structure
 ```
+scripts/        # Node build/validation scripts (update-portal-template.mjs, validate-flow-expressions.mjs)
+publish.ps1     # One-command deploy (build → download portal state → upload to Power Pages)
 src/
 ├── app/            # App entry + router
 ├── components/ui/  # Reusable UI primitives (Button, Dialog, Card, etc.)
@@ -138,6 +142,8 @@ All docs live in `docs/`:
 - `PHASE-2-PERFORMANCE-OPTIMIZATION.md` — Phase 2 performance optimization (code splitting, debounce, React.memo)
 - `path-b-scraper-microservice-postmortem.md` — Full retrospective on the abandoned Puppeteer approach
 - `power-automate-cloud-only-design.md` — Power Automate Cloud flow design for YallaMotor scraping (Flow 1 ✅ built, Flow 2 ✅ built, Flow 3 ✅ built with SAS token + Try/Catch Scope)
+- `flow3-deep-scrape-debugging-retrospective.md` — Complete narrative of the Flow 3 deep-scrape debugging journey (2026-07-31): every test, root cause, and fix, plus the final verified extraction expressions
+- `azure-functions-scraper-guide.md` — Implementation guide (from scratch) for migrating the scraper to multi-source Azure Functions: pre-requisites, feasibility probe, adapter pattern, anti-bot layer, Dataverse write-back, durable orchestration, deployment, testing, migration
 
 ## Environment Variables
 Defined in `.env.example`. All vars are reserved for future configuration — Dataverse is the hard-coded default.

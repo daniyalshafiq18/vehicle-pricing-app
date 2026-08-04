@@ -1,1 +1,0 @@
-import{w as t}from"./index-evPyxZ9r.js";import"./vendor-8gPU-quC.js";class c{async getAnalytics(){return t().getAnalytics()}async getAllVehiclesWithPricing(s){return t().getAllVehiclesWithPricing(s)}async getDashboardAnalytics(s){return t().getDashboardAnalytics(s)}}const r=new c;export{r as a};

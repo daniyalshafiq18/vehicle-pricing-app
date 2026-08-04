@@ -10,3 +10,8 @@ playwright-report/
 test-results/
 *.tsbuildinfo
 .vite/
+
+# Power Pages auto-generated files — re-downloaded via npm run publish
+vehicle-pricing-intelligence-platform/.powerpages-site/web-files/
+vehicle-pricing-intelligence-platform/.powerpages-site/.portalconfig/manifest.yml
+vehicle-pricing-intelligence-platform/.powerpages-site/.portalconfig/org*.yml

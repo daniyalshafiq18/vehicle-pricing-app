@@ -251,6 +251,13 @@ function MissingVehicleDetailModal({
   isOpen: boolean;
   onClose: () => void;
 }) {
+  const scrape = parseScrapedListings(request.scrapedListings);
+  // Prefer the dedicated vpi_mileage column; fall back to the scraped-listings JSON value.
+  const mileageLabel = (() => {
+    if (request.mileage != null) return `${request.mileage.toLocaleString()} km`;
+    const raw = scrape && scrape.mileage != null ? String(scrape.mileage).replace(/\D/g, '') : '';
+    return raw ? `${Number(raw).toLocaleString()} km` : null;
+  })();
   return (
     <Dialog
       isOpen={isOpen}
@@ -270,7 +277,8 @@ function MissingVehicleDetailModal({
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-[#071936] dark:text-white">
-                  {request.make} {request.model}
+                  {request.name ||
+                    [request.make, request.model, request.trim].filter(Boolean).join(' ')}
                 </h2>
                 <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium text-[#647887] dark:text-[#b8cbd4]">
                   <Calendar className="h-3 w-3" />
@@ -292,31 +300,44 @@ function MissingVehicleDetailModal({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          {/* Vehicle details grid */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Vehicle details (grouped) */}
+          <div className="space-y-4">
             {[
-              { label: 'Make', value: request.make },
-              { label: 'Model', value: request.model },
-              { label: 'Year', value: request.modelYear },
-              { label: 'Spec / Trim', value: request.trim },
-              { label: 'Body Type', value: request.bodyType },
-              { label: 'Cylinders', value: request.cylinders },
-              { label: 'Fuel Type', value: request.fuelType },
-              { label: 'Transmission', value: request.transmissionType },
-              { label: 'Drive Type', value: request.driveType },
-              { label: 'Min Price', value: request.minPrice != null ? formatCurrency(request.minPrice) : null },
-              { label: 'Max Price', value: request.maxPrice != null ? formatCurrency(request.maxPrice) : null },
-              { label: 'Status', value: request.status },
-              { label: 'Requested By', value: request.contactName || request.contactEmail },
-              { label: 'Contact Email', value: request.contactEmail },
-            ].map((item) => (
-              <div key={item.label} className="rounded-xl border bg-card p-3.5">
-                <p className="text-xs text-foreground">
-                  {item.label}
+              {
+                title: 'Vehicle Specifications',
+                items: [
+                  { label: 'Body Type', value: request.bodyType },
+                  { label: 'Engine Size', value: request.engineSize ? `${request.engineSize} cc` : null },
+                  { label: 'Cylinders', value: request.cylinders },
+                  { label: 'Fuel Type', value: request.fuelType },
+                  { label: 'Transmission', value: request.transmissionType },
+                  { label: 'Drive Type', value: request.driveType },
+                  { label: 'Doors', value: request.doors },
+                  { label: 'Mileage', value: mileageLabel },
+                ],
+              },
+              {
+                title: 'Requester',
+                items: [
+                  { label: 'Requested By', value: request.contactName || request.contactEmail },
+                  { label: 'Contact Email', value: request.contactEmail },
+                ],
+              },
+            ].map((group) => (
+              <div key={group.title}>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {group.title}
                 </p>
-                <p className="mt-1 text-sm font-medium text-foreground break-words">
-                  {item.value ? String(item.value) : '—'}
-                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {group.items.map((item) => (
+                    <div key={item.label} className="rounded-xl border bg-card p-3.5">
+                      <p className="text-xs text-foreground">{item.label}</p>
+                      <p className="mt-1 text-sm font-medium text-foreground break-words">
+                        {item.value ? String(item.value) : '—'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
@@ -346,7 +367,7 @@ function MissingVehicleDetailModal({
                           <p className="text-xs text-foreground">Source</p>
                           <p className="mt-1 text-sm font-medium text-foreground">{String(parsed.source ?? '—')}</p>
                         </div>
-                      </>
+                        </>
                     );
                   }
                   return null;
@@ -579,11 +600,11 @@ function MissingVehicleCard({
     >
       <UICard className="h-full overflow-hidden border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.07)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(18,38,63,0.11)] dark:bg-[#0c2530] dark:shadow-[0_18px_38px_rgba(0,0,0,0.25)]">
         <CardContent className="p-5 flex flex-col h-full">
-          {/* Header: make model year + status */}
+          {/* Header: make model trim (+ year badge) + status */}
           <div className="flex items-start justify-between mb-4 shrink-0 gap-3">
             <div className="min-w-0">
               <h3 className="text-lg font-semibold text-foreground leading-tight truncate">
-                {request.make} {request.model}
+                {request.name || [request.make, request.model, request.trim].filter(Boolean).join(' ')}
               </h3>
               {request.modelYear && (
                 <span className="mt-1 inline-flex items-center rounded-full border border-[#d9e2e8] bg-[#f4f8fb] px-2.5 py-0.5 text-xs font-semibold text-[#071936] dark:border-[#31545a] dark:bg-[#071936] dark:text-white">
@@ -600,8 +621,8 @@ function MissingVehicleCard({
           {/* Details grid */}
           <div className="grid grid-cols-2 gap-2">
             {[
-              { label: 'Trim', value: request.trim },
               { label: 'Body Type', value: request.bodyType },
+              { label: 'Engine Size', value: request.engineSize ? `${request.engineSize} cc` : null },
               { label: 'Cylinders', value: request.cylinders ? String(request.cylinders) : null },
               { label: 'Fuel Type', value: request.fuelType },
               { label: 'Transmission', value: request.transmissionType },
@@ -615,25 +636,6 @@ function MissingVehicleCard({
               </div>
             ))}
           </div>
-
-          {/* Price info */}
-          {(request.minPrice != null || request.maxPrice != null) && (
-            <div className="mt-3 flex items-center gap-3 rounded-lg border border-[#d9e2e8] bg-[#f7fafc] p-3 shrink-0 dark:border-[#31545a] dark:bg-[#071936]">
-              <div className="flex-1">
-                <p className="text-xs font-medium text-[#7d93a5] dark:text-[#9fb8c5]">Min Price</p>
-                <p className="text-sm font-semibold text-[#08766c] tabular-nums dark:text-[#19b8a5]">
-                  {request.minPrice != null ? formatCurrency(request.minPrice) : '—'}
-                </p>
-              </div>
-              <div className="h-8 w-px bg-[#d9e2e8] dark:bg-[#31545a]" />
-              <div className="flex-1">
-                <p className="text-xs font-medium text-[#7d93a5] dark:text-[#9fb8c5]">Max Price</p>
-                <p className="text-sm font-semibold text-[#071936] tabular-nums dark:text-white">
-                  {request.maxPrice != null ? formatCurrency(request.maxPrice) : '—'}
-                </p>
-              </div>
-            </div>
-          )}
 
           {/* Scrape info */}
           {request.scrapeStatus && request.scrapeStatus !== 'Pending' && (
@@ -980,8 +982,6 @@ export function AdminMissingVehiclesPage() {
                       <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Model</th>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Year</th>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Trim</th>
-                      <th className="px-3 py-3 text-right text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Min Price</th>
-                      <th className="px-3 py-3 text-right text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Max Price</th>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Status</th>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Scraped</th>
                       <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Requester</th>
@@ -1019,16 +1019,6 @@ export function AdminMissingVehiclesPage() {
                           <p className="text-sm text-foreground truncate" title={req.trim}>
                             {req.trim || '—'}
                           </p>
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-right">
-                          <span className="text-sm font-medium text-foreground">
-                            {req.minPrice != null ? formatCurrency(req.minPrice) : '—'}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3 whitespace-nowrap text-right">
-                          <span className="text-sm font-medium text-foreground">
-                            {req.maxPrice != null ? formatCurrency(req.maxPrice) : '—'}
-                          </span>
                         </td>
                         <td className="px-3 py-3 whitespace-nowrap">
                           <StatusBadge status={req.status} />

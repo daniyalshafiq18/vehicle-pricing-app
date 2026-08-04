@@ -31,8 +31,6 @@ export function useUpsertMissingVehicleRequest() {
       contactName?: string;
       minPrice?: number;
       maxPrice?: number;
-      minMileage?: number;
-      maxMileage?: number;
       scrapedMinPrice?: number;
       scrapedMaxPrice?: number;
       scrapedListings?: string;
