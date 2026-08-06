@@ -1,8 +1,15 @@
 /**
- * Flow 3 HTTP URL — paste the URL from Power Automate HTTP trigger here.
- * From the trigger step: copy the "HTTP POST URL" shown at the top.
+ * Flow 3 HTTP trigger URL.
+ *
+ * Read from the VITE_FLOW3_URL env var; Vite injects it into this CLIENT bundle
+ * at build time from .env.local (dev) / the build environment (publish).
+ *
+ * SECURITY: this is a client-invoked trigger key, so it is not a true secret to
+ * end users — it will exist in the shipped JS bundle. What we DO fix here is
+ * keeping a live SAS key out of git. Rotate the Power Automate trigger key to
+ * invalidate any previously-committed copy, then set the new value in env.
  */
-const FLOW_3_URL = 'https://15c7cf15bfa4e984a64eef99a12de7.cd.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/17/workflows/78d508a5400a40b18f89343b6cf2f4c5/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=i4Ywt7OqT_X0TYi3VxPhGXZPl1cFmdwrNU_F46bUSjQ';
+const FLOW_3_URL = (import.meta.env.VITE_FLOW3_URL as string | undefined) ?? '';
 
 /** Safely extract a string value from an unknown response field. */
 function asString(val: unknown): string | undefined {
@@ -65,6 +72,13 @@ export async function scrapeViaFlow3(params: {
   year: number;
 }): Promise<Flow3Response> {
   try {
+    if (!FLOW_3_URL) {
+      return {
+        success: false,
+        error: 'Flow 3 URL is not configured (set VITE_FLOW3_URL at build time).',
+      };
+    }
+
     const response = await fetch(FLOW_3_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
