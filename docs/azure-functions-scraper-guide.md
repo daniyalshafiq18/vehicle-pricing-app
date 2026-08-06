@@ -2,7 +2,7 @@
 
 > **Goal:** Replace the single-source Power Automate scraping setup (Flow 1/2/3 → YallaMotor) with a code-first **Azure Functions** scraper that supports **many sources** (YallaMotor, Drive Arabia, Dubizzle, …), with the same response contract the frontend already expects.
 > **Guiding principle:** Power Automate keeps running until Azure Functions is proven. Every step is reversible, and the swap is a one-line URL change in the frontend.
-> **Status:** ⏳ Guide — not yet implemented.
+> **Status (2026-08-06):** ✅ YallaMotor adapter built and **frontend-wired as the PRIMARY path with Power Automate Flow 3 as the automatic fallback** (`scrapeWithFallback` in `src/lib/azureYallaMotorScraper.ts`). Live rollout pending: re-publish the function app (CORS), set `VITE_AZURE_FUNCTION_URL`, `npm run publish`, side-by-side verify (see §14). Drive Arabia / Dubizzle remain future work.
 
 ---
 
@@ -650,11 +650,14 @@ async function resolveUrl(url: string): Promise<string> {
 
 ## 7. YallaMotor Adapter — Porting Flow 3 (Phase 5)
 
-> **Status (2026-08-06):** the JSON-LD extraction core now lives **in-repo** at
-> `src/parsers/` (see §7.3) with real fixtures in `tests/fixtures/` (see §7.5) —
-> built as part of the in-repo adapter scaffold and unit-tested against the
-> live-scraped Pajero/Camry JSON-LD. The full service layout below stays as the
-> target for the deployable adapter.
+> **Status (2026-08-06):** the JSON-LD extraction core lives **in-repo** at
+> `src/parsers/` (see §7.3) with real fixtures in `tests/fixtures/` (see §7.5),
+> and the extraction is extended beyond JSON-LD: `src/parsers/specTable.ts`
+> `extractCylinders(html)` reads cylinders from the detail-page HTML spec grid
+> (YallaMotor's JSON-LD has none — the one field Flow 3 took from HTML). The
+> Azure transport `src/lib/azureYallaMotorScraper.ts` is wired into
+> `useTriggerScrape` as PRIMARY with Flow 3 fallback. The full service layout
+> below stays as the target for the deployable adapter.
 
 ### 7.1 Search URL (reuse the frontend's logic exactly)
 Port `slugify` + the URL template from `src/lib/yallaMotorHttpScraper.ts` so URLs match today's working behavior:
@@ -965,28 +968,29 @@ az functionapp show --name vp-scraper-prod --resource-group rg-vehicle-scraper -
 ## 14. Migration & Rollout (Phase 12)
 
 ```
-1.  Phase 1 probe          → deploy, verify Cloudflare passes          → gate
-2.  YallaMotor adapter     → local tests against fixtures              → gate
-3.  /api/scrape live       → curl a real search, compare to Flow 3 output
-4.  Keep BOTH running      → Power Automate stays live, unchanged
-5.  Frontend swap (dev)    → point scrapeViaFlow3() FLOW_3_URL at the function URL
-6.  Verify in dev          → user compares old vs new results side-by-side
-7.  Frontend swap (prod)   → flip; keep old URL commented for rollback
+1.  Phase 1 probe          → deploy, verify Cloudflare passes          → gate   ✅ done (vpi-probe-py-20260805, 2026-08-06)
+2.  YallaMotor adapter     → local tests against fixtures              → gate   ✅ done (src/parsers + src/lib/azureYallaMotorScraper.ts)
+3.  /api/scrape live       → curl a real search, compare to Flow 3 output        ✅ done (probe reproduced Flow 3 exactly, 2026-08-06)
+4.  Keep BOTH running      → Power Automate stays live, unchanged                ✅ wired (scrapeWithFallback)
+5.  Frontend swap (dev)    → point scrapeViaFlow3() FLOW_3_URL at the function URL  ✅ wired (Azure primary via VITE_AZURE_FUNCTION_URL)
+6.  Verify in dev          → user compares old vs new results side-by-side        ⏳ pending (transport marker in scrapedListings)
+7.  Frontend swap (prod)   → flip; keep old URL commented for rollback            ⏳ after step 6 passes
 8.  Add Drive Arabia       → new adapter + fixture + live check
 9.  Add Dubizzle           → API-sniff first, browser only if needed
 10. (Optional) Durable     → orchestration + timer sync; retire Flow 2
 11. Retire flows           → only AFTER Functions proven for weeks
 ```
 
-**The frontend swap** (`src/lib/yallaMotorHttpScraper.ts`) is intentionally minimal:
-```typescript
-const FLOW_3_URL = 'https://15c7cf15.../invoke?...';              // Power Automate (fallback)
-const SCRAPER_URL = 'https://vp-scraper-prod.azurewebsites.net/api/scrape?code=<function-key>';
-// Flip SCRAPER_URL / FLOW_3_URL to switch back.
-```
-Because `/api/scrape` returns the identical `Flow3ScrapeResult` shape, no other frontend change is needed.
+**The frontend swap** is now handled by `scrapeWithFallback` in
+`src/lib/azureYallaMotorScraper.ts` — Azure is tried first; ANY Azure shortfall
+falls back to Power Automate Flow 3 (`scrapeViaFlow3`), so no live scrape is
+ever lost and rollback is automatic. Each result carries a
+`transport: 'azure' | 'flow3'` marker recorded in `scrapedListings` for
+side-by-side verification. The probe URL comes from `VITE_AZURE_FUNCTION_URL`
+(dev: `.env.local`; prod: build env) — leave it empty to run Flow 3 only.
 
-**Rollback:** revert the constant. Two-minute rollback, zero data loss (Flow 3 was never disabled).
+**Rollback:** unset `VITE_AZURE_FUNCTION_URL` (or leave it empty) — the app
+falls back to Flow 3 immediately. Zero data loss (Flow 3 was never disabled).
 
 ---
 

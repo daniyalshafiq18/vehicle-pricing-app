@@ -51,7 +51,13 @@ Verify from the Azure portal: `POST /api/probe_py?url=<yallamotor-url>&client=cl
 
 - **No `br` in Accept-Encoding** — without the `brotli` module the body comes
   back mojibake and JSON-LD parsing breaks (§6.1).
-- **Do not blind-retry on 403** — it burns the IP further; surface the friendly
-  "Live Data Unavailable" state instead (§6.6).
+- **Do not blind-retry on 403** — blocks the IP further; surface the "Live Data
+  Unavailable" state instead (§6.6).
 - **`cloudscraper` solves a fresh challenge per request** (`hasCfClearanceCookie:
   false`) — fine at low volume; pace big batches (§6.5).
+- **CORS enabled** — `Access-Control-Allow-Origin: *` on every response plus an
+  OPTIONS preflight handler, because the browser calls `probe_py` cross-origin
+  from the Power Pages portal (the frontend transport `src/lib/azureYallaMotorScraper.ts`
+  fetches the function directly client-side). If you later lock auth down to
+  `function`, restore that key into `VITE_AZURE_FUNCTION_URL` in the gitignored
+  `.env.local` — never in committed source.

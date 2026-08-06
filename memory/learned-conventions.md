@@ -20,6 +20,8 @@ metadata:
 - **Build scripts must use JavaScript-compatible regex syntax** — Node does not support PCRE atomic groups like `(?>...)`; use standard capturing or non-capturing groups in `.mjs` scripts.
 - **Portal orphan cleanup is opt-in** — avoid deleting large batches of Power Pages web-file records during normal builds; large deletion payloads can make `pac paportal upload` time out.
 - **Strict TypeScript** — `noUnusedLocals`, `noUnusedParameters`, `noUncheckedIndexedAccess` are enabled
+- **Never hardcode live credentials / SAS tokens in committed source** (2026-08-05) — Power Automate HTTP-trigger URLs carry a `sig=` SAS that lets anyone invoke premium flows (credit burn + unauthorized Dataverse writes). Read such values from a `VITE_*` env var; keep the live value in **gitignored `.env.local`** and in the build environment. Two honest caveats: (1) a client-invoked trigger key is still visible in the shipped JS bundle (Vite inlines env at build time), and (2) old tokens live on in git history forever — **rotating the trigger key is the only action that actually invalidates a leaked copy**.
+- **When migrating a hardcoded secret to an env var, restore the value into `.env.local` in the SAME change** (2026-08-05) — otherwise the feature breaks the moment the hardcoded line is removed, until someone sets the env. Pair the migration with immediate restoration so functionality is never regressed mid-transition.
 - **Centralize currency display** — use `formatCurrency()` for user-facing prices and display the `AED` ISO currency code consistently; do not add a Dirham SVG or custom currency font
 - **Typography convention** — use Inter for all UI text. Reserve `font-mono` for actual code/preformatted text; use `tabular-nums` for aligned prices, counts, dates, and metrics.
 - **Price entry UX** — show `AED` inside price inputs and format thousands separators while typing; keep state and submitted payloads digit-only, without a duplicate formatted preview below the fields
@@ -44,6 +46,11 @@ metadata:
 - Flow 3 is an HTTP-triggered Power Automate Cloud flow (SAS token auth) that scrapes YallaMotor in real-time.
 - The flow uses a **Try/Catch Scope** with a `-1` sentinel for `count` to signal YallaMotor being unreachable (Cloudflare block).
 - Two HTTP requests: (1) search results page → pricing data + first listing URL, (2) detail page → spec fields.
+
+### Transport Architecture — Azure primary, Flow 3 fallback (2026-08-06)
+- `src/lib/azureYallaMotorScraper.ts` `scrapeWithFallback` is now the single scrape entry point: **Azure probe first, Power Automate Flow 3 on ANY Azure shortfall** (unconfigured URL, blocked, HTTP error, no listings, no listing URL, detail failure). No live scrape is ever lost, and rollback = just leave `VITE_AZURE_FUNCTION_URL` empty.
+- Both transports return the identical `Flow3ScrapeResult` shape and every result carries a `transport: 'azure' | 'flow3'` marker recorded in `scrapedListings` — that's the field to check when verifying which path produced an admin row.
+- **Seats is unavailable on YallaMotor for BOTH paths** — the JSON-LD has no seating capacity and the HTML has no seats tile. It is permanently out of scope (neither Flow 3 nor Azure writes it).
 
 ### JSON-LD Extraction (Search Page)
 - YallaMotor uses Next.js with structured data in `<script type="application/ld+json">` blocks.
@@ -75,7 +82,8 @@ metadata:
   <div class="text-base font-semibold text-gray-900 lg:text-base" title="VALUE">VALUE</div>
   ```
   - **Cylinders / Regional Specs extraction pattern:** split on `title="LABEL"`, then split the following segment on `title="` (the value div's title attribute), then split on `"`:
-    `trim(first(split(first(skip(split(first(skip(split(body, 'title="Number of Cylinders"'), 1)), 'title="'), 1)), '"')))` → `6`.
+    `trim(first(split(first(skip(first(skip(split(body, 'title="Number of Cylinders"'), 1)), 'title="'), 1)), '"')))` → `6`.
+  - **In-repo TS mirror (2026-08-06, Azure adapter):** the same pattern now lives as a tested regex in `src/parsers/specTable.ts` (`extractCylinders(html)` — anchor `title="Number of Cylinders"`, read the value div's `title`), pinned by `tests/fixtures/wrangler-detail-spec-section.html` (a trimmed slice of a raw Azure-probe capture). This lets the Azure transport produce the exact cylinders Flow 3 does.
   - ❌ **A `contains()` diagnostic does NOT prove HTML structure.** The earlier `<th>Number of Cylinders</th><td>4</td>` table assumption was WRONG — there are NO `<td>` tags on the page. `split(..., '<td>')` returned Null at runtime. Always get the actual view-source snippet (~300 chars around the label) before writing HTML extraction. (Hit on Extract_Cylinders, fixed 2026-07-31.)
   - **Listing URL**: Two-step: (1) find `<article>` element, (2) within it, `split(article, 'href="')` → take second segment → `split on '"'` → `concat('https://uae.yallamotor.com', url)`
 
@@ -90,6 +98,7 @@ metadata:
 - Full HTTP headers including `sec-ch-ua*` help but don't prevent rate limiting on high-frequency calls.
 - Flow 3's Try/Catch Scope handles 403 errors gracefully.
 - Test strategy: wait between manual tests, or test from Power Automate's "Test → Automatic" with saved data.
+- **Anti-bot, live-proven (2026-08-06, Azure egress `52.149.247.118`):** on a Microsoft/Azure IP, YallaMotor's Cloudflare emits a *solvable* JS challenge instead of a hard block — but only a client that can **run the challenge JS** gets through. Node `fetch`, Python `requests`, and TLS-only `curl_cffi` were **all blocked from the same IP**; Python `cloudscraper` (Chrome TLS + JS-challenge solver) passed 3/3 at HTTP 200. Headers alone don't save a request — the TLS handshake + challenge-solving capability are what decide. Detection nuance: `hasCfChallenge`/`just a moment` strings appear on **successful** pages too (marker scripts embedded in normal markup) — it's only a block when the marker is present AND no content/JSON-LD came through. And when a request *isn't* gated, Cloudflare simply never challenged it — nothing to solve, which is how plain clients get lucky runs before the behavior flag kicks in (the "works twice, then 403" pattern).
 
 ## Dataverse Option Sets — Verify, Don't Assume
 

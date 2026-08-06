@@ -9,6 +9,7 @@ interface ImportMetaEnv {
   readonly VITE_CACHE_TTL: string;
   readonly VITE_MAX_VEHICLE_DISPLAY: string;
   readonly VITE_FLOW3_URL: string;
+  readonly VITE_AZURE_FUNCTION_URL: string;
 }
 
 interface ImportMeta {

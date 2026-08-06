@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { missingVehicleRepository } from '@repositories';
-import { scrapeViaFlow3 } from '@lib/yallaMotorHttpScraper';
+import { scrapeWithFallback } from '@lib/azureYallaMotorScraper';
 import { missingVehicleScrapeStatusValue } from '@data/dataverseOptionSets';
 import { normalizeToDataverse } from '@parsers';
 import toast from 'react-hot-toast';
@@ -16,9 +16,12 @@ interface ScrapeMissingVehicleParams {
 }
 
 /**
- * Trigger a Power Automate Flow 3 scrape for a missing vehicle request.
+ * Trigger a YallaMotor scrape for a missing vehicle request.
  *
- * 1. Calls Flow 3 via HTTP with the vehicle make/model/trim/year
+ * Azure is the primary transport; Power Automate Flow 3 is the automatic
+ * fallback (see `scrapeWithFallback`), so no live scrape is ever lost.
+ *
+ * 1. Calls `scrapeWithFallback` with the vehicle make/model/trim/year
  * 2. On success, PATCHes the MVR record with scraped prices + status
  * 3. On failure/blocked, updates the MVR with the appropriate status
  * 4. Invalidates the MVR query cache so the admin list refreshes
@@ -28,7 +31,7 @@ export function useTriggerScrape() {
 
   return useMutation({
     mutationFn: async (params: ScrapeMissingVehicleParams) => {
-      const result = await scrapeViaFlow3({
+      const result = await scrapeWithFallback({
         make: params.make,
         model: params.model,
         trim: params.trim,
@@ -81,6 +84,7 @@ export function useTriggerScrape() {
           source: 'YallaMotor',
           url: result.sourceUrl,
           heading: result.heading,
+          transport: result.transport, // 'azure' | 'flow3' — which path produced this row
           // Also embed the raw spec values for traceability
           bodyType: result.bodyType,
           fuelType: result.fuelType,

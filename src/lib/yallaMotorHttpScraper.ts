@@ -9,12 +9,18 @@
  * keeping a live SAS key out of git. Rotate the Power Automate trigger key to
  * invalidate any previously-committed copy, then set the new value in env.
  */
+import { buildYallaMotorSearchUrl } from './yallaMotorUrl';
+
 const FLOW_3_URL = (import.meta.env.VITE_FLOW3_URL as string | undefined) ?? '';
 
 /** Safely extract a string value from an unknown response field. */
 function asString(val: unknown): string | undefined {
-  if (typeof val === 'string' && val.length > 0) return val;
-  if (typeof val === 'number' && !isNaN(val)) return String(val);
+  if (typeof val === 'string' && val.length > 0) {
+    return val;
+  }
+  if (typeof val === 'number' && !isNaN(val)) {
+    return String(val);
+  }
   return undefined;
 }
 
@@ -137,15 +143,8 @@ export async function scrapeViaFlow3(params: {
       };
     }
 
-    // Construct the YallaMotor URL client-side.
-    // Replace any sequence of non-alphanumeric characters with a single hyphen.
-    // This handles spaces ("Mercedes Benz" → "mercedes-benz"), periods ("2.4L" → "2-4l"),
-    // apostrophes ("O'Neil" → "oneil"), and other special chars YallaMotor converts.
-    const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    const makeSlug = slugify(params.make);
-    const modelSlug = slugify(params.model);
-    const trimSlug = slugify(params.trim);
-    const sourceUrl = `https://uae.yallamotor.com/used-cars/${makeSlug}/${modelSlug}/vr_${trimSlug}/yr_${params.year}_${params.year}`;
+    // Construct the YallaMotor URL via the shared builder (same output, one source).
+    const sourceUrl = buildYallaMotorSearchUrl(params);
 
     return {
       success: true,

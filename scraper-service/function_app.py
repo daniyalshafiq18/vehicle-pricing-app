@@ -56,13 +56,35 @@ def _is_blocked(html: str, status: int) -> bool:
 
 app = func.FunctionApp()
 
+# The browser calls this function cross-origin from the Power Pages portal,
+# so every response carries CORS headers and we answer OPTIONS preflights.
+CORS_HEADERS = {"Access-Control-Allow-Origin": "*"}
 
-@app.route(route="probe_py", auth_level=func.AuthLevel.ANONYMOUS)
+
+def _json_response(payload: dict, status_code: int = 200) -> func.HttpResponse:
+    return func.HttpResponse(
+        json.dumps(payload),
+        status_code=status_code,
+        mimetype="application/json",
+        headers=CORS_HEADERS,
+    )
+
+
+@app.route(route="probe_py", auth_level=func.AuthLevel.ANONYMOUS, methods=["GET", "POST", "OPTIONS"])
 def probe_py(req: func.HttpRequest) -> func.HttpResponse:
+    if req.method == "OPTIONS":  # CORS preflight
+        return func.HttpResponse(
+            status_code=200,
+            headers={
+                **CORS_HEADERS,
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type",
+            },
+        )
+
     url = req.params.get("url")
     if not url:
-        return func.HttpResponse(json.dumps({"error": "Missing ?url= parameter"}), status_code=400,
-                                 mimetype="application/json")
+        return _json_response({"error": "Missing ?url= parameter"}, status_code=400)
 
     client = (req.params.get("client") or "cloudscraper").lower()
     time.sleep(random.uniform(0.5, 2.0))  # §6.6 human pacing — the behaviour layer
@@ -74,9 +96,7 @@ def probe_py(req: func.HttpRequest) -> func.HttpResponse:
         r = s.get(url, headers=HEADERS, timeout=30, allow_redirects=True)
     except Exception as exc:  # network / solver failure
         logging.error("fetch failed for %s: %s", url, exc)
-        return func.HttpResponse(
-            json.dumps({"error": f"fetch failed: {exc}"}), status_code=502, mimetype="application/json"
-        )
+        return _json_response({"error": f"fetch failed: {exc}"}, status_code=502)
 
     html = r.text
     blocked = _is_blocked(html, r.status_code)
@@ -95,11 +115,7 @@ def probe_py(req: func.HttpRequest) -> func.HttpResponse:
 
     if blocked:
         logging.warning("blocked %s status=%s", url, r.status_code)
-        return func.HttpResponse(json.dumps(diagnostics), status_code=r.status_code, mimetype="application/json")
+        return _json_response(diagnostics, status_code=r.status_code)
 
     # Success — include diagnostics and raw HTML for the adapter layer to parse.
-    return func.HttpResponse(
-        json.dumps({**diagnostics, "html": html}),
-        status_code=200,
-        mimetype="application/json",
-    )
+    return _json_response({**diagnostics, "html": html})

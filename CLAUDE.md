@@ -106,13 +106,13 @@ src/
 ├── types/          # TypeScript interfaces
 ├── utils/          # Helpers (formatters, validators, memoize, debounce)
 ├── data/           # Data source context + DataverseDataSource + config
-├── lib/            # Utility modules (safeAjax.ts — CSRF-authenticated fetch wrapper + vehicleApi/contactApi/inquiryApi + yallaMotorHttpScraper.ts — Power Automate Flow 3 HTTP scraper)
-├── parsers/        # Pure YallaMotor JSON-LD extraction core (types, yallaJsonLd, mappers, normalize) + Vitest tests against tests/fixtures
+├── lib/            # Utility modules (safeAjax + vehicleApi/contactApi/inquiryApi + yallaMotorUrl.ts — shared YallaMotor URL builder + yallaMotorHttpScraper.ts — Power Automate Flow 3 HTTP scraper + azureYallaMotorScraper.ts — Azure probe transport (PRIMARY) with Flow 3 fallback)
+├── parsers/        # Pure YallaMotor extraction core (types, yallaJsonLd, jsonLdFromHtml, specTable, mappers, normalize) + Vitest tests against tests/fixtures
 ├── styles/         # globals.css
 └── testing/        # Vitest setup
 tests/
 └── fixtures/       # Real live-scraped YallaMotor JSON-LD snapshots (Pajero detail + Camry search) for the parser tests — the guide §7.5 fixture rule
-scraper-service/    # Azure Functions Python `cloudscraper` transport (scaffolded, NOT deployed — see scraper-service/README.md + guide §14 rollout)
+scraper-service/    # Azure Functions Python `cloudscraper` transport (DEPLOYED to vpi-probe-py-20260805, CORS-enabled — see scraper-service/README.md + guide §14 rollout)
 ```
 
 ## 🎯 Session Start — Always Do This
