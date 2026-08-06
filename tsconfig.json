@@ -45,6 +45,8 @@
       "@data/*": ["./src/data/*"],
       "@lib": ["./src/lib"],
       "@lib/*": ["./src/lib/*"],
+      "@parsers": ["./src/parsers"],
+      "@parsers/*": ["./src/parsers/*"],
       "@styles": ["./src/styles"],
       "@styles/*": ["./src/styles/*"]
     }

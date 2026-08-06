@@ -77,7 +77,7 @@ Frontend (React)
 ### 2.2 Local machine (Windows — your environment)
 | Tool | Version | Why | Verify |
 |---|---|---|---|
-| **Node.js** | 20 LTS (18 also OK) | Functions Node 20 worker + your TS tooling | `node -v` |
+| **Node.js** | 22 LTS (recommended) or 24.x — both supported | Functions Node worker + your TS tooling | `node -v` |
 | **npm** | bundled with Node | package management | `npm -v` |
 | **Azure Functions Core Tools** | 4.x | Local runtime + publish | `func --version` |
 | **Azure CLI** | latest | Create resources, deploy | `az --version` |
@@ -97,7 +97,7 @@ npm install -g azure-functions-core-tools@4
 npm install -g azurite
 ```
 
-> ⚠️ **Node 20 is the minimum for Functions Node 20 worker.** If your global Node is older, either upgrade or use `nvm` to switch per-project. Check with `node -v`.
+> ⚠️ **Supported versions are Node 22.x and 24.x** (per the official Functions Node.js reference, updated 2026 — Node 22 is the recommended LTS). If your global Node is older than 22, either upgrade or use `nvm` to switch per-project. Check with `node -v`. At deploy time set the app's Node version explicitly (`WEBSITE_NODE_DEFAULT_VERSION=~22` on Windows, `linuxFxVersion "node|22"` on Linux, or `--runtime-version 22` in the create command).
 
 ### 2.3 Accounts & access you'll need
 | Access | Needed for | Notes |
@@ -110,7 +110,7 @@ npm install -g azurite
 
 ### 2.4 Pre-flight checklist (run before touching anything)
 ```powershell
-node -v          # expect v20.x
+node -v          # expect v22.x or v24.x
 npm -v
 func --version   # expect 4.x
 az --version
@@ -196,7 +196,7 @@ az login
 az group create --name rg-vehicle-scraper --location uaenorth
 az storage account create --name vpscraperstore --resource-group rg-vehicle-scraper --location uaenorth --sku Standard_LRS
 az functionapp create --resource-group rg-vehicle-scraper --consumption-plan-location uaenorth `
-  --runtime node --runtime-version 20 --functions-version 4 `
+  --runtime node --runtime-version 22 --functions-version 4 `
   --name vp-scraper-probe --storage-account vpscraperstore
 func azure functionapp publish vp-scraper-probe
 ```
@@ -208,10 +208,29 @@ Open: `https://vp-scraper-probe.azurewebsites.net/api/probe?make=toyota&model=ca
 |---|---|---|
 | `status: 200`, `hasJsonLd: true`, `hasCfChallenge: false` | ✅ **FEASIBLE** — Microsoft IPs + full headers pass, same as Power Automate | Proceed to Phase 2 |
 | `status: 200` but `hasJsonLd: false` | Partial — HTML present, structure differs | Port parsing, verify fixtures |
-| `status: 403` or `hasCfChallenge: true` | Cloudflare is blocking Azure IPs specifically | Try §Appendix B variations; if persistent, add a proxy (§6.4) or keep this source on Power Automate |
+| `status: 403` or `hasCfChallenge: true` | Cloudflare is blocking Azure IPs specifically | Try §Appendix B variations; if persistent, add a proxy (§6.7) or keep this source on Power Automate |
 | `status: 0` / network error | IP range or TLS blocked hard | Same as above — proxy or fallback |
 
 > **Why this is non-negotiable:** your docs prove Microsoft IPs pass YallaMotor's Cloudflare today (Power Automate egress). Azure Functions is the same network family, but Cloudflare reputation is **per-IP**, so it must be verified empirically. If the probe passes, the entire premise holds. If it fails, you've spent one afternoon — not two weeks — to learn it.
+
+> **⚠️ REAL-WORLD FINDING (2026-08-04, local probe):** from a clean residential IP with a real browser, YallaMotor loads fine — but the same IP with **Node's built-in `fetch`** (undici) and the **exact Flow 3 headers** was Cloudflare-challenged (`403`, title "Just a moment...", `hasCfChallenge: true`). **Conclusion: Cloudflare fingerprints the TLS/HTTP client, not just headers/IP.** A real Chrome TLS handshake passes; undici's does not. Implications:
+> 1. **Local live-testing with plain `fetch` is blocked** — local development must use **saved HTML/JSON-LD fixtures** (§13), never the live site.
+> 2. The **deployed Azure-IP probe is the decisive test** — the only untested variable left. If Azure passes (like Power Automate's Microsoft IPs + .NET TLS), we're done. If Azure also challenges, the fallback is a **TLS-impersonating client** (`curl-cffi` / `tls-client` / Playwright-with-real-Chromium) in the anti-bot layer (§6) — which Power Automate structurally cannot do, so we're still ahead.
+
+> **⚠️⚠️ UPDATED REAL-WORLD FINDING (2026-08-04, Vercel free-tier experiment):** the "deployed probe" hypothesis was tested **for free on Vercel's free tier** (AWS datacenter IP, `iad1`) before committing to any subscription — reusing the exact same `probe.ts` plus a Python `curl_cffi` variant. Results were decisive:
+>
+> | Client | IP | Result |
+> |---|---|---|
+> | Node `fetch` (undici) + exact Flow 3 headers | AWS datacenter (Vercel) | ❌ 403 "Just a moment..." |
+> | curl_cffi `impersonate="chrome"` (real Chrome TLS) | AWS datacenter (Vercel) | ❌ 403 "Just a moment..." |
+> | cloudscraper (JS-challenge solver; `js2py` interpreter) | AWS datacenter (Vercel) | ❌ 403, no `cf_clearance` cookie |
+> | Node `fetch` (undici) | residential | ❌ 403 challenge |
+> | Real Chrome browser | residential | ✅ pass |
+> | Power Automate (.NET + Microsoft IP) | Microsoft | ✅ pass (production, proven) |
+>
+> **Both undici AND a real Chrome TLS fingerprint are challenged from a non-Microsoft datacenter IP** — and the same AWS IP blocks **DriveArabia** (also Cloudflare) and **Dubizzle** (Imperva/Incapsula "Pardon Our Interruption"). **Every target source is bot-protected against datacenter IPs**, so the deciding layer is **datacenter-IP reputation**, not the client and not the platform.
+>
+> **Strategic implication:** a code-first scraper on any non-Microsoft IP family (Vercel/AWS, Railway, almost certainly Azure Functions) cannot reliably reach these sources. Only **Microsoft datacenter IPs** are proven to pass. For multi-source, the proven path is to **extend Power Automate to DriveArabia** (same Cloudflare vendor → Microsoft IPs likely pass, as with YallaMotor) and **test Dubizzle with one Power Automate HTTP action** (Imperva → unknown). An Azure subscription probe is no longer the default plan — the card step is only justified if you specifically want to test whether *Microsoft* Azure IPs pass for a non-Power-Automate client. If any *unprotected* source is ever identified, the Azure Functions scraper in this guide applies to it directly.
 
 ---
 
@@ -415,7 +434,7 @@ export interface ScrapeContext {
   log(level: 'info' | 'warn' | 'error', msg: string, meta?: unknown): void;
 }
 ```
-Adapters **never** build raw `fetch()` calls — they go through `ctx.fetchHtml`, so retry/backoff/proxy logic lives in one place (§6.2).
+Adapters **never** build raw `fetch()` calls — they go through `ctx.fetchHtml`, so retry/backoff lives in one place (§6.3) and proxy logic in §6.7.
 
 ### 5.3 The normalization boundary
 `src/shared/normalize.ts` — the single place a `NormalizedListing` becomes Dataverse field values:
@@ -470,6 +489,16 @@ export function getAdapters(): IScraperAdapter[] {
 
 ## 6. Anti-Bot Layer (Phase 4)
 
+> **✅ 2026-08-06 VERIFIED against a live Azure egress (Aug-05 experiment) + Azure portal re-test.** This section corrects the original scaffold with a hard-won truth:
+>
+> | Original scaffold assumed | Live-proven reality |
+> |---|---|
+> | Node `fetch` + the Flow-3 header set is enough | ❌ **Blocked from a genuine Microsoft IP** even with byte-identical headers (probe matrix row 1: 403). Headers alone don't save it. |
+> | The Azure IP is what gets you through | ⚠️ **Partly.** The IP earns a *solvable* challenge from YallaMotor's Cloudflare — not a free pass. |
+> | A client that can *solve* the JS challenge does the rest | ✅ **Python `cloudscraper` scraped YallaMotor 3/3 at 200** (~1.4 MB, real JSON-LD) from egress IP `52.149.247.118`. |
+>
+> **Bottom line:** the verified transport is **Python `cloudscraper`, not Node `fetch`.** Use §6.2; treat the old Node wrapper (§6.3) strictly as reference — it maps to the Power Automate / Python-plain-client level that fails.
+
 This is the layer Power Automate cannot have, and the reason the whole move is worth it.
 
 ### 6.1 `src/shared/headers.ts` — the exact working headers
@@ -497,8 +526,47 @@ export function sourceHeaders(source: string): Record<string, string> {
   return { ...BROWSER_HEADERS };
 }
 ```
+> **Python gotcha (live-tested, Aug-05):** keep `Accept-Encoding` free of `br` unless the `brotli` module is installed. Without it, YallaMotor serves `br`-compressed bodies that decode to **mojibake** and break JSON-LD parsing (§4.6 of the egress report). `gzip, deflate` is what the verified §6.2 transport sends.
 
-### 6.2 `src/shared/httpClient.ts` — the fetch wrapper
+### 6.2 Python `cloudscraper` transport — ✅ VERIFIED (use this)
+
+The transport proven live against YallaMotor from a real Microsoft IP (`52.149.247.118`, Linux Consumption plan, Functions v2). The working probe is `C:\Users\PC\azure-probe-py\function_app.py` — this is the same shape `/api/probe_py` you test from the portal with `?url=…&client=cloudscraper`.
+
+```python
+import random, time, logging, cloudscraper, azure.functions as func
+
+HEADERS = {  # §6.1 — with `br` REMOVED from Accept-Encoding (see 6.1 note below)
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+    "Accept-Encoding": "gzip, deflate",
+    "Cache-Control": "no-cache",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Upgrade-Insecure-Requests": "1",
+    "Referer": "https://www.google.com/",
+}
+
+app = func.FunctionApp()
+
+@app.route(route="probe_py", auth_level=func.AuthLevel.ANONYMOUS)
+def probe_py(req: func.HttpRequest) -> func.HttpResponse:
+    url = req.params.get("url")
+    if not url:
+        return func.HttpResponse("Missing ?url= parameter", status_code=400)
+    time.sleep(random.uniform(0.5, 2.0))   # human pacing (§6.6) — avoid the "scripted" flag
+    s = cloudscraper.create_scraper()      # Chrome-TLS + JS-challenge solver (§6.5)
+    r = s.get(url, headers=HEADERS, timeout=30)
+    logging.info("status=%s bytes=%s cf=%s jsonld=%s", r.status_code, len(r.content),
+                 "just a moment" in r.text, '<script type="application/ld+json"' in r.text)
+    return func.HttpResponse(r.text if r.ok else f"blocked {r.status_code}", status_code=r.status_code)
+```
+
+- **Why `cloudscraper`:** it sends a genuine Chrome TLS handshake *and* runs the Cloudflare JS challenge when offered — the two live-verified ingredients. Plain `requests`, TLS-only `curl_cffi`, and Node `fetch` all failed from the **same** IP.
+- **Why a Python worker and not the Node wrapper:** the Azure Functions Node v4 host has no JS-challenge solver; the Python runtime brings `cloudscraper` in via `requirements.txt` (Oryx remote build on `func publish --python`).
+
+### 6.3 `src/shared/httpClient.ts` — ⚠️ DEMOTED (reference only; proven blocked on Azure)
 ```typescript
 export class HttpError extends Error {
   constructor(public status: number, message: string) { super(message); }
@@ -529,19 +597,46 @@ export async function fetchWithRetry(
 - **Backoff + jitter** — mimics human pacing; Power Automate had fixed retry only.
 - **403/429 handled separately** — a Cloudflare block is *not* retried blindly (it would burn your IP further); it surfaces to the caller so the frontend shows the friendly "Live Data Unavailable" state.
 
-### 6.3 Cloudflare detection (ported from Flow 3's simplified check)
+### 6.4 Cloudflare detection (two-state, refined after the live test)
+The old single-grep check (`/just a moment/`) is **not** enough — the Aug-06 portal test returned `hasCfChallenge: true` on a **fully successful** page: YallaMotor embeds Cloudflare's marker scripts in normal page markup, so the strings are present even when you were never gated. The flag is only meaningful *combined with a content check*:
+
 ```typescript
-export function isCloudflareBlocked(status: number, html: string, finalUrl: string): boolean {
-  return (
-    status === 403 ||
-    /just a moment/i.test(html) ||
-    /attention required/i.test(html) ||
-    finalUrl.includes('cdn-cgi/challenge-platform')
-  );
+const CHALLENGE_RE = /just a moment|attention required|cdn-cgi\/challenge-platform/i;
+
+// A genuine block = challenge/page marker WITHOUT real content.
+// A successful page = marker strings present AND content delivered (JSON-LD / large body).
+export function classifyResponse(status: number, html: string): { blocked: boolean; reason?: string } {
+  if (status === 403) return { blocked: true, reason: `HTTP ${status}` };
+  const marker = CHALLENGE_RE.test(html);
+  const contentDelivered = html.includes('application/ld+json') || html.length > 50_000;
+  if (marker && !contentDelivered) return { blocked: true, reason: 'challenge page, no content' };
+  return { blocked: false };
 }
 ```
+- A real challenge page is a **few KB** of "Just a moment" boilerplate with **no** JSON-LD. If content came through, you were not gated — treat as success (as the live Pajero run was).
 
-### 6.4 Proxy hook (only when a source blocks MS IPs)
+### 6.5 Challenge solving — the capability Power Automate structurally cannot have
+Cloudflare's guard has three doors: *serve directly* (good IP + browser look), *hand you a JS puzzle*, or *hard-block*. On a Microsoft IP, YallaMotor takes the **middle door** — it offers a *solvable* challenge. Who wins then:
+
+| Client | Can run the JS puzzle? | Result on Azure (live) |
+|---|---|---|
+| Node `fetch`, Python `requests` | ❌ No JS runtime | 403 — can't even attempt it |
+| `curl_cffi` (Chrome TLS only) | ❌ No JS runtime | 403 — perfect handshake, still can't solve |
+| **`cloudscraper`** | ✅ embeds a JS runtime that executes the challenge | **200** — solves it, gets the token, walks in |
+
+So the decisive capability is **running + solving the challenge JavaScript**, not just looking like a browser on the network. `cloudscraper.create_scraper()` gives you that out of the box. (In the live trace it solved fresh per request — `hasCfClearanceCookie: false` — which is fine at low volume, but for big batches treat each request as a fresh challenge and pace accordingly, §6.6.)
+
+### 6.6 Human pacing — the behavior layer that keeps you out of the MIDDLE door
+The "after two or three requests" Power Automate failure was the **behavior** signal: machine-perfect timing and repeated identical requests. In `cloudscraper`, apply:
+
+```python
+import random, time
+time.sleep(random.uniform(0.5, 2.0))     # between independent scrapes (not just retries)
+```
+- Jitter **between requests**, not only on retries — a fixed 5-second gap is as recognizable as no gap.
+- On a **403 block**: do **not** blind-retry (it burns the IP further) — back off for minutes and surface the friendly "Live Data Unavailable" state to the frontend instead.
+
+### 6.7 Proxy hook (only when a source blocks MS IPs)
 Add to `httpClient` — if `PROXY_URL` app-setting is set, route through it. In Node, the simplest approach is an authenticated proxy via a scraping-API host (e.g. Bright Data / ScraperAPI format URLs):
 ```typescript
 const proxyUrl = process.env.PROXY_URL;   // e.g. https://user:pass@brd.superproxy.io:33335
@@ -554,6 +649,12 @@ async function resolveUrl(url: string): Promise<string> {
 ---
 
 ## 7. YallaMotor Adapter — Porting Flow 3 (Phase 5)
+
+> **Status (2026-08-06):** the JSON-LD extraction core now lives **in-repo** at
+> `src/parsers/` (see §7.3) with real fixtures in `tests/fixtures/` (see §7.5) —
+> built as part of the in-repo adapter scaffold and unit-tested against the
+> live-scraped Pajero/Camry JSON-LD. The full service layout below stays as the
+> target for the deployable adapter.
 
 ### 7.1 Search URL (reuse the frontend's logic exactly)
 Port `slugify` + the URL template from `src/lib/yallaMotorHttpScraper.ts` so URLs match today's working behavior:
@@ -813,7 +914,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: npm, cache-dependency-path: scraper-service/package-lock.json }
+        with: { node-version: 22, cache: npm, cache-dependency-path: scraper-service/package-lock.json }
       - run: npm ci
         working-directory: scraper-service
       - run: npm test
@@ -830,7 +931,7 @@ Consumption plan outbound IPs are a range that can change. **Premium plan gives 
 ```powershell
 az functionapp plan create --name vp-scraper-premium --resource-group rg-vehicle-scraper --sku EP1 --location uaenorth
 az functionapp create --resource-group rg-vehicle-scraper --plan vp-scraper-premium `
-  --runtime node --runtime-version 20 --functions-version 4 `
+  --runtime node --runtime-version 22 --functions-version 4 `
   --name vp-scraper-prod --storage-account vpscraperstore
 az functionapp show --name vp-scraper-prod --resource-group rg-vehicle-scraper --query "outboundIpAddresses"
 ```
@@ -934,7 +1035,7 @@ curl "http://localhost:7071/api/probe?make=toyota&model=camry"
 az group create --name rg-vehicle-scraper --location uaenorth
 az storage account create --name vpscraperstore --resource-group rg-vehicle-scraper --location uaenorth --sku Standard_LRS
 az functionapp create --resource-group rg-vehicle-scraper --consumption-plan-location uaenorth `
-  --runtime node --runtime-version 20 --functions-version 4 --name vp-scraper-dev --storage-account vpscraperstore
+  --runtime node --runtime-version 22 --functions-version 4 --name vp-scraper-dev --storage-account vpscraperstore
 az functionapp identity assign --name vp-scraper-dev --resource-group rg-vehicle-scraper
 az functionapp config appsettings set --name vp-scraper-dev --resource-group rg-vehicle-scraper --settings @appsettings.json
 
@@ -945,7 +1046,7 @@ func azure functionapp publish vp-scraper-dev
 # ── Premium (only if needed) ──────────────────────────────
 az functionapp plan create --name vp-scraper-premium --resource-group rg-vehicle-scraper --sku EP1 --location uaenorth
 az functionapp create --resource-group rg-vehicle-scraper --plan vp-scraper-premium `
-  --runtime node --runtime-version 20 --functions-version 4 --name vp-scraper-prod --storage-account vpscraperstore
+  --runtime node --runtime-version 22 --functions-version 4 --name vp-scraper-prod --storage-account vpscraperstore
 ```
 
 ---
@@ -954,7 +1055,7 @@ az functionapp create --resource-group rg-vehicle-scraper --plan vp-scraper-prem
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Probe: `403` / `hasCfChallenge: true` | Azure IP specifically flagged, or headers incomplete | Verify headers are byte-identical to §6.1; try the `uaecentral` region; then add proxy (§6.4) |
+| Probe: `403` / `hasCfChallenge: true` | Azure IP specifically flagged, or headers incomplete | Verify headers are byte-identical to §6.1; try the `uaecentral` region; then add proxy (§6.7) |
 | Probe: `status: 0` | Network/TLS block or timeout | Check `HTTP_TIMEOUT_MS`; try from a different region; proxy |
 | `hasJsonLd: false` but 200 | YallaMotor changed page structure | Save the HTML to fixtures, re-derive extraction, add a test |
 | `/api/scrape` returns nothing for one source | Adapter threw (it shouldn't — adapters never throw) | Check Application Insights for that adapter's `context.log` |

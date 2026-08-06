@@ -66,7 +66,7 @@ Components → Hooks (React Query) → Repositories → IDataSource → Datavers
 
 ## Path Aliases
 All paths use `@` prefix, configured in both `tsconfig.json` and `vite.config.ts`:
-`@`, `@app`, `@components`, `@features`, `@layouts`, `@hooks`, `@repositories`, `@providers`, `@stores`, `@types`, `@utils`, `@data`, `@lib`, `@styles`
+`@`, `@app`, `@components`, `@features`, `@layouts`, `@hooks`, `@repositories`, `@providers`, `@stores`, `@types`, `@utils`, `@data`, `@lib`, `@parsers`, `@styles`
 
 ## Commands
 | Command | Description |
@@ -107,8 +107,12 @@ src/
 ├── utils/          # Helpers (formatters, validators, memoize, debounce)
 ├── data/           # Data source context + DataverseDataSource + config
 ├── lib/            # Utility modules (safeAjax.ts — CSRF-authenticated fetch wrapper + vehicleApi/contactApi/inquiryApi + yallaMotorHttpScraper.ts — Power Automate Flow 3 HTTP scraper)
+├── parsers/        # Pure YallaMotor JSON-LD extraction core (types, yallaJsonLd, mappers, normalize) + Vitest tests against tests/fixtures
 ├── styles/         # globals.css
 └── testing/        # Vitest setup
+tests/
+└── fixtures/       # Real live-scraped YallaMotor JSON-LD snapshots (Pajero detail + Camry search) for the parser tests — the guide §7.5 fixture rule
+scraper-service/    # Azure Functions Python `cloudscraper` transport (scaffolded, NOT deployed — see scraper-service/README.md + guide §14 rollout)
 ```
 
 ## 🎯 Session Start — Always Do This
@@ -144,6 +148,8 @@ All docs live in `docs/`:
 - `power-automate-cloud-only-design.md` — Power Automate Cloud flow design for YallaMotor scraping (Flow 1 ✅ built, Flow 2 ✅ built, Flow 3 ✅ built with SAS token + Try/Catch Scope)
 - `flow3-deep-scrape-debugging-retrospective.md` — Complete narrative of the Flow 3 deep-scrape debugging journey (2026-07-31): every test, root cause, and fix, plus the final verified extraction expressions
 - `azure-functions-scraper-guide.md` — Implementation guide (from scratch) for migrating the scraper to multi-source Azure Functions: pre-requisites, feasibility probe, adapter pattern, anti-bot layer, Dataverse write-back, durable orchestration, deployment, testing, migration
+- `azure-functions-scraper-evaluation-report.md` — Feasibility evaluation report (2026-08-04): presentation-ready findings from the free Vercel experiment proving serverless datacenter scrapers can't pass Cloudflare/Imperva for these sources; full evidence tables + revised strategy
+- `azure-egress-experiment-campaign-report.md` — Live Azure egress experiment (2026-08-05): the resolved untested cell. PROVES Azure Functions + cloudscraper **can** scrape YallaMotor (real JSON-LD extracted); DriveArabia/Dubizzle remain hard-blocked. Full chronological log incl. infra battles + scraper gotchas
 
 ## Environment Variables
 Defined in `.env.example`. All vars are reserved for future configuration — Dataverse is the hard-coded default.

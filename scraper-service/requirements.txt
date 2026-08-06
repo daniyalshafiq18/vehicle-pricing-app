@@ -1,0 +1,5 @@
+# Azure Functions Python v2 runtime + the live-verified Cloudflare challenge solver.
+# Oryx remote build (`func azure functionapp publish <app> --python`) installs these
+# on Linux x86_64 (the Consumption runtime) — wheels must exist for that platform.
+azure-functions
+cloudscraper

@@ -1,6 +1,50 @@
 
 # Changelog
 
+## 2026-08-06
+
+### Azure Functions Scraper Guide — §6 Anti-Bot Layer revised with the live Azure findings
+- **What:** reworked `docs/azure-functions-scraper-guide.md` §6 to fold in the evidence from the Azure egress experiment (Aug-05) + the live Azure portal re-tests (Aug-06).
+- **Transport decision made explicit:** the live matrix proved Node `fetch` — the guide's original §6.2 `httpClient.ts` — is **blocked from a genuine Microsoft IP** even with the exact Flow-3 headers. The verified transport is **Python `cloudscraper`** (Chrome TLS + JS-challenge solver), which scraped YallaMotor 3/3 at HTTP 200 from egress IP `52.149.247.118`.
+- **§6 restructure (numbers updated, all cross-references fixed):** 6.1 headers (+ `br`/`brotli` mojibake gotcha) · **6.2 Python `cloudscraper` transport (VERIFIED)** · 6.3 Node `fetch` wrapper (DEMOTED, reference only) · 6.4 two-state Cloudflare detection · 6.5 challenge solving · 6.6 human pacing (jitter between requests) · 6.7 proxy hook.
+- **Detection fix:** the old single-grep check mis-flags successful pages — YallaMotor embeds Cloudflare marker scripts in normal markup (`hasCfChallenge: true` on a 200 page). New logic only blocks when the marker is present AND no content/JSON-LD was delivered.
+- **Pacing gap closed:** the "works twice, then 403" behavior signal needs jitter *between* requests, not just retry backoff.
+- Docs rule: lesson also captured in `memory/learned-conventions.md` (Anti-bot section).
+
+### Azure Scraper Adapter — in-repo extraction core + Python transport scaffold (build-in-parallel)
+- **Direction (user-chosen):** build the Azure adapter **in parallel** while Power Automate Flow 3 stays live as the fallback. This session scaffolds the two halves; nothing the app *calls* changed.
+- **Test fixtures (real, live-captured):** `tests/fixtures/` holds the exact JSON-LD from today's live Azure portal runs — `yallamotor-pajero-detail.jsonld.json` (detail page: price `52999`, mileage `130161`, doors `4`, engine `"2972"`, drive `AllWheelDriveConfiguration`, fuel `Petrol`, body `SUV / Crossover`, trans `Automatic`, `GCC Specs` in description) and `yallamotor-camry-search.jsonld.json` (search page: count `503`, min/max `120`/`350000`, first listing Camry 3.5L SE+ 2019 @ AED `52000`). The `README.md` codifies the guide §13 fixture rule (new markup → save + test case).
+- **`src/parsers/` — pure, tested extraction core:** `types.ts` (DetailSpecs/SearchResult/NormalizedListing), `yallaJsonLd.ts` (defensive `parseDetailJsonLd` / `parseSearchJsonLd`, never throws), `mappers.ts` (drive/category/fuel/doors/seats label mappers), `normalize.ts` (`normalizeToDataverse` — the single label→integer boundary, permanently guarding the Aug-03 label-round-trip bug), barrel `index.ts`.
+- **`@parsers` path alias** added to `tsconfig.json` paths + `vite.config.ts` resolve.alias.
+- **Hook refactor (behavior-preserving):** `useTriggerScrape.ts` inline mappers + `...Value` block replaced with `normalizeToDataverse(result)` — identical mutation flow, statuses, toasts, and query invalidation; verified by typecheck + the new unit tests.
+- **Tests (no network):** `yallaJsonLd.test.ts` (exact live-verified values from fixtures), `normalize.test.ts` (body `SUV / Crossover`→57, fuel `Petrol`→1, doors `4`→4, category `GCC`→1, drive AWD→2, cylinders `6`→4, engine→2972, mileage→130161), `mappers.test.ts` (edge cases incl. `RearWheelDriveConfiguration`→RWD, `Not Sure`→OTHER/STANDARD, empty→undefined).
+- **`scraper-service/` — Python `cloudscraper` transport scaffold (committed, NOT deployed):** `function_app.py` (v2 `probe_py`, `?url=` required→400, human-pacing jitter, `gzip, deflate` only, two-state Cloudflare check, returns raw HTML + diagnostics), `requirements.txt`, `host.json`, `.funcignore`, `local.settings.json.example`, `README.md` (guide §14 rollout order). `scraper-service/local.settings.json` added to `.gitignore`.
+- Docs rule: CLAUDE.md Project Structure + Path Aliases updated; guide §7 gained a pointer to `src/parsers/`.
+- **Verification (2026-08-06):** `npm run typecheck` clean; `npm run test:run` 22/22 pass (4 files, no network); `eslint src/parsers` clean after conforming the new files to the repo's `curly`/`eqeqeq` rules (braces on all single-line `if`s, `!= null` → explicit `!== undefined && !== null`). The repo-wide `npm run lint` still reports a large **pre-existing** backlog in untouched files (`dataverseDataSource.ts`, admin pages, UI primitives, etc.) — out of scope for the adapter, tracked separately.
+
+## 2026-08-05
+
+### Azure Functions Egress Experiment — live egress test on the real Azure subscription
+- **Context:** user obtained an Azure subscription (org `SBS-PTN-BNF-2400`, PIM Contributor, 2026-08-05 09:56–17:56 UTC) — which let us finally run the *one untested cell* of the Azure Functions feasibility evaluation: does a genuinely Microsoft datacenter IP + Python challenge-solver clients beat the anti-bot walls?
+- **Setup:** scaffolded a Node probe (`C:\Users\PC\azure-probe`) and a Python v2 probe (`C:\Users\PC\azure-probe-py`, `?client=requests|curl_cffi|cloudscraper`) on the Linux Consumption plan in resource group `vpi-probe`, tested from egress IP `52.149.247.118`, all with the exact Flow-3 Chrome-128 header set.
+- **Infra battles won:** `az.cmd` PATH staleness; `Microsoft.Storage` provider registration; `.cmd` arg-mangling (quotes + `|` pipe) worked around via ARM REST PATCH with a bearer token wrapped in `{"properties":{...}}`; **Node 24 unsupported by the Functions host (constant 503) → Node 22 fixed it**; removed **`br`** from Accept-Encoding to stop Brotli mojibake.
+- **The breakthrough:** Python **`cloudscraper`** (a real Cloudflare JS-challenge solver) **successfully scraped YallaMotor from Azure** — HTTP 200, ~1.4 MB, reliable 3/3 across 5 real URLs (VW Tiguan used-search + detail, Kia Seltos used-search + new-car detail). Verified end-to-end by extracting the actual schema.org **JSON-LD** (`price`, `mileage`, `engine`, `doors`, `drive`, `fuel`, `body`, `transmission`, `color`, `city`) from both search pages (`ItemList`) and detail pages (`Product`/`Car`).
+- **The boundary:** DriveArabia & Dubizzle remain **hard-blocked** for every client from Azure; only YallaMotor's Cloudflare emits a *solvable* challenge from a cloud IP.
+- **Verdict update:** the earlier "Azure migration falsified" conclusion was **premature** — YallaMotor → **Azure Functions + cloudscraper is now proven viable** (serverless, no Power Automate), but it is **NOT** a multi-source solution; DriveArabia/Dubizzle still require Power Automate.
+- **Scraper gotchas:** a `/used-cars/` URL can return **new** cars (`NewCondition`, 0 km) — read `itemCondition`, not the URL; engine/doors/drive appear only on **detail** pages.
+- New doc: `docs/azure-egress-experiment-campaign-report.md` (full chronological evidence log).
+
+## 2026-08-05
+
+### Security — Hardcoded Power Automate SAS token removed from committed code
+
+### Security — Hardcoded Power Automate SAS token removed from committed code
+- **Critical finding from the full project audit:** `src/lib/yallaMotorHttpScraper.ts` hardcoded the Flow 3 HTTP trigger URL **including its live `sig=` SAS signature**, committed to git. Anyone with repo access could invoke premium Flow 3 on demand — burning Power Automate credits and writing scrapes to Dataverse.
+- **Fix:** the trigger URL now reads from the `VITE_FLOW3_URL` env var (`src/lib/yallaMotorHttpScraper.ts`), typed in `vite-env.d.ts`, documented as a placeholder in `.env.example`. Added a graceful guard: if the var is unset, `scrapeViaFlow3` returns a clear "not configured" error instead of failing the fetch silently.
+- **Functionality preserved:** the working Flow URL lives in **gitignored `.env.local`** (verified via `git check-ignore`; absent from `git status`), so the admin scrape feature behaves exactly as before for both `npm run dev` and the production `npm run publish` build. The token is no longer in any tracked file and won't be committed going forward.
+- **Residual risk (documented honestly):** the token still exists in git history and, being a client-invoked trigger key, inside the shipped JS bundle. **Rotation completed 2026-08-05** — the user regenerated the Flow 3 trigger key; the new URL is set in `.env.local` and the previously-leaked `sig=` is now invalid. A complete fix (no flow-invoking credential exposed to the browser at all) needs an architectural follow-up.
+- Files: `src/lib/yallaMotorHttpScraper.ts`, `vite-env.d.ts`, `.env.example`, `.env.local` (gitignored, not committed).
+
 ## 2026-08-04
 
 ### Hassan's Branch Merged into Main (PR #6)
@@ -26,6 +70,22 @@
 - **Guide covers, in 12 phases:** pre-requisites + pre-flight checks → feasibility probe (the make-or-break Cloudflare test) → project scaffold/structure → adapter pattern (`IScraperAdapter`, `NormalizedListing`, per-source registry) → anti-bot layer (exact working Flow 3 headers, retry/backoff, Cloudflare detection, proxy hook) → YallaMotor adapter (ports the 9 verified spec-field extractions + HTML tile parsing + `slugify` URL logic) → HTTP trigger functions (drop-in `Flow3ScrapeResult` contract, timer sync, debug endpoint) → Dataverse write-back (managed identity vs app registration, label→integer normalization that prevents the Aug-03 label round-trip bug) → Durable orchestration → deployment/CI/CD (Consumption vs Premium, fixed IPs) → monitoring → testing (fixtures-based, contract tests) → migration/rollback plan (frontend swap is a one-line URL change).
 - **Reuses existing assets:** Flow 3's confirmed working headers, `Flow3ScrapeResult` shape from `src/lib/yallaMotorHttpScraper.ts`, option-set maps from `src/data/dataverseOptionSets.ts`, Path B postmortem lessons (test target early, keep debug endpoints). Typecheck N/A (doc only).
 - Files: `docs/azure-functions-scraper-guide.md`, `docs/CHANGELOG.md`, `CLAUDE.md` (Documentation list).
+- **Correction (same day):** guide's Node version requirement updated after verifying the official Functions Node.js reference — supported versions are **Node 22.x and 24.x** (Node 22 recommended LTS), not "20 LTS" as originally written. All scaffold/deploy commands now use `--runtime-version 22` / `node-version: 22`.
+- **Azure Functions hands-on — Milestone 1 (Hello World) + Milestone 2 (YallaMotor probe) done locally:** Core Tools 4.12.1 installed on the dev PC; a scratch `hello-functions` project (outside the repo) runs an HTTP-triggered Node 20/24 model-v4 function at `localhost:7071`. **Real-world probe finding:** the local probe against YallaMotor with the exact Flow 3 headers got a Cloudflare 403 challenge ("Just a moment...") **even though a real browser on the same residential IP loads YallaMotor fine** → Cloudflare fingerprints the TLS client, not just headers/IP. Local live-testing with plain `fetch` is therefore blocked (fixtures become mandatory); the **deployed Azure-IP probe is the decisive feasibility test**, with TLS-impersonating clients (`curl-cffi`/`tls-client`/Playwright) as the documented fallback. Guide §3.5 updated with this finding.
+
+### Azure Functions Scraper — Feasibility Evaluation Report Added
+- **Added `docs/azure-functions-scraper-evaluation-report.md`** — a presentation-ready report the user can show stakeholders: full narrative of the Azure Functions evaluation (milestones, the free Vercel experiment, the complete evidence table, the three-way "Python can't fix it" test addressing the org developer's claim, cost avoided, and the recommended Power Automate-extension strategy). Cross-linked from CLAUDE.md Documentation list.
+
+### Azure Functions Scraper — Cloudflare Question Answered for FREE via Vercel (decisive negative)
+- **Ran the decisive "datacenter-IP probe" without an Azure subscription** by deploying the exact `probe.ts` to **Vercel's free tier** (GitHub login, no credit card) at `C:\Users\PC\vercel-probe` (outside repo). Also added `api/probe_py.py` (Python `curl_cffi` with `impersonate="chrome"`) and `api/probe_any.ts` (generic per-URL probe).
+- **Results from Vercel's AWS datacenter IP (`iad1`), Node 24 undici + exact Flow 3 headers:**
+  - YallaMotor → `403` "Just a moment..." (Cloudflare challenge)
+  - DriveArabia → `403` "Just a moment..." (also Cloudflare)
+  - Dubizzle → `200` "Pardon Our Interruption" (Imperva/Incapsula — different anti-bot vendor)
+- **`curl_cffi` impersonating a real Chrome TLS fingerprint from the same AWS IP also got challenged** → the blocker is **datacenter-IP reputation**, not the TLS client and not the platform. Even a real browser only passes from a trusted (residential) IP.
+- **`cloudscraper` (the Python lib that *solves* Cloudflare's JS challenge) also failed** from the AWS IP — `403` "Just a moment..." with **no `cf_clearance` cookie**. This directly addresses the org developer's suggestion ("write Python scripts to prevent the Cloudflare error"): tested three ways (undici, curl_cffi real-Chrome-TLS, cloudscraper challenge-solver), **no Python/Node code defeats it from a non-Microsoft datacenter IP** — the block is IP-reputation, not challenge-based. The only remaining untested combination is an actual Microsoft/Azure IP (needs the subscription); odds now rated low since cloudscraper couldn't even obtain a clearance cookie.
+- **Conclusion (revised strategy):** serverless scraping of these three sources from non-Microsoft datacenter IPs is not feasible; **Power Automate (Microsoft IPs) is the only proven-working path**, and multi-source expansion should extend Power Automate to DriveArabia (same Cloudflare → likely passes) and test Dubizzle (Imperva → unknown) rather than build a code-first serverless scraper. An Azure subscription is no longer the default next step. Guide §3.5 rewritten with the full evidence table.
+- **Vercel deploy fixes worth remembering (for future Vercel functions):** default export uses `(req,res)=>void` and **ignores returned `Response`** (request hangs) → use a named `GET`/`POST` export for the Web fetch-style API; `request.url` is a **relative path**, so parse the query string directly rather than `new URL(request.url)`.
 
 ## 2026-08-03
 

@@ -1,0 +1,144 @@
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Used Toyota Camry for Sale in UAE",
+    "url": "https://uae.yallamotor.com/used-cars/toyota/camry",
+    "description": "503 listings · AED 120 – 350,000 · 1996–2026 · updated 6 August 2026",
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "YallaMotor",
+      "url": "https://www.yallamotor.com/"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "YallaMotor",
+      "logo": { "@type": "ImageObject", "url": "https://ymv01.b8cdn.com/uploads/logos/ym-default-logo.png" }
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "url": "https://uae.yallamotor.com/used-cars/toyota/camry",
+    "name": "Used Toyota Camry for Sale in UAE",
+    "numberOfItems": 22,
+    "itemListOrder": "https://schema.org/ItemListUnordered",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "item": {
+          "@context": "https://schema.org",
+          "@type": ["Product", "Car"],
+          "name": "Used Toyota Camry 3.5L SE+ (298 HP) 2019",
+          "url": "https://uae.yallamotor.com/used-cars/toyota/camry/2019/used-toyota-camry-2019-ajman-2116847",
+          "brand": { "@type": "Brand", "name": "toyota" },
+          "model": "camry",
+          "vehicleModelDate": "2019",
+          "description": "Used Toyota Camry 2019 for sale in Ajman: AED 52,000, 147,000 km, Automatic, GCC Specs. Verified listing on YallaMotor — call or WhatsApp the seller.",
+          "image": "https://ymimg1.b8cdn.com/resized/used_car/2026/6/12/2116847/pictures/16817644/webp_listing_main_toyota_camry_2019_2116847.webp",
+          "itemCondition": "https://schema.org/UsedCondition",
+          "fuelType": "Petrol",
+          "bodyType": "Sedan",
+          "color": "Red",
+          "vehicleTransmission": "Automatic",
+          "mileageFromOdometer": { "@type": "QuantitativeValue", "value": 147000, "unitCode": "KMT" },
+          "offers": {
+            "@type": "Offer",
+            "url": "https://uae.yallamotor.com/used-cars/toyota/camry/2019/used-toyota-camry-2019-ajman-2116847",
+            "price": 52000,
+            "priceCurrency": "AED",
+            "priceValidUntil": "2027-12-31",
+            "availability": "https://schema.org/InStock"
+          }
+        }
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "url": "https://uae.yallamotor.com/new-cars/toyota/camry/2025/inventory/new-toyota-camry-2025-dubai-2079814",
+        "name": "New Toyota Camry 2.5L E (204 HP) 2025"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "item": {
+          "@context": "https://schema.org",
+          "@type": ["Product", "Car"],
+          "name": "Used Toyota Camry 2.5 S 2019",
+          "url": "https://uae.yallamotor.com/used-cars/toyota/camry/2019/used-toyota-camry-2019-sharjah-2083869",
+          "brand": { "@type": "Brand", "name": "toyota" },
+          "model": "camry",
+          "vehicleModelDate": "2019",
+          "description": "Used Toyota Camry 2019 for sale in Sharjah: AED 39,900, 166,000 km, Automatic, GCC Specs. Verified listing on YallaMotor — call or WhatsApp the seller.",
+          "image": "https://ymimg1.b8cdn.com/resized/used_car/2026/1/19/2083869/pictures/16156536/webp_mobile_listing_main_Toyota_Camry_2019_in_Sharjah_2083869.webp",
+          "itemCondition": "https://schema.org/UsedCondition",
+          "fuelType": "Petrol",
+          "bodyType": "Sedan",
+          "color": "White",
+          "vehicleTransmission": "Automatic",
+          "mileageFromOdometer": { "@type": "QuantitativeValue", "value": 166000, "unitCode": "KMT" },
+          "offers": {
+            "@type": "Offer",
+            "url": "https://uae.yallamotor.com/used-cars/toyota/camry/2019/used-toyota-camry-2019-sharjah-2083869",
+            "price": 39900,
+            "priceCurrency": "AED",
+            "priceValidUntil": "2027-12-31",
+            "availability": "https://schema.org/InStock"
+          }
+        }
+      },
+      {
+        "@type": "ListItem",
+        "position": 4,
+        "item": {
+          "@context": "https://schema.org",
+          "@type": ["Product", "Car"],
+          "name": "Used Toyota Camry 2024",
+          "url": "https://uae.yallamotor.com/used-cars/toyota/camry/2024/used-toyota-camry-2024-dubai-2128234",
+          "brand": { "@type": "Brand", "name": "toyota" },
+          "model": "camry",
+          "vehicleModelDate": "2024",
+          "description": "Used Toyota Camry 2024 for sale in Dubai: AED 109,999, 72,000 km, Automatic, GCC Specs. Verified listing on YallaMotor — call or WhatsApp the seller.",
+          "image": "https://ymimg1.b8cdn.com/resized/used_car/2026/8/5/2128234/pictures/16970896/webp_mobile_listing_main_1.webp",
+          "itemCondition": "https://schema.org/UsedCondition",
+          "fuelType": "Petrol",
+          "bodyType": "Sedan",
+          "color": "White",
+          "vehicleTransmission": "Automatic",
+          "mileageFromOdometer": { "@type": "QuantitativeValue", "value": 72000, "unitCode": "KMT" },
+          "offers": {
+            "@type": "Offer",
+            "url": "https://uae.yallamotor.com/used-cars/toyota/camry/2024/used-toyota-camry-2024-dubai-2128234",
+            "price": 109999,
+            "priceCurrency": "AED",
+            "priceValidUntil": "2027-12-31",
+            "availability": "https://schema.org/InStock"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": "https://www.yallamotor.com/#organization",
+    "name": "YallaMotor",
+    "alternateName": ["Yalla Motor"],
+    "description": "YallaMotor is the leading automotive marketplace in the Middle East, connecting car buyers and sellers across UAE, Saudi Arabia, Egypt, Qatar, Kuwait, Oman, and Bahrain.",
+    "foundingDate": "2012",
+    "url": "https://www.yallamotor.com/"
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "name": "Breadcrumb",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "UAE", "item": "https://uae.yallamotor.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Cars for Sale", "item": "https://uae.yallamotor.com/used-cars" },
+      { "@type": "ListItem", "position": 3, "name": "Toyota", "item": "https://uae.yallamotor.com/used-cars/toyota" },
+      { "@type": "ListItem", "position": 4, "name": "Camry", "item": "https://uae.yallamotor.com/used-cars/toyota/camry" },
+      { "@type": "ListItem", "position": 5, "name": "503 Cars for Sale in UAE" }
+    ]
+  }
+]

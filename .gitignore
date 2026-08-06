@@ -15,3 +15,6 @@ test-results/
 vehicle-pricing-intelligence-platform/.powerpages-site/web-files/
 vehicle-pricing-intelligence-platform/.powerpages-site/.portalconfig/manifest.yml
 vehicle-pricing-intelligence-platform/.powerpages-site/.portalconfig/org*.yml
+
+# Azure Functions local config — holds function-app keys once the scraper-service is deployed
+scraper-service/local.settings.json

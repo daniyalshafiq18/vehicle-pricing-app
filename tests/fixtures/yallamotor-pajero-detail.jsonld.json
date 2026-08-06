@@ -1,0 +1,85 @@
+[
+  {
+    "@context": "https://schema.org",
+    "@type": ["Product", "Car"],
+    "name": "Used Mitsubishi Pajero GLS V6 2020",
+    "url": "https://uae.yallamotor.com/used-cars/mitsubishi/pajero/2020/used-mitsubishi-pajero-2020-dubai-2121456",
+    "brand": { "@type": "Brand", "name": "Mitsubishi" },
+    "model": "Pajero",
+    "vehicleModelDate": "2020",
+    "description": "Used Mitsubishi Pajero 2020 for sale in Dubai: AED 52,999, 130,161 km, Automatic, GCC Specs. Verified listing on YallaMotor — call or WhatsApp the seller.",
+    "image": "https://ymimg1.b8cdn.com/resized/used_car/2026/7/6/2121456/pictures/16877740/listing_main_mitsubishi_pajero_2020_2121456.jpg",
+    "itemCondition": "https://schema.org/UsedCondition",
+    "fuelType": "Petrol",
+    "bodyType": "SUV / Crossover",
+    "color": "White",
+    "vehicleTransmission": "Automatic",
+    "mileageFromOdometer": {
+      "@type": "QuantitativeValue",
+      "value": 130161,
+      "unitCode": "KMT"
+    },
+    "numberOfDoors": {
+      "@type": "QuantitativeValue",
+      "value": 4,
+      "unitCode": "C62"
+    },
+    "driveWheelConfiguration": "https://schema.org/AllWheelDriveConfiguration",
+    "vehicleEngine": {
+      "@type": "EngineSpecification",
+      "engineDisplacement": {
+        "@type": "QuantitativeValue",
+        "value": "2972",
+        "unitCode": "CMQ"
+      }
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": "https://uae.yallamotor.com/used-cars/mitsubishi/pajero/2020/used-mitsubishi-pajero-2020-dubai-2121456",
+      "price": 52999,
+      "priceCurrency": "AED",
+      "priceValidUntil": "2027-12-31",
+      "availability": "https://schema.org/InStock",
+      "availableAtOrFrom": {
+        "@type": "Place",
+        "name": "Dubai",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Dubai",
+          "addressCountry": "AE"
+        }
+      }
+    }
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "name": "Breadcrumb",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "UAE", "item": "https://uae.yallamotor.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Cars for Sale", "item": "https://uae.yallamotor.com/used-cars/" },
+      { "@type": "ListItem", "position": 3, "name": "Dubai", "item": "https://uae.yallamotor.com/used-cars/dubai" },
+      { "@type": "ListItem", "position": 4, "name": "Mitsubishi", "item": "https://uae.yallamotor.com/used-cars/dubai/mitsubishi" },
+      { "@type": "ListItem", "position": 5, "name": "Pajero", "item": "https://uae.yallamotor.com/used-cars/dubai/mitsubishi/pajero" },
+      { "@type": "ListItem", "position": 6, "name": "2020", "item": "https://uae.yallamotor.com/used-cars/dubai/mitsubishi/pajero/yr_2020_2020" },
+      { "@type": "ListItem", "position": 7, "name": "Used Mitsubishi Pajero GLS V6 2020", "item": "https://uae.yallamotor.com/used-cars/mitsubishi/pajero/2020/used-mitsubishi-pajero-2020-dubai-2121456" }
+    ]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": "https://www.yallamotor.com/#organization",
+    "name": "YallaMotor",
+    "alternateName": ["Yalla Motor"],
+    "description": "YallaMotor is the leading automotive marketplace in the Middle East, connecting car buyers and sellers across UAE, Saudi Arabia, Egypt, Qatar, Kuwait, Oman, and Bahrain.",
+    "foundingDate": "2012",
+    "url": "https://www.yallamotor.com/",
+    "logo": {
+      "@type": "ImageObject",
+      "@id": "https://www.yallamotor.com/#logo",
+      "url": "https://ymv01.b8cdn.com/uploads/logos/ym-default-logo.png",
+      "contentUrl": "https://ymv01.b8cdn.com/uploads/logos/ym-default-logo.png"
+    },
+    "parentOrganization": { "@type": "Organization", "name": "Bayt.com" }
+  }
+]

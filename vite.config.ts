@@ -20,6 +20,7 @@ export default defineConfig({
       '@utils': path.resolve(__dirname, './src/utils'),
       '@data': path.resolve(__dirname, './src/data'),
       '@lib': path.resolve(__dirname, './src/lib'),
+      '@parsers': path.resolve(__dirname, './src/parsers'),
       '@styles': path.resolve(__dirname, './src/styles'),
     },
   },
