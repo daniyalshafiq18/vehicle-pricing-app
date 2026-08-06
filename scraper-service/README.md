@@ -1,9 +1,11 @@
 # scraper-service — Azure Functions `cloudscraper` transport (scaffold)
 
-The deployable Python transport for the YallaMotor Azure adapter. **Scaffolded
-only — NOT deployed this session.** It needs an Azure subscription + `func`
-CLI + a Function App; the verified live test ran on a Linux Consumption plan
-(guide §6.2). Until it's deployed, Power Automate Flow 3 stays the live path.
+Deployable Python transport for the YallaMotor Azure adapter. **Deployed
+2026-08-06 to `vpi-probe-py-20260805`** (Linux Consumption, Python 3.11) and
+proven end-to-end: the probe + in-repo `src/parsers/` reproduce Power Automate
+Flow 3's output exactly (search count / min / max and all detail integers —
+see CHANGELOG 2026-08-06). Power Automate Flow 3 remains the app's **live**
+path; the adapter is not wired to the frontend yet.
 
 ## What's here
 

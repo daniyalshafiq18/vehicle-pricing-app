@@ -10,7 +10,8 @@ This is a TRANSPORT ONLY — it fetches the HTML and reports diagnostics. The
 JSON-LD → Dataverse extraction "brain" lives in the app at `src/parsers/`
 (see the guide §7 pointer) and is shared by both Power Automate and this path.
 
-NOT deployed this session — publish with:
+Deployed 2026-08-06 to `vpi-probe-py-20260805` (Linux Consumption, Python 3.11).
+Publish updates with:
     func azure functionapp publish <app> --python   (Oryx remote build)
 """
 
