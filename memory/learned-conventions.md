@@ -42,6 +42,8 @@ metadata:
 
 ## YallaMotor Scraping Patterns
 
+- **Label-case discipline between parser halves** (2026-08-07) — `extractRegionalSpecs` (yallaJsonLd.ts) returns **lowercase** generic spec phrases (`"american specs"`) and the keyword `'Non-GCC'`; `mapCategory` (mappers.ts) **must be case-insensitive** (`toLowerCase()` before `includes`) and must carry a branch for `'Non-GCC'` (no "Specs" substring). A case-sensitive `includes('Specs')` here silently dropped the MVR **Category** field (blank in Dataverse) for every non-GCC listing while all other fields wrote fine — null was invisible until queried live. Lesson: the label→value boundary (`normalizeToDataverse`) can silently omit a field; when one mapped field is blank but others vary, compare case/spelling between the two parser halves before touching Dataverse.
+
 ### Flow 3 Architecture
 - Flow 3 is an HTTP-triggered Power Automate Cloud flow (SAS token auth) that scrapes YallaMotor in real-time.
 - The flow uses a **Try/Catch Scope** with a `-1` sentinel for `count` to signal YallaMotor being unreachable (Cloudflare block).

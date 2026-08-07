@@ -29,6 +29,17 @@ describe('mapCategory', () => {
     expect(mapCategory('… Japan Specs …')).toBe('NON-GCC');
   });
 
+  it('handles lowercase generic spec phrases (regression: american specs → blank)', () => {
+    // extractRegionalSpecs returns lowercase generic phrases for non-GCC specs.
+    expect(mapCategory('… american specs …')).toBe('NON-GCC');
+    expect(mapCategory('… GCC specs …')).toBe('GCC'); // lowercased input still works
+    expect(mapCategory('… Other specs …')).toBe('OTHER/STANDARD');
+  });
+
+  it('maps the Non-GCC keyword (no "Specs" substring) → NON-GCC (regression)', () => {
+    expect(mapCategory('Non-GCC')).toBe('NON-GCC');
+  });
+
   it('returns undefined when no spec phrase is present', () => {
     expect(mapCategory('Just a plain listing description')).toBeUndefined();
   });

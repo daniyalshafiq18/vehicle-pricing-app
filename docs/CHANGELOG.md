@@ -1,7 +1,26 @@
 
 # Changelog
 
+## 2026-08-07
+
+### Category dropped for non-GCC listings — root-caused + fixed (case-sensitivity bug in shared parser)
+- **Symptom:** MVR `vpi_category` was **blank** for the Ford Mustang V6 ("american specs") after a successful Azure scrape, while every other mapped field (drive, engine, mileage, cylinders…) wrote correctly. Confirmed live via Web API — `vpi_category: null`.
+- **Root cause:** case-mismatch across the two parser halves. `extractRegionalSpecs` (`src/parsers/yallaJsonLd.ts`) returns generic spec phrases **lowercase** (`"american specs"`), but `mapCategory` (`src/parsers/mappers.ts`) matched with **case-sensitive** `includes('Specs' | 'GCC Specs' | 'Other Specs')` → missed → `categoryValue` `undefined` → `updateMissingVehicleScrapeResult` omitted `vpi_category`. A second latent gap: the `'Non-GCC'` keyword (no "Specs" substring) had **no branch** at all. The GCC Wrangler worked only because `extractRegionalSpecs` hardcodes the capitalised `'GCC Specs'`.
+- **Fix:** `mapCategory` is now case-insensitive + gained the `'Non-GCC'` → `NON-GCC` branch. Both transports (Azure + Flow 3) flow through the same `normalizeToDataverse` boundary, so the fix covers both. 3 regression tests added (`mappers.test.ts` — lowercase generic, lowercased GCC/Other, `Non-GCC`); 10/10 mapper tests pass.
+- **Verified live** (2026-08-07): after `npm run publish` + re-scrape, Category **lands as Non-GCC**.
+- Also fixed a `tsc -b` blocker in the live-probe test: `let r;` after the retry loop wasn't narrowed → TS18048; split into two guards (`!r` → throw, then `!r.success` → throw).
+
+### Live rollout: publish unblocked + side-by-side proof captured (Azure primary)
+- **Deploy fixed.** `npm run publish` was blocked by corrupt stale `powerpagecomponent` blob records that threw Azure `InvalidRange` / `0x80040216` on the pre-upload download (intermittent reads — `cloudscraper`-era chunk assets). Deleted the 4 corrupt records via the Dataverse Web API (`analyticsRepository-DtkRFhD5`, `usePricing-ApzTY_mN`, `usePricing-CfCVzFjm`, `analyticsRepository-Dk3cLwHk` — all verified unreferenced by the live SPA shell). **`Power Pages website upload succeeded` (574 s, exit 0).**
+- **Live side-by-side proof** (`src/lib/azureLiveProbe.test.ts`, gated by `LIVE_AZURE_PROBE=1`, real URLs from `.env.local`):
+  - Azure primary ✅ — Jeep Wrangler → `transport:"azure"`, **cylinders "6"**, `SUV / Crossover`, count 3, AED 93k–129k (matches the Flow 3 parity table). Cloudflare is **flaky on cold first probe** (403/`blocked:true`), retries pass 3/3 — test now retries up to 5×.
+  - Fallback routing ✅ — broken Azure URL → `transport:"flow3"` selected. **Flow 3 data hop** still needs a portal click: the Power Automate host (`…environment.api.powerplatform.com`) is unreachable from the dev box's network (connect refused, even non-sandboxed).
+- `docs/azure-functions-scraper-implementation-report.md` §7 live cell and §8 rollout checklist updated to match.
+
 ## 2026-08-06
+
+### Implementation report for the Azure Functions scraper added
+- New `docs/azure-functions-scraper-implementation-report.md` — end-to-end "how it is built today" reference completing the report series (evaluation → egress campaign → **implementation**). Covers: objective, architecture (thin Python transport + in-repo `src/parsers` brain), the parser core, `function_app.py`, the `azureYallaMotorScraper` adapter + `scrapeWithFallback`, frontend wiring, verification (40/40 + live Azure↔Flow-3 parity table), the live-rollout status with the PIM daily-window blocker, and limitations. The single §7 live side-by-side cell is marked PENDING until the PIM window opens (scheduled 2026-08-07 10:00) — filled live per §8 checklist.
 
 ### Azure Functions Scraper Guide — §6 Anti-Bot Layer revised with the live Azure findings
 - **What:** reworked `docs/azure-functions-scraper-guide.md` §6 to fold in the evidence from the Azure egress experiment (Aug-05) + the live Azure portal re-tests (Aug-06).

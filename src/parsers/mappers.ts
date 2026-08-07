@@ -25,16 +25,27 @@ export function mapDriveType(driveType: string): string | undefined {
   return undefined;
 }
 
-/** Parse the listing description for regional-spec keywords → category label. */
+/**
+ * Parse the listing description for regional-spec keywords → category label.
+ *
+ * Case-insensitive on purpose: `extractRegionalSpecs` (yallaJsonLd.ts) returns
+ * lowercase generic phrases (e.g. `"american specs"`), and the label
+ * `'Non-GCC'` is a separate keyword that never contains "Specs" — both were
+ * missed by the old case-sensitive matching and silently dropped Category.
+ */
 export function mapCategory(description: string): string | undefined {
-  if (description.includes('GCC Specs')) {
+  const d = description.toLowerCase();
+  if (d.includes('gcc specs')) {
     return 'GCC';
   }
-  if (description.includes('Not Sure') || description.includes('Other Specs')) {
+  if (d.includes('non-gcc')) {
+    return 'NON-GCC';
+  }
+  if (d.includes('not sure') || d.includes('other specs')) {
     return 'OTHER/STANDARD';
   }
   // Any other explicit spec mention → Non-GCC
-  if (description.includes('Specs')) {
+  if (d.includes('specs')) {
     return 'NON-GCC';
   }
   return undefined;

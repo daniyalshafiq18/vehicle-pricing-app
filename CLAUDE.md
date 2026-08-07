@@ -150,6 +150,7 @@ All docs live in `docs/`:
 - `azure-functions-scraper-guide.md` — Implementation guide (from scratch) for migrating the scraper to multi-source Azure Functions: pre-requisites, feasibility probe, adapter pattern, anti-bot layer, Dataverse write-back, durable orchestration, deployment, testing, migration
 - `azure-functions-scraper-evaluation-report.md` — Feasibility evaluation report (2026-08-04): presentation-ready findings from the free Vercel experiment proving serverless datacenter scrapers can't pass Cloudflare/Imperva for these sources; full evidence tables + revised strategy
 - `azure-egress-experiment-campaign-report.md` — Live Azure egress experiment (2026-08-05): the resolved untested cell. PROVES Azure Functions + cloudscraper **can** scrape YallaMotor (real JSON-LD extracted); DriveArabia/Dubizzle remain hard-blocked. Full chronological log incl. infra battles + scraper gotchas
+- `azure-functions-scraper-implementation-report.md` — End-to-end implementation report (2026-08-06) of the Azure-first scrape path: architecture, `src/parsers` core, `function_app.py` transport, `azureYallaMotorScraper` + `scrapeWithFallback`, verification, live-rollout status (PIM daily-window blocker), limitations
 
 ## Environment Variables
 Defined in `.env.example`. All vars are reserved for future configuration — Dataverse is the hard-coded default.
