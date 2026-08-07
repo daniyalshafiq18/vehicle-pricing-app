@@ -107,7 +107,7 @@ src/
 ├── utils/          # Helpers (formatters, validators, memoize, debounce)
 ├── data/           # Data source context + DataverseDataSource + config
 ├── lib/            # Utility modules (safeAjax + vehicleApi/contactApi/inquiryApi + yallaMotorUrl.ts — shared YallaMotor URL builder + yallaMotorHttpScraper.ts — Power Automate Flow 3 HTTP scraper + azureYallaMotorScraper.ts — Azure probe transport (PRIMARY) with Flow 3 fallback)
-├── parsers/        # Pure YallaMotor extraction core (types, yallaJsonLd, jsonLdFromHtml, specTable, mappers, normalize) + Vitest tests against tests/fixtures
+├── parsers/        # Pure extraction core (types, yallaJsonLd, jsonLdFromHtml, specTable, mappers, normalize, driveArabia — DriveArabia landing-price rows + trim specs for the PAD source) + Vitest tests against tests/fixtures
 ├── styles/         # globals.css
 └── testing/        # Vitest setup
 tests/
@@ -151,6 +151,7 @@ All docs live in `docs/`:
 - `azure-functions-scraper-evaluation-report.md` — Feasibility evaluation report (2026-08-04): presentation-ready findings from the free Vercel experiment proving serverless datacenter scrapers can't pass Cloudflare/Imperva for these sources; full evidence tables + revised strategy
 - `azure-egress-experiment-campaign-report.md` — Live Azure egress experiment (2026-08-05): the resolved untested cell. PROVES Azure Functions + cloudscraper **can** scrape YallaMotor (real JSON-LD extracted); DriveArabia/Dubizzle remain hard-blocked. Full chronological log incl. infra battles + scraper gotchas
 - `azure-functions-scraper-implementation-report.md` — End-to-end implementation report (2026-08-06) of the Azure-first scrape path: architecture, `src/parsers` core, `function_app.py` transport, `azureYallaMotorScraper` + `scrapeWithFallback`, verification, live-rollout status (PIM daily-window blocker), limitations
+- `power-automate-desktop-scraper-guide.md` — Multi-source implementation guide (2026-08-07) for adding DriveArabia + Dubizzle via Power Automate Desktop: evidence, the inbox-relay architecture (PAD captures HTML → Azure function relays → shared `src/parsers` brain → Dataverse with `transport:'pad'`), PAD flow build, function endpoints, discovery-method extraction, security, rollout
 
 ## Environment Variables
 Defined in `.env.example`. All vars are reserved for future configuration — Dataverse is the hard-coded default.

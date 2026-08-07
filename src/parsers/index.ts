@@ -6,6 +6,7 @@
  * - `specTable`       — detail-page HTML spec-grid extraction (cylinders)
  * - `mappers`         — label/URL → Dataverse option-set label
  * - `normalize`       — `DetailSpecs` → Dataverse option-set integers (single boundary)
+ * - `driveArabia`     — DriveArabia model-landing price rows + trim specs (PAD source)
  *
  * Consumed by the app (see `@parsers/...` imports in `useTriggerScrape.ts`) and,
  * eventually, by the Azure Functions adapter for the same values server-side.
@@ -29,3 +30,5 @@ export {
   lookupSeatsValue,
 } from './mappers';
 export { normalizeToDataverse } from './normalize';
+export type { DriveArabiaPriceRow, DriveArabiaSpecs } from './driveArabia';
+export { extractDriveArabiaPriceRows, extractDriveArabiaSpecs } from './driveArabia';
