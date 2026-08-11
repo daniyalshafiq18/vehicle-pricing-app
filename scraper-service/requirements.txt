@@ -3,3 +3,7 @@
 # on Linux x86_64 (the Consumption runtime) — wheels must exist for that platform.
 azure-functions
 cloudscraper
+# PAD inbox relay (§6.3) — Blob store for raw HTML + Table metadata, both on the
+# function's own AzureWebJobsStorage account.
+azure-storage-blob
+azure-data-tables

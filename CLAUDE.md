@@ -112,7 +112,7 @@ src/
 └── testing/        # Vitest setup
 tests/
 └── fixtures/       # Real live-scraped YallaMotor JSON-LD snapshots (Pajero detail + Camry search) for the parser tests — the guide §7.5 fixture rule
-scraper-service/    # Azure Functions Python `cloudscraper` transport (DEPLOYED to vpi-probe-py-20260805, CORS-enabled — see scraper-service/README.md + guide §14 rollout)
+scraper-service/    # Azure Functions Python `cloudscraper` transport + PAD inbox relay (ingest_html / next_pending / inbox_status, guide §6) — DEPLOYED to vpi-probe-py-20260805, CORS-enabled (see scraper-service/README.md + guide §14 rollout)
 ```
 
 ## 🎯 Session Start — Always Do This

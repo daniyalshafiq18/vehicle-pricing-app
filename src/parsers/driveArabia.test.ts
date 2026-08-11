@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { extractDriveArabiaPriceRows, extractDriveArabiaSpecs } from './driveArabia';
 // Real view-source captures (2026-08-07): Toyota Camry model landing page + a trim detail page.
 import pricesHtml from '../../tests/fixtures/drivearabia-camry-prices.html?raw';
+import padPricesHtml from '../../tests/fixtures/drivearabia-camry-prices-pad.html?raw';
 import trimHtml from '../../tests/fixtures/drivearabia-camry-trim.html?raw';
 
 describe('extractDriveArabiaPriceRows (model landing page)', () => {
@@ -36,6 +37,33 @@ describe('extractDriveArabiaPriceRows (model landing page)', () => {
 
   it('returns [] for empty / missing input (never throws)', () => {
     expect(extractDriveArabiaPriceRows('')).toEqual([]);
+  });
+});
+
+describe('extractDriveArabiaPriceRows (PAD capture 2026-08-11 — real-browser route)', () => {
+  // Fixture rule (§8): raw outerHTML captured through the Power Automate Desktop
+  // flow on the user's residential IP, pinned verbatim as the PAD-capture fixture.
+  const rows = extractDriveArabiaPriceRows(padPricesHtml);
+
+  it('extracts the same 21 trim/price pairs as the reference fixture', () => {
+    expect(rows.length).toBe(21);
+  });
+
+  it('assigns the pairs to the same model years (2024 and 2025)', () => {
+    const years = [...new Set(rows.map((r) => r.year))].sort();
+    expect(years).toEqual([2024, 2025]);
+  });
+
+  it('parses the known 2025 trim to the same numeric AED range', () => {
+    const row = rows.find((r) => r.trim === '2.5L I4 E FWD');
+    expect(row).toBeDefined();
+    expect(row && row.minPrice).toBe(109900);
+    expect(row && row.maxPrice).toBe(110000);
+  });
+
+  it('guards the live max<min data glitch (raw "AED 138,900 - 130,000") safely', () => {
+    expect(rows.some((r) => r.minPrice === 130000 && r.maxPrice === 138900)).toBe(true);
+    expect(rows.every((r) => r.maxPrice >= r.minPrice)).toBe(true);
   });
 });
 

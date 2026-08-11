@@ -1,6 +1,29 @@
 
 # Changelog
 
+## 2026-08-11
+
+### ingest_html URL-decode fix — PAD's Invoke web service percent-encodes the request body
+- **Root cause found live:** the user's first real PAD run returned `400 invalid JSON body` with a diagnostic preview showing the body was **percent-URL-encoded** (`%7b%22source%22%3a...` = `{"source":"drivearabia"...`), even with `Content-Type: application/json` correctly set. PAD's `Invoke web service` URL-encodes the whole body regardless of content type — this is PAD behaviour, not a header mistake.
+- **Fix (transport hardened to accept both):** new `_try_parse_json(raw)` helper in `scraper-service/function_app.py` — tries `json.loads` on the raw body first (regression-safe), and only when the head looks encoded (`%XX` present, no literal `{`) retries via `urllib.parse.unquote` before parsing. The encoded fallback is narrow by design so a raw-JSON body whose html happens to contain `%` sequences is never mangled. `inbox_status` got the same helper (uniformity, future PAD-driven marks).
+- **Verified live (PIM window, 2026-08-11):** PAD-shaped lowercase-hex encoded body (`%7b...%7d`) → `202 {inboxId}` and landed in the queue; `?inboxId=` round-trip returns the **decoded** `<html>...` (not `%3chtml%3e`); raw-JSON body still `202` (no regression); both smoke items cleaned up (Complete/Error), queue drained → `404 no_pending`.
+- **PAD-side note for the user:** nothing to change in the flow — the endpoint now accepts whatever `Invoke web service` sends. If a future PAD version exposes a request-body "format/encoding" option, "Raw"/"as-is" keeps the wire clean, but it's no longer required.
+- **Status:** PAD live hand-off is UNBLOCKED. User presses **Run** in PAD → expect `ingest: {"inboxId": "...", "source": "drivearabia", "status": "Pending"}` (HTTP 202).
+
+### Inbox relay deployed + live-verified on vpi-probe-py-20260805 (PAD pipeline, §13 gate #1 ✅)
+- **Three new endpoints** added to `scraper-service/function_app.py` beside the untouched `probe_py` (guide §6): `POST /api/ingest_html` (auth=function — validates source/url/html, 5 MB cap, stores HTML to Blob `scrape-inbox/<source>/<uuid>.html`, records `Pending` metadata in Table `scrapeinboxmeta` with sortable RowKey, returns `202 {inboxId}`); `GET /api/next_pending` (anonymous + CORS — oldest `Pending` item, `?inboxId=` returns the raw HTML); `POST /api/inbox_status` (anonymous + CORS, browser-only — `Complete` purges the blob per §10 inbox hygiene, `Error` keeps it for re-processing).
+- **Storage reuses `AzureWebJobsStorage`** — no new storage account needed; `requirements.txt` gained `azure-storage-blob` + `azure-data-tables`, Oryx remote build installed `12.30.0`/`12.7.0`.
+- **Live smoke test (§12) all green** (PIM window 2026-08-11): ingest → 202 + inboxId; next_pending → item; `?inboxId=` → HTML byte-round-trip; inbox_status Complete → 200 + blob purged; queue drained → 404 `no_pending`. Security paths: ingest **without key → 401**; unknown source → 400.
+- **Two SDK bugs hit + fixed on the live box:** (1) `TableClient` has no `exists()` (Blob-SDK API, not Table) → replaced with try/except `create_table()` on `ResourceExistsError`; (2) `upsert_entity` supports **Replace only** (not Merge) → rebuild the full entity with the new Status and `UpdateMode.REPLACE`. Both re-published; final re-test 5/5.
+- **Status:** §13 gate #1 **DONE**. Next: (1) extend PAD flow with pacing `Wait`s + the `Invoke web service` POST using the `ingest_html` function key (PAD-side only, never committed), (2) app-side `src/lib/multiSourceScraper.ts` inbox polling (§7), (3) first real `transport:'pad'` row.
+
+### PAD flow v1 (capture mode) built + live capture validated against the parser
+- **User built the first Power Automate Desktop flow** (`PAD-DriveArabia`, capture-first shape): `Launch new Chrome` (real profile, `drivearabia.com/carprices/uae/toyota/toyota-camry/`) → `Run JavaScript function on web page` (`document.documentElement.outerHTML`) → `Write text to file` (`C:\Users\PC\Desktop\pad-camry.html`). This is the browse+capture half of the guide §5 contract; the traffic-light missing pieces are the human-pacing `Wait`s + the final `Invoke web service` POST (blocked until the serverless relay exists).
+- **Live capture validated:** the 392 KB file is REAL content, not a block page — the Cloudflare marker scripts (`challenge-platform`/`captcha`) sit on their own line while the full serialized React payload delivered 40+ `\"AED min - max\"` pairs. Anchors the fixture rule (§8) with a genuine **residential-IP, PAD-produced** capture.
+- **Parser needs zero changes:** `extractDriveArabiaPriceRows` on the PAD capture reproduces the reference fixture exactly — 21 rows, years `[2024, 2025]`, `2.5L I4 E FWD` → `109900–110000`, `max<min` guard holds on the live `AED 138,900 - 130,000` glitch.
+- **New fixture pinned:** `tests/fixtures/drivearabia-camry-prices-pad.html` (392 KB, provenance PAD 2026-08-11) + 4 tests added to `driveArabia.test.ts` (now 13, suite 43/43 passing).
+- **Status:** the PAD → fixture → parser leg of the pipeline is proven. Next: (1) extend the PAD flow with pacing + the `ingest_html` POST, (2) build `ingest_html` + `next_pending` on the Azure function (§6), (3) `multiSourceScraper.ts` browser-side inbox processing (§7).
+
 ## 2026-08-07
 
 ### DriveArabia parser core built + fixture-pinned (PAD source 1)

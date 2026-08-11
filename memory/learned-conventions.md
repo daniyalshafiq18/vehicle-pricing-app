@@ -44,6 +44,11 @@ metadata:
 
 - **Label-case discipline between parser halves** (2026-08-07) — `extractRegionalSpecs` (yallaJsonLd.ts) returns **lowercase** generic spec phrases (`"american specs"`) and the keyword `'Non-GCC'`; `mapCategory` (mappers.ts) **must be case-insensitive** (`toLowerCase()` before `includes`) and must carry a branch for `'Non-GCC'` (no "Specs" substring). A case-sensitive `includes('Specs')` here silently dropped the MVR **Category** field (blank in Dataverse) for every non-GCC listing while all other fields wrote fine — null was invisible until queried live. Lesson: the label→value boundary (`normalizeToDataverse`) can silently omit a field; when one mapped field is blank but others vary, compare case/spelling between the two parser halves before touching Dataverse.
 
+### Multi-source transport discipline (PAD — 2026-08-07, see `docs/power-automate-desktop-scraper-guide.md`)
+- **IP reputation is the decisive anti-bot layer, not technique.** All three sources block datacenter IPs (Railway/AWS/Vercel/**Azure**) even with byte-perfect TLS and `cloudscraper`; a real browser on a **residential IP** passes. PAD = real Chrome on the user's home IP → defeats both DriveArabia's Cloudflare and Dubizzle's Imperva.
+- **Keep extraction OUT of PAD.** PAD flows are selector-brittle; the tested `src/parsers` TS brain stays the single extractor. PAD only captures raw HTML and relays it (via the existing Azure function) to the browser, which parses + writes Dataverse with `transport:'pad'`.
+- **The Category bug class applies to every new source** — label→value boundary is case-sensitive; always reuse `normalizeToDataverse`/`mapCategory` and add a fixture test per new source markup (guide §7.5 rule).
+
 ### Flow 3 Architecture
 - Flow 3 is an HTTP-triggered Power Automate Cloud flow (SAS token auth) that scrapes YallaMotor in real-time.
 - The flow uses a **Try/Catch Scope** with a `-1` sentinel for `count` to signal YallaMotor being unreachable (Cloudflare block).
