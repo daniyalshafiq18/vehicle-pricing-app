@@ -1,6 +1,6 @@
 # Power Automate Desktop (PAD) Multi-Source Scraper — Implementation Guide
 
-> **Status:** IN PROGRESS · Direction decided 2026-08-07 (DriveArabia + Dubizzle via PAD; YallaMotor untouched until this lands). §13 gate #1 (inbox relay) **deployed + live-verified 2026-08-11**; PAD `Invoke web service` body **percent-encoding handled server-side** (`_try_parse_json` unquote fallback, same day) — PAD live hand-off unblocked.
+> **Status:** IN PROGRESS · Direction decided 2026-08-07 (DriveArabia + Dubizzle via PAD; YallaMotor untouched until this lands). §13 gate #1 (inbox relay) **deployed + live-verified 2026-08-11**; PAD `Invoke web service` body **encoding handled server-side** (`_try_parse_json` fallback, same day) — PAD live hand-off unblocked. **2026-08-11 follow-up (live root-cause):** PAD form-encodes (space → `+`, genuine `+` → `%2B`), so the fallback must decode with **`unquote_plus`**, not `unquote` — the first real PAD capture arrived with every space as `+` (`<html+lang=…`) and the parser returned 0 rows. Fixed, re-publish pending; re-capture after publish should land 21 rows.
 > **Date written:** 2026-08-07 · **Series:** [evaluation-report](azure-functions-scraper-evaluation-report.md) → [egress-campaign](azure-egress-experiment-campaign-report.md) → [implementation-report](azure-functions-scraper-implementation-report.md) → **this guide**
 > **Companion to:** [azure-functions-scraper-guide.md](azure-functions-scraper-guide.md) (the single-source Azure path — still the YallaMotor transport).
 >

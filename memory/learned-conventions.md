@@ -48,6 +48,7 @@ metadata:
 - **IP reputation is the decisive anti-bot layer, not technique.** All three sources block datacenter IPs (Railway/AWS/Vercel/**Azure**) even with byte-perfect TLS and `cloudscraper`; a real browser on a **residential IP** passes. PAD = real Chrome on the user's home IP → defeats both DriveArabia's Cloudflare and Dubizzle's Imperva.
 - **Keep extraction OUT of PAD.** PAD flows are selector-brittle; the tested `src/parsers` TS brain stays the single extractor. PAD only captures raw HTML and relays it (via the existing Azure function) to the browser, which parses + writes Dataverse with `transport:'pad'`.
 - **The Category bug class applies to every new source** — label→value boundary is case-sensitive; always reuse `normalizeToDataverse`/`mapCategory` and add a fixture test per new source markup (guide §7.5 rule).
+- **PAD `Invoke web service` form-encodes the whole body** (2026-08-11) — not just percent-encoding: a **space arrives as `+`** and a genuine `+` as `%2B`. Decode with **`urllib.parse.unquote_plus`** (replaces `+`→space then decodes `%XX`); `unquote` alone leaves `+` in place and silently corrupts every space in the captured HTML (`<html lang=` → `<html+lang=`, parser → 0 rows). Lesson: when a smoke test uses a hand-built `%7b…%7d` body with **no spaces**, it can pass while the real client's form-encoding breaks the payload — replicate the client's exact byte encoding in the test, spaces included.
 
 ### Flow 3 Architecture
 - Flow 3 is an HTTP-triggered Power Automate Cloud flow (SAS token auth) that scrapes YallaMotor in real-time.

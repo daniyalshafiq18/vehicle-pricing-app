@@ -170,16 +170,23 @@ def _purge_blob(blob, source: str, inbox_id: str) -> None:
 def _try_parse_json(raw: bytes):
     """Parse a PAD request body. PAD's `Invoke web service` percent-URL-encodes
     the whole body (Content-Type stays application/json) — accept either as-is
-    JSON or a percent-encoded JSON payload. The encoded fallback only fires when
-    the head looks encoded (%XX with no literal '{'), so a raw-JSON body whose
-    html happens to contain '%' sequences is never mangled."""
+    JSON or an encoded JSON payload. The encoded fallback only fires when the
+    head looks encoded (%XX with no literal '{'), so a raw-JSON body whose html
+    happens to contain '%' sequences is never mangled.
+
+    Encoding must be decoded with `unquote_plus`, NOT `unquote`: PAD form-encodes
+    (application/x-www-form-urlencoded semantics), so a space in the HTML arrives
+    as '+' and a genuine '+' arrives as '%2B'. `unquote` leaves '+' untouched,
+    which corrupted the first real DriveArabia capture (every space became '+',
+    e.g. `<html lang=` -> `<html+lang=`); `unquote_plus` restores both.
+    """
     try:
         return json.loads(raw.decode("utf-8"))
     except Exception:
         head = raw[:64]
         if b"%" in head and b"{" not in head:
             try:
-                return json.loads(urllib.parse.unquote(raw.decode("utf-8")))
+                return json.loads(urllib.parse.unquote_plus(raw.decode("utf-8")))
             except Exception:
                 return None
         return None
