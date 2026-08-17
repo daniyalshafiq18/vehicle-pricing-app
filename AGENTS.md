@@ -92,16 +92,20 @@ src/
 │   ├── valuation/  # 3-step wizard (Personal Info → Vehicle → Result)
 │   └── admin/      # Dashboard, Vehicles, Queries, Settings
 ├── layouts/        # MainLayout (public), AdminLayout (sidebar)
-├── hooks/          # React Query hooks + startup API prefetch orchestration
+├── hooks/          # React Query hooks + startup/PAD inbox orchestration
 ├── repositories/   # Data access wrappers
 ├── providers/      # Context providers
 ├── stores/         # Zustand stores
 ├── types/          # TypeScript interfaces
 ├── utils/          # Helpers (formatters, validators, memoize, debounce)
 ├── data/           # Data source context + DataverseDataSource + config
-├── lib/            # Utility modules (safeAjax.ts — CSRF-authenticated fetch wrapper + vehicleApi/contactApi/inquiryApi)
+├── lib/            # API/scraper modules (safeAjax, Dataverse APIs, YallaMotor transports, PAD inbox processor)
+├── parsers/        # Transport-agnostic YallaMotor + DriveArabia extraction and normalization
 ├── styles/         # globals.css
 └── testing/        # Vitest setup
+scraper-service/    # Azure Functions transport + PAD HTML inbox relay
+scripts/            # Build/publish support and flow validation utilities
+tests/fixtures/     # Real captured HTML/JSON-LD fixtures for parser regression tests
 ```
 
 ## Coding Standards

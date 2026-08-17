@@ -66,8 +66,11 @@ The Web API layer is split into four dedicated modules, each with a dual-path st
 | `vehicleApi.ts` | Fetch all vehicles with keyset pagination | `safeFetch` | — |
 | `contactApi.ts` | Create/upsert contact records | `webapi.safeAjax` (reads `entityid` header) | `safeFetchWithMeta` |
 | `inquiryApi.ts` | Create vehicle inquiry records | `webapi.safeAjax` (reads `entityid` header) | `safeFetchWithMeta` |
+| `multiSourceScraper.ts` | Drain PAD HTML inbox, parse DriveArabia prices + selected-trim specs, match exact MVR records, persist `transport:'pad'` | Azure relay `next_pending` / `inbox_status` | — |
 
 All API modules read the created record's GUID from the `entityid` response header (Power Pages standard), with a fallback to `OData-EntityId` header parsing.
+
+The PAD processor is deliberately record-safe: it derives make/model from the captured DriveArabia URL, takes year/trim from fixture-tested parser rows, and updates only exact matches among the MVR records already loaded by the admin page. A per-year page can list several trims while its `Product`/`Vehicle` block describes only one selected/default `vehicleConfiguration`; specs are therefore written only when that configuration and year exactly match the MVR. Supported MVR writes include body/fuel/transmission/drive/cylinders/engine/doors/horsepower, and Horsepower is carried into Vehicle Data on approval. Other matched trims receive prices only. A valid unmatched capture stays `Pending` so an MVR can be created and processing retried. Unsupported, malformed, or write-failed captures are acknowledged as `Error` and retain their Blob HTML for diagnosis. Successful items are marked `Complete`, which purges the transient Blob.
 
 ## Inquiry System
 

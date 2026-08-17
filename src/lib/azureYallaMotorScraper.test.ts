@@ -30,10 +30,14 @@ function fakeFetch(htmls: string[]) {
   });
 }
 
-const blockedFetch = vi.fn(async () =>
-  new Response(JSON.stringify({ httpStatus: 403, blocked: true, reason: 'challenge page, no content' }), {
-    status: 403,
-  }),
+const blockedFetch = vi.fn(
+  async () =>
+    new Response(
+      JSON.stringify({ httpStatus: 403, blocked: true, reason: 'challenge page, no content' }),
+      {
+        status: 403,
+      },
+    ),
 );
 
 describe('assembleAzureResult', () => {
@@ -107,7 +111,9 @@ describe('scrapeViaAzure', () => {
   });
 
   it('returns an error when no probe URL is configured', async () => {
-    const result = await scrapeViaAzure(PARAMS, {});
+    // Explicitly override any VITE_AZURE_FUNCTION_URL loaded from .env.local so
+    // this remains a deterministic unit test and never becomes a live probe.
+    const result = await scrapeViaAzure(PARAMS, { functionBaseUrl: '' });
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error).toContain('not configured');
@@ -127,7 +133,9 @@ describe('scrapeViaAzure', () => {
 describe('scrapeWithFallback', () => {
   it('uses Azure when it succeeds — transport: azure, Flow 3 untouched', async () => {
     const fetchFn = fakeFetch([camrySearchHtml, wranglerDetailHtml]);
-    const flow3 = vi.fn(async (): Promise<Flow3Response> => ({ success: false, error: 'should not run' }));
+    const flow3 = vi.fn(
+      async (): Promise<Flow3Response> => ({ success: false, error: 'should not run' }),
+    );
     const result = await scrapeWithFallback(PARAMS, { fetchFn, functionBaseUrl: BASE, flow3 });
 
     expect(result.transport).toBe('azure');
@@ -146,10 +154,15 @@ describe('scrapeWithFallback', () => {
       minPrice: 100,
       maxPrice: 200,
       heading: '7 listings · AED 100 – 200',
-      sourceUrl: 'https://uae.yallamotor.com/used-cars/jeep/wrangler/vr_3-6l-automatic/yr_2021_2021',
+      sourceUrl:
+        'https://uae.yallamotor.com/used-cars/jeep/wrangler/vr_3-6l-automatic/yr_2021_2021',
     };
     const flow3 = vi.fn(async (): Promise<Flow3Response> => flow3Success);
-    const result = await scrapeWithFallback(PARAMS, { fetchFn: blockedFetch, functionBaseUrl: BASE, flow3 });
+    const result = await scrapeWithFallback(PARAMS, {
+      fetchFn: blockedFetch,
+      functionBaseUrl: BASE,
+      flow3,
+    });
 
     expect(result.transport).toBe('flow3');
     expect(result.success).toBe(true);
@@ -159,8 +172,14 @@ describe('scrapeWithFallback', () => {
   });
 
   it('reports the Flow 3 error when both transports fail', async () => {
-    const flow3 = vi.fn(async (): Promise<Flow3Response> => ({ success: false, error: 'Flow 3 down' }));
-    const result = await scrapeWithFallback(PARAMS, { fetchFn: blockedFetch, functionBaseUrl: BASE, flow3 });
+    const flow3 = vi.fn(
+      async (): Promise<Flow3Response> => ({ success: false, error: 'Flow 3 down' }),
+    );
+    const result = await scrapeWithFallback(PARAMS, {
+      fetchFn: blockedFetch,
+      functionBaseUrl: BASE,
+      flow3,
+    });
 
     expect(result.transport).toBe('flow3');
     expect(result.success).toBe(false);

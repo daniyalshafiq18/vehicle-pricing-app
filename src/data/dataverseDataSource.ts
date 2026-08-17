@@ -14,8 +14,21 @@ import { fetchAllVehicles } from '@lib/vehicleApi';
 import { createContact } from '@lib/contactApi';
 import { createInquiry } from '@lib/inquiryApi';
 import type { CreateInquiryPayload } from '@lib/inquiryApi';
-import { upsertMissingVehicleRequest, fetchMissingVehicleRequests, fetchMissingVehicleRequestById, updateMissingVehicleRequest, updateMissingVehicleRequestStatus, updateMissingVehicleScrapeResult, approveAndCreateVehicle } from '@lib/missingVehicleApi';
-import { upsertPriceSuggestion, fetchPriceSuggestions, updatePriceSuggestion, updatePriceSuggestionStatus } from '@lib/priceSuggestionApi';
+import {
+  upsertMissingVehicleRequest,
+  fetchMissingVehicleRequests,
+  fetchMissingVehicleRequestById,
+  updateMissingVehicleRequest,
+  updateMissingVehicleRequestStatus,
+  updateMissingVehicleScrapeResult,
+  approveAndCreateVehicle,
+} from '@lib/missingVehicleApi';
+import {
+  upsertPriceSuggestion,
+  fetchPriceSuggestions,
+  updatePriceSuggestion,
+  updatePriceSuggestionStatus,
+} from '@lib/priceSuggestionApi';
 import { memoize } from '@utils';
 import type {
   IDataSource,
@@ -150,9 +163,7 @@ export class DataverseDataSource implements IDataSource {
       // Otherwise estimate: at least 7 pages (35000 records) to match the
       // current ~30000-34000 record count, growing as more pages arrive.
       const effectiveTotal =
-        total > MAX_PAGE_SIZE
-          ? total
-          : Math.max(fetched + MAX_PAGE_SIZE, MAX_PAGE_SIZE * 7);
+        total > MAX_PAGE_SIZE ? total : Math.max(fetched + MAX_PAGE_SIZE, MAX_PAGE_SIZE * 7);
       const pct = Math.min(98, Math.round((fetched / effectiveTotal) * 100));
       onProgress?.(pct);
     });
@@ -237,7 +248,9 @@ export class DataverseDataSource implements IDataSource {
       cylinders: numeric(record[VEHICLE_FIELDS.CYLINDERS]),
       doors: numeric(doorsLabel(record[VEHICLE_FIELDS.DOORS], '4')),
       seats: numeric(seatsLabel(record[VEHICLE_FIELDS.SEATS], '5')),
-      transmission: transmissionLabel(record[VEHICLE_FIELDS.TRANSMISSION]) as Vehicle['transmission'],
+      transmission: transmissionLabel(
+        record[VEHICLE_FIELDS.TRANSMISSION],
+      ) as Vehicle['transmission'],
       bodyType: bodyTypeLabel(record[VEHICLE_FIELDS.BODY_TYPE]) as Vehicle['bodyType'],
       driveType: driveTypeLabel(record[VEHICLE_FIELDS.DRIVE_TYPE]) as Vehicle['driveType'],
       vehicleType: vehicleTypeLabel(record[VEHICLE_FIELDS.VEHICLE_TYPE]) as Vehicle['vehicleType'],
@@ -385,7 +398,11 @@ export class DataverseDataSource implements IDataSource {
 
     const basePricing = this.pricing.get(vehicle.id);
     const pricing = basePricing
-      ? { ...basePricing, priceRange: { ...basePricing.priceRange }, marketTrend: { ...basePricing.marketTrend } }
+      ? {
+          ...basePricing,
+          priceRange: { ...basePricing.priceRange },
+          marketTrend: { ...basePricing.marketTrend },
+        }
       : this.createDefaultPricing(vehicle);
 
     // Override min/max with per-vehicle values from Dataverse for accuracy
@@ -470,7 +487,9 @@ export class DataverseDataSource implements IDataSource {
       return this.dashboardCache;
     }
 
-    const vehicles = filters ? this.applyFilters(this.vehicles, filters as VehicleFilters) : this.vehicles;
+    const vehicles = filters
+      ? this.applyFilters(this.vehicles, filters as VehicleFilters)
+      : this.vehicles;
     const totalUnfiltered = this.vehicles.length;
 
     // ── Single-pass data collection ──
@@ -755,9 +774,7 @@ export class DataverseDataSource implements IDataSource {
     const payload: CreateInquiryPayload = {
       vpi_name: name,
       'vpi_Contact@odata.bind': contactId ? `/contacts(${contactId})` : null,
-      'vpi_Vehicle@odata.bind': vehicleGuid
-        ? `/${ENTITIES.VEHICLE}(${vehicleGuid})`
-        : null,
+      'vpi_Vehicle@odata.bind': vehicleGuid ? `/${ENTITIES.VEHICLE}(${vehicleGuid})` : null,
       vpi_status: inquiryStatusValue(inquiry.status) ?? 1,
     };
 
@@ -891,7 +908,10 @@ export class DataverseDataSource implements IDataSource {
     return updateMissingVehicleRequestStatus(id, status);
   }
 
-  async updateMissingVehicleRequest(id: string, fields: { minPrice?: number; maxPrice?: number }): Promise<void> {
+  async updateMissingVehicleRequest(
+    id: string,
+    fields: { minPrice?: number; maxPrice?: number },
+  ): Promise<void> {
     return updateMissingVehicleRequest(id, fields);
   }
 
@@ -909,6 +929,7 @@ export class DataverseDataSource implements IDataSource {
       driveTypeValue?: number;
       cylindersValue?: number;
       engineSizeValue?: number;
+      horsepowerValue?: number;
       doorsValue?: number;
       seatsValue?: number;
       categoryValue?: number;
@@ -938,7 +959,11 @@ export class DataverseDataSource implements IDataSource {
     return fetchPriceSuggestions();
   }
 
-  async updatePriceSuggestion(id: string, minPrice: number | null, maxPrice: number | null): Promise<void> {
+  async updatePriceSuggestion(
+    id: string,
+    minPrice: number | null,
+    maxPrice: number | null,
+  ): Promise<void> {
     return updatePriceSuggestion(id, minPrice, maxPrice);
   }
 
@@ -1039,7 +1064,9 @@ export class DataverseDataSource implements IDataSource {
           doors: 0,
           seats: 0,
           transmission: 'Automatic',
-          bodyType: bodyTypeLabel(typeof rawBodyType === 'number' ? rawBodyType : undefined) as Vehicle['bodyType'],
+          bodyType: bodyTypeLabel(
+            typeof rawBodyType === 'number' ? rawBodyType : undefined,
+          ) as Vehicle['bodyType'],
           driveType: 'Unknown',
           vehicleType: 'Car',
           category: 'OTHER/STANDARD',
@@ -1079,10 +1106,15 @@ export class DataverseDataSource implements IDataSource {
         make: (vehicle[VEHICLE_FIELDS.MAKE] as string) ?? '',
         model: (vehicle[VEHICLE_FIELDS.MODEL] as string) ?? '',
         spec: (vehicle[VEHICLE_FIELDS.SPEC] as string) ?? '',
-        bodyType: bodyTypeLabel(typeof rawBodyType === 'number' ? rawBodyType : undefined) as string,
+        bodyType: bodyTypeLabel(
+          typeof rawBodyType === 'number' ? rawBodyType : undefined,
+        ) as string,
       },
       createdAt: rawCreatedOn ? new Date(rawCreatedOn as string) : new Date(),
-      status: inquiryStatusLabel(record[INQUIRY_FIELDS.STATUS] as number, 'pending') as Inquiry['status'],
+      status: inquiryStatusLabel(
+        record[INQUIRY_FIELDS.STATUS] as number,
+        'pending',
+      ) as Inquiry['status'],
       valuationResult,
     };
   }
@@ -1140,7 +1172,12 @@ export class DataverseDataSource implements IDataSource {
           p90: percentile(90),
         },
         confidenceScore: Math.min(95, 60 + len),
-        marketTrend: { direction: 'stable' as const, percentage: 0, periodMonths: 3, volatility: 'low' as const },
+        marketTrend: {
+          direction: 'stable' as const,
+          percentage: 0,
+          periodMonths: 3,
+          volatility: 'low' as const,
+        },
         lastUpdated: new Date(),
       });
     }
@@ -1188,7 +1225,8 @@ export class DataverseDataSource implements IDataSource {
       const propKey = `${v.year}-${v.make.toLowerCase()}-${v.model.toLowerCase()}`;
       if (v.transmission) {
         if (!transmissions[propKey]) transmissions[propKey] = [];
-        if (!transmissions[propKey]!.includes(v.transmission)) transmissions[propKey]!.push(v.transmission);
+        if (!transmissions[propKey]!.includes(v.transmission))
+          transmissions[propKey]!.push(v.transmission);
       }
       if (v.driveType) {
         if (!driveTypes[propKey]) driveTypes[propKey] = [];
@@ -1204,7 +1242,8 @@ export class DataverseDataSource implements IDataSource {
       }
       if (v.vehicleType) {
         if (!vehicleTypes[propKey]) vehicleTypes[propKey] = [];
-        if (!vehicleTypes[propKey]!.includes(v.vehicleType)) vehicleTypes[propKey]!.push(v.vehicleType);
+        if (!vehicleTypes[propKey]!.includes(v.vehicleType))
+          vehicleTypes[propKey]!.push(v.vehicleType);
       }
     }
 
@@ -1261,12 +1300,14 @@ export class DataverseDataSource implements IDataSource {
       totalVehicles: this.vehicles.length,
       totalMakes: makes.size,
       totalModels: models.size,
-      averageMarketPrice: validPrices.length > 0
-        ? Math.round(validPrices.reduce((a, b) => a + b, 0) / validPrices.length)
-        : 0,
+      averageMarketPrice:
+        validPrices.length > 0
+          ? Math.round(validPrices.reduce((a, b) => a + b, 0) / validPrices.length)
+          : 0,
       highestVehicleValue: validPrices.length > 0 ? Math.max(...validPrices) : 0,
       lowestVehicleValue: validPrices.length > 0 ? Math.min(...validPrices) : 0,
-      priceRangeSpread: validPrices.length > 0 ? Math.max(...validPrices) - Math.min(...validPrices) : 0,
+      priceRangeSpread:
+        validPrices.length > 0 ? Math.max(...validPrices) - Math.min(...validPrices) : 0,
       lastUpdated: new Date(),
     };
   }
@@ -1327,7 +1368,9 @@ export class DataverseDataSource implements IDataSource {
     for (let i = 0; i < 10; i++) {
       const bucketMin = min + i * bucketSize;
       const bucketMax = bucketMin + bucketSize;
-      const count = prices.filter((p) => p >= bucketMin && (i === 9 ? p <= bucketMax : p < bucketMax)).length;
+      const count = prices.filter(
+        (p) => p >= bucketMin && (i === 9 ? p <= bucketMax : p < bucketMax),
+      ).length;
       buckets.push({
         range: `${Math.round(bucketMin).toLocaleString()} - ${Math.round(bucketMax).toLocaleString()}`,
         min: Math.round(bucketMin),
@@ -1353,10 +1396,11 @@ export class DataverseDataSource implements IDataSource {
         const sorted = [...data.prices].sort((a, b) => a - b);
         return {
           year,
-          averagePrice: Math.round(data.prices.reduce((a, b) => a + b, 0) / data.prices.length) || 0,
-          medianPrice: sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] ?? 0 : 0,
-          minimumPrice: sorted.length > 0 ? sorted[0] ?? 0 : 0,
-          maximumPrice: sorted.length > 0 ? sorted[sorted.length - 1] ?? 0 : 0,
+          averagePrice:
+            Math.round(data.prices.reduce((a, b) => a + b, 0) / data.prices.length) || 0,
+          medianPrice: sorted.length > 0 ? (sorted[Math.floor(sorted.length / 2)] ?? 0) : 0,
+          minimumPrice: sorted.length > 0 ? (sorted[0] ?? 0) : 0,
+          maximumPrice: sorted.length > 0 ? (sorted[sorted.length - 1] ?? 0) : 0,
           count: data.prices.length,
         };
       })
@@ -1376,12 +1420,17 @@ export class DataverseDataSource implements IDataSource {
     return [...map.entries()]
       .map(([category, data]) => ({
         category: category as Vehicle['category'],
-        averagePrice: data.prices.length > 0
-          ? Math.round(data.prices.reduce((a, b) => a + b, 0) / data.prices.length)
-          : 0,
-        medianPrice: data.prices.length > 0
-          ? (() => { const s = [...data.prices].sort((a, b) => a - b); return s[Math.floor(s.length / 2)] ?? 0; })()
-          : 0,
+        averagePrice:
+          data.prices.length > 0
+            ? Math.round(data.prices.reduce((a, b) => a + b, 0) / data.prices.length)
+            : 0,
+        medianPrice:
+          data.prices.length > 0
+            ? (() => {
+                const s = [...data.prices].sort((a, b) => a - b);
+                return s[Math.floor(s.length / 2)] ?? 0;
+              })()
+            : 0,
         count: data.count,
       }))
       .sort((a, b) => b.averagePrice - a.averagePrice);
@@ -1508,12 +1557,24 @@ export class DataverseDataSource implements IDataSource {
 
     let cmp = 0;
     switch (field) {
-      case 'year': cmp = a.year - b.year; break;
-      case 'make': cmp = a.make.localeCompare(b.make); break;
-      case 'model': cmp = a.model.localeCompare(b.model); break;
-      case 'price': cmp = priceA - priceB; break;
-      case 'horsepower': cmp = a.horsepower - b.horsepower; break;
-      case 'engineSize': cmp = a.engineSize - b.engineSize; break;
+      case 'year':
+        cmp = a.year - b.year;
+        break;
+      case 'make':
+        cmp = a.make.localeCompare(b.make);
+        break;
+      case 'model':
+        cmp = a.model.localeCompare(b.model);
+        break;
+      case 'price':
+        cmp = priceA - priceB;
+        break;
+      case 'horsepower':
+        cmp = a.horsepower - b.horsepower;
+        break;
+      case 'engineSize':
+        cmp = a.engineSize - b.engineSize;
+        break;
     }
     return cmp * dir;
   }

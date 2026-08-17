@@ -1,6 +1,6 @@
 # Power Automate Desktop (PAD) Multi-Source Scraper — Implementation Guide
 
-> **Status:** IN PROGRESS · Direction decided 2026-08-07 (DriveArabia + Dubizzle via PAD; YallaMotor untouched until this lands). §13 gate #1 (inbox relay) **deployed + live-verified 2026-08-11**; PAD `Invoke web service` body **encoding handled server-side** (`_try_parse_json` fallback, same day) — PAD live hand-off unblocked. **2026-08-11 follow-up (live root-cause):** PAD form-encodes (space → `+`, genuine `+` → `%2B`), so the fallback must decode with **`unquote_plus`**, not `unquote` — the first real PAD capture arrived with every space as `+` (`<html+lang=…`) and the parser returned 0 rows. Fixed, re-publish pending; re-capture after publish should land 21 rows.
+> **Status:** IN PROGRESS · **The attended DriveArabia exact-trim workflow is live-proven end to end**, including a Missing Vehicle Request freshly created through Valuation and the dedicated Horsepower write. Specs are applied only to the JSON-LD-selected trim. Automatic PAD launching/inbox processing and Dubizzle remain pending; YallaMotor stays untouched.
 > **Date written:** 2026-08-07 · **Series:** [evaluation-report](azure-functions-scraper-evaluation-report.md) → [egress-campaign](azure-egress-experiment-campaign-report.md) → [implementation-report](azure-functions-scraper-implementation-report.md) → **this guide**
 > **Companion to:** [azure-functions-scraper-guide.md](azure-functions-scraper-guide.md) (the single-source Azure path — still the YallaMotor transport).
 >
@@ -170,9 +170,10 @@ Add to `scraper-service/function_app.py` (same app; do not touch `probe_py`).
 
 Keep it parallel to `azureYallaMotorScraper.ts`:
 
-- **`processScrapeInbox()`** — the orchestrator: poll `next_pending` → for each item, load HTML → run the source-aware parser (§7.2) → `normalizeToDataverse(result)` → `updateMissingVehicleScrapeResult(...)` with `transport: 'pad'` and `scrapedSources: [url]` → mark the inbox item `Complete`.
+- **`processScrapeInbox()`** — implemented orchestrator: drain up to 25 `next_pending` items → load HTML → parse DriveArabia reference-price rows and selected-trim specs → derive make/model from the captured URL → match exact make/model/year/trim values among the admin's loaded MVR records → update each match with `transport:'pad'` → mark the item `Complete`.
 - **`transport` provenance:** the value written is **`'pad'`** — a new third value alongside `'azure'` and `'flow3'`, so the frontend/admin can show exactly which path produced a row (the same observable the live side-by-side proof relies on).
-- **Error handling:** any parse/write failure marks the inbox item `Error` + keeps the raw HTML so it can be re-processed; never silently drops.
+- **Error handling:** a valid capture with no exact MVR match remains `Pending` and stops the drain, allowing the request to be created before retrying. Unsupported sources, invalid markup, or write failures become `Error` and keep their raw HTML for diagnosis; the processor never guesses a record association.
+- **Acknowledgement transport:** `inbox_status` sends JSON text with `Content-Type: text/plain;charset=UTF-8` intentionally. This is a CORS-safelisted request and avoids Azure's platform handler returning a headerless `204` to the JSON POST preflight. The function body parser is content-type agnostic.
 
 ### 7.2 Source-aware extraction (keep the shared shape)
 
@@ -193,7 +194,7 @@ Clone `src/lib/yallaMotorUrl.ts` → `src/lib/driveArabiaUrl.ts`, `src/lib/dubiz
 
 ## 8. Extraction — the discovery method (unknowns are resolved this way)
 
-DriveArabia/Dubizzle JSON-LD shapes are **not yet captured** — the guide does not guess selectors. Instead it prescribes the method (same discipline as the guide's §7.5 fixture rule that produced the real Pajero/Camry fixtures):
+DriveArabia's model landing and per-model-year HTML shapes are captured and fixture-pinned. Current per-year pages contain useful schema.org `Product`/`Vehicle` JSON-LD for one selected/default `vehicleConfiguration`; `src/parsers/driveArabia.ts` prefers that block for specs and uses serialized/bounded visible content for price rows. Because the price table contains multiple trims, specs must never be copied to a different trim. Dubizzle remains uncaptured. For every new page shape, follow the same discovery method instead of guessing selectors:
 
 1. **Capture real HTML fixtures** — run the PAD flow once per source, save the raw `outerHTML` into `tests/fixtures/` (`drivearabia-<model>-detail.html`, `dubizzle-<model>-detail.html`) + one search page each.
 2. **Inspect for structured data** — grep for `application/ld+json` (schema.org `Car` / `Product` / `ItemList`). If absent, fall back to the rendered spec-grid HTML (the pattern already used for YallaMotor cylinders).
@@ -269,13 +270,14 @@ Rollback: stop the PAD flows; the app is unaffected — YallaMotor path is untou
 ## 13. Rollout checklist (gates — mirror the scraper-service README phases)
 
 1. [x] **Inbox relay built** — `ingest_html` + `next_pending` (+ `inbox_status`) deployed + verified live (2026-08-11 smoke test 5/5) — see CHANGELOG entry
-2. [ ] **PAD-DriveArabia flow** (attended) captures a real listing HTML fixture
-3. [ ] **DriveArabia parser** — fixture + unit tests + live row (`transport:'pad'`)
-4. [ ] **PAD-Dubizzle flow** captures a real Dubizzle HTML fixture (Imperva confirms pass)
-5. [ ] **Dubizzle parser** — fixture + unit tests + live row (`transport:'pad'`)
-6. [ ] **Frontend/admin** — surface `transport` for the two new sources (same pattern as Azure proof)
-7. [ ] **Keep YallaMotor untouched** — re-verify `azure`/`flow3` after each deploy
-8. [ ] **Graduate to unattended** — only after both sources run reliably attended for weeks (licensing + machine group + HTTP-trigger cloud flow)
+2. [x] **PAD-DriveArabia flow** (attended) captures real landing and per-model-year HTML fixtures (2026-08-11/12)
+3. [x] **DriveArabia price path** — parser + app processor + live Dataverse price row + automatic `Complete`/Blob purge verified (2026-08-12)
+4. [x] **DriveArabia enrichment live gate** — fresh Valuation-created Camry 2024 request completed through PAD/inbox processing with prices, mapped specifications, and the dedicated Horsepower write (2026-08-13)
+5. [ ] **PAD-Dubizzle flow** captures a real Dubizzle HTML fixture (Imperva confirms pass)
+6. [ ] **Dubizzle parser** — fixture + unit tests + live row (`transport:'pad'`)
+7. [x] **Frontend/admin** — `Process PAD Inbox` action added; parsed scrape details surface `transport`
+8. [ ] **Keep YallaMotor untouched** — re-verify `azure`/`flow3` after each deploy
+9. [ ] **Graduate to unattended** — only after both sources run reliably attended for weeks (licensing + machine group + HTTP-trigger cloud flow)
 
 ---
 

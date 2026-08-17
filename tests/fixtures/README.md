@@ -1,8 +1,8 @@
-# Test Fixtures — YallaMotor JSON-LD
+# Test Fixtures — Scraper Parser Captures
 
-Real, live-scraped JSON-LD blocks captured from the Azure Functions probe
-(`?client=cloudscraper&jsonld=1`, egress IP `52.149.247.118`) on **2026-08-06**.
-These drive the in-repo parser tests in `src/parsers/` — no network needed.
+Real HTML and JSON-LD captures from the Azure Functions and Power Automate
+Desktop transports. These drive the in-repo parser tests in `src/parsers/` —
+no network needed.
 
 ## Files
 
@@ -10,9 +10,13 @@ These drive the in-repo parser tests in `src/parsers/` — no network needed.
 |---|---|---|
 | `yallamotor-pajero-detail.jsonld.json` | Detail page | `https://uae.yallamotor.com/used-cars/mitsubishi/pajero/2020/used-mitsubishi-pajero-2020-dubai-2121456` |
 | `yallamotor-camry-search.jsonld.json` | Search page | `https://uae.yallamotor.com/used-cars/toyota/camry` |
+| `drivearabia-camry-prices.html` | Model landing page | DriveArabia Toyota Camry price page |
+| `drivearabia-camry-prices-pad.html` | PAD model landing capture | DriveArabia Toyota Camry price page |
+| `drivearabia-camry-2024-pad.html` | PAD per-model-year capture | DriveArabia Toyota Camry 2024 price page |
+| `drivearabia-camry-trim.html` | Trim detail page | DriveArabia Toyota Camry trim page |
 
-Each file is an array of JSON-LD blocks as returned by the probe's `jsonld`
-field (i.e. schema.org objects, one per `@type`).
+YallaMotor `.json` files are arrays of JSON-LD blocks returned by the probe's
+`jsonld` field. DriveArabia `.html` files are raw page captures used verbatim.
 
 ## Verified values (asserted by the tests)
 

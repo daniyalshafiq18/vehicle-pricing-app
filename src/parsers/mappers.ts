@@ -10,6 +10,18 @@ import { DOORS, SEATS } from '@data/dataverseOptionSets';
 /** Normalise a drive-type schema URL to the short label Dataverse recognises. */
 export function mapDriveType(driveType: string): string | undefined {
   const url = driveType.toLowerCase();
+  if (url === 'fwd') {
+    return 'FWD';
+  }
+  if (url === 'rwd') {
+    return 'RWD';
+  }
+  if (url === 'awd') {
+    return 'AWD';
+  }
+  if (url === '4wd' || url === '4x4') {
+    return '4X4';
+  }
   if (url.includes('rearwheel')) {
     return 'RWD';
   }

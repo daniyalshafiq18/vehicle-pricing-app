@@ -1,5 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useMissingVehicleRequests, useUpdateMissingVehicleRequestStatus, useApproveMissingVehicleRequest, useTriggerScrape } from '@hooks';
+import {
+  useMissingVehicleRequests,
+  useUpdateMissingVehicleRequestStatus,
+  useApproveMissingVehicleRequest,
+  useTriggerScrape,
+  useProcessScrapeInbox,
+} from '@hooks';
 import { Button, Dialog, SkeletonTable, Card as UICard, CardContent } from '@components/ui';
 import { motion } from 'framer-motion';
 import {
@@ -23,6 +29,7 @@ import {
   Globe,
   ExternalLink,
   Loader,
+  Inbox,
 } from 'lucide-react';
 import type { MissingVehicleRequest } from '@types';
 import { cn, formatCurrency } from '@utils';
@@ -31,29 +38,36 @@ import { cn, formatCurrency } from '@utils';
 
 const STATUS_OPTIONS = ['Pending', 'Approved', 'In Progress', 'Reject'] as const;
 
-const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; className: string; dot: string }> = {
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; icon: React.ReactNode; className: string; dot: string }
+> = {
   Pending: {
     label: 'Pending',
     icon: <Clock className="h-3 w-3" />,
-    className: 'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c] dark:border-[#19b8a5]/35 dark:bg-[#0f3f43] dark:text-[#5eead4]',
+    className:
+      'border-[#bfe9e2] bg-[#ecfbf8] text-[#08766c] dark:border-[#19b8a5]/35 dark:bg-[#0f3f43] dark:text-[#5eead4]',
     dot: 'bg-[#19b8a5]',
   },
   Approved: {
     label: 'Approved',
     icon: <CheckCircle2 className="h-3 w-3" />,
-    className: 'border-[#b7ead4] bg-[#eefbf5] text-[#067647] dark:border-[#34d399]/35 dark:bg-[#0f3328] dark:text-[#86efac]',
+    className:
+      'border-[#b7ead4] bg-[#eefbf5] text-[#067647] dark:border-[#34d399]/35 dark:bg-[#0f3328] dark:text-[#86efac]',
     dot: 'bg-[#22c55e]',
   },
   'In Progress': {
     label: 'In Progress',
     icon: <AlertCircle className="h-3 w-3" />,
-    className: 'border-[#c9d8ff] bg-[#eef4ff] text-[#315caa] dark:border-[#5b7cc8]/40 dark:bg-[#102748] dark:text-[#9db8ff]',
+    className:
+      'border-[#c9d8ff] bg-[#eef4ff] text-[#315caa] dark:border-[#5b7cc8]/40 dark:bg-[#102748] dark:text-[#9db8ff]',
     dot: 'bg-[#5b7cc8]',
   },
   Reject: {
     label: 'Reject',
     icon: <XCircle className="h-3 w-3" />,
-    className: 'border-[#f4c7c7] bg-[#fff0f0] text-[#b42323] dark:border-[#fca5a5]/35 dark:bg-[#3a161a] dark:text-[#fca5a5]',
+    className:
+      'border-[#f4c7c7] bg-[#fff0f0] text-[#b42323] dark:border-[#fca5a5]/35 dark:bg-[#3a161a] dark:text-[#fca5a5]',
     dot: 'bg-[#ef4444]',
   },
 };
@@ -63,32 +77,38 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; clas
 const SCRAPE_STATUS_CONFIG: Record<string, { label: string; className: string; dot: string }> = {
   Pending: {
     label: 'Pending',
-    className: 'border-[#e5edf2] bg-[#F6F9FB] text-[#647887] dark:border-[#31545a] dark:bg-[#071936] dark:text-[#8fb6cc]',
+    className:
+      'border-[#e5edf2] bg-[#F6F9FB] text-[#647887] dark:border-[#31545a] dark:bg-[#071936] dark:text-[#8fb6cc]',
     dot: 'bg-[#8aa0ad]',
   },
   Testing: {
     label: 'Testing',
-    className: 'border-[#c9d8ff] bg-[#eef4ff] text-[#315caa] dark:border-[#5b7cc8]/40 dark:bg-[#102748] dark:text-[#9db8ff]',
+    className:
+      'border-[#c9d8ff] bg-[#eef4ff] text-[#315caa] dark:border-[#5b7cc8]/40 dark:bg-[#102748] dark:text-[#9db8ff]',
     dot: 'bg-[#5b7cc8]',
   },
   'In Progress': {
     label: 'In Progress',
-    className: 'border-[#c9d8ff] bg-[#eef4ff] text-[#315caa] dark:border-[#5b7cc8]/40 dark:bg-[#102748] dark:text-[#9db8ff]',
+    className:
+      'border-[#c9d8ff] bg-[#eef4ff] text-[#315caa] dark:border-[#5b7cc8]/40 dark:bg-[#102748] dark:text-[#9db8ff]',
     dot: 'bg-[#5b7cc8]',
   },
   Scraped: {
     label: 'Scraped',
-    className: 'border-[#b7ead4] bg-[#eefbf5] text-[#067647] dark:border-[#34d399]/35 dark:bg-[#0f3328] dark:text-[#86efac]',
+    className:
+      'border-[#b7ead4] bg-[#eefbf5] text-[#067647] dark:border-[#34d399]/35 dark:bg-[#0f3328] dark:text-[#86efac]',
     dot: 'bg-[#22c55e]',
   },
   Failed: {
     label: 'Failed',
-    className: 'border-[#f4c7c7] bg-[#fff0f0] text-[#b42323] dark:border-[#fca5a5]/35 dark:bg-[#3a161a] dark:text-[#fca5a5]',
+    className:
+      'border-[#f4c7c7] bg-[#fff0f0] text-[#b42323] dark:border-[#fca5a5]/35 dark:bg-[#3a161a] dark:text-[#fca5a5]',
     dot: 'bg-[#ef4444]',
   },
   Unreachable: {
     label: 'Unreachable',
-    className: 'border-[#f4c7c7] bg-[#fff0f0] text-[#b42323] dark:border-[#fca5a5]/35 dark:bg-[#3a161a] dark:text-[#fca5a5]',
+    className:
+      'border-[#f4c7c7] bg-[#fff0f0] text-[#b42323] dark:border-[#fca5a5]/35 dark:bg-[#3a161a] dark:text-[#fca5a5]',
     dot: 'bg-[#ef4444]',
   },
 };
@@ -97,14 +117,19 @@ function ScrapeStatusBadge({ status }: { status: string | undefined }) {
   const cfg = SCRAPE_STATUS_CONFIG[status ?? ''];
   if (!cfg) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground bg-muted/30 border-muted">
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-muted bg-muted/30 px-2 py-0.5 text-xs font-medium text-muted-foreground">
         <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
         {status || '—'}
       </span>
     );
   }
   return (
-    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium', cfg.className)}>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium',
+        cfg.className,
+      )}
+    >
       <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
       {cfg.label}
     </span>
@@ -116,7 +141,9 @@ function parseScrapedListings(raw: string | undefined): Record<string, unknown> 
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw);
-    return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : null;
+    return typeof parsed === 'object' && parsed !== null
+      ? (parsed as Record<string, unknown>)
+      : null;
   } catch {
     return null;
   }
@@ -127,14 +154,24 @@ function StatusBadge({ status }: { status: string | undefined }) {
   if (!cfg) {
     const fallback = STATUS_CONFIG['Pending']!;
     return (
-      <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium', fallback.className)}>
+      <span
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+          fallback.className,
+        )}
+      >
         <span className={cn('h-1.5 w-1.5 rounded-full', fallback.dot)} />
         {status || 'Pending'}
       </span>
     );
   }
   return (
-    <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium', cfg.className)}>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+        cfg.className,
+      )}
+    >
       <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
       {cfg.label}
     </span>
@@ -259,17 +296,10 @@ function MissingVehicleDetailModal({
     return raw ? `${Number(raw).toLocaleString()} km` : null;
   })();
   return (
-    <Dialog
-      isOpen={isOpen}
-      onClose={onClose}
-      title=""
-      description=""
-      size="xl"
-      hideCloseButton
-    >
+    <Dialog isOpen={isOpen} onClose={onClose} title="" description="" size="xl" hideCloseButton>
       <div className="flex max-h-[75vh] flex-col gap-0 text-[#071936] dark:text-white">
         {/* Header */}
-        <div className="shrink-0 -mx-6 -mt-6 rounded-t-2xl border-b border-[#d9e2e8] bg-white px-6 pb-4 pt-5 dark:border-[#31545a] dark:bg-[#0c2530]">
+        <div className="-mx-6 -mt-6 shrink-0 rounded-t-2xl border-b border-[#d9e2e8] bg-white px-6 pb-4 pt-5 dark:border-[#31545a] dark:bg-[#0c2530]">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3.5">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#ecfbf8] shadow-sm dark:bg-[#0f3f43]">
@@ -307,7 +337,10 @@ function MissingVehicleDetailModal({
                 title: 'Vehicle Specifications',
                 items: [
                   { label: 'Body Type', value: request.bodyType },
-                  { label: 'Engine Size', value: request.engineSize ? `${request.engineSize} cc` : null },
+                  {
+                    label: 'Engine Size',
+                    value: request.engineSize ? `${request.engineSize} cc` : null,
+                  },
                   { label: 'Cylinders', value: request.cylinders },
                   { label: 'Fuel Type', value: request.fuelType },
                   { label: 'Transmission', value: request.transmissionType },
@@ -332,7 +365,7 @@ function MissingVehicleDetailModal({
                   {group.items.map((item) => (
                     <div key={item.label} className="rounded-xl border bg-card p-3.5">
                       <p className="text-xs text-foreground">{item.label}</p>
-                      <p className="mt-1 text-sm font-medium text-foreground break-words">
+                      <p className="mt-1 break-words text-sm font-medium text-foreground">
                         {item.value ? String(item.value) : '—'}
                       </p>
                     </div>
@@ -344,7 +377,7 @@ function MissingVehicleDetailModal({
 
           {/* ── Scrape Results Section ── */}
           <div className="mt-5">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="mb-3 flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#ecfbf8]">
                 <Loader className="h-3.5 w-3.5 text-[#19b8a5]" />
               </div>
@@ -361,13 +394,25 @@ function MissingVehicleDetailModal({
                       <>
                         <div className="rounded-xl border bg-card p-3.5">
                           <p className="text-xs text-foreground">Listings Found</p>
-                          <p className="mt-1 text-sm font-semibold text-foreground">{String(parsed.count ?? '—')}</p>
+                          <p className="mt-1 text-sm font-semibold text-foreground">
+                            {String(parsed.count ?? '—')}
+                          </p>
                         </div>
                         <div className="rounded-xl border bg-card p-3.5">
                           <p className="text-xs text-foreground">Source</p>
-                          <p className="mt-1 text-sm font-medium text-foreground">{String(parsed.source ?? '—')}</p>
+                          <p className="mt-1 text-sm font-medium text-foreground">
+                            {String(parsed.source ?? '—')}
+                          </p>
                         </div>
-                        </>
+                        {parsed.transport ? (
+                          <div className="rounded-xl border bg-card p-3.5">
+                            <p className="text-xs text-foreground">Transport</p>
+                            <p className="mt-1 text-sm font-medium uppercase text-foreground">
+                              {String(parsed.transport)}
+                            </p>
+                          </div>
+                        ) : null}
+                      </>
                     );
                   }
                   return null;
@@ -395,7 +440,7 @@ function MissingVehicleDetailModal({
                       href={request.scrapedSources}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-[#08766c] hover:underline break-all"
+                      className="mt-1 inline-flex items-center gap-1.5 break-all text-sm font-medium text-[#08766c] hover:underline"
                     >
                       <Globe className="h-3.5 w-3.5 shrink-0" />
                       {request.scrapedSources}
@@ -406,7 +451,7 @@ function MissingVehicleDetailModal({
                 {request.scrapedListings && !parseScrapedListings(request.scrapedListings) && (
                   <div className="col-span-2 rounded-xl border bg-card p-3.5">
                     <p className="text-xs text-foreground">Raw Scraped Data</p>
-                    <pre className="mt-1 max-h-32 overflow-auto rounded-lg bg-muted/50 p-2 text-xs text-foreground break-all whitespace-pre-wrap">
+                    <pre className="mt-1 max-h-32 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-muted/50 p-2 text-xs text-foreground">
                       {request.scrapedListings}
                     </pre>
                   </div>
@@ -532,7 +577,11 @@ function ScrapeAllPendingButton({ requests }: { requests: MissingVehicleRequest[
   const [isScrapingAll, setIsScrapingAll] = useState(false);
 
   const pendingRequests = requests.filter(
-    (r) => !r.scrapeStatus || r.scrapeStatus === 'Pending' || r.scrapeStatus === 'Failed' || r.scrapeStatus === 'Unreachable',
+    (r) =>
+      !r.scrapeStatus ||
+      r.scrapeStatus === 'Pending' ||
+      r.scrapeStatus === 'Failed' ||
+      r.scrapeStatus === 'Unreachable',
   );
 
   const handleScrapeAll = async () => {
@@ -582,6 +631,24 @@ function ScrapeAllPendingButton({ requests }: { requests: MissingVehicleRequest[
   );
 }
 
+function ProcessPadInboxButton({ requests }: { requests: MissingVehicleRequest[] }) {
+  const processInbox = useProcessScrapeInbox();
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="!border-[#c9d8ff] !bg-white !text-[#315caa] hover:!bg-[#eef4ff] dark:!border-[#5b7cc8]/40 dark:!bg-[#0c2530] dark:!text-[#9db8ff] dark:hover:!bg-[#102748]"
+      onClick={() => processInbox.mutate(requests)}
+      disabled={processInbox.isPending || requests.length === 0}
+      title="Process captured DriveArabia pages waiting in the PAD inbox"
+    >
+      <Inbox className={cn('mr-1.5 h-3.5 w-3.5', processInbox.isPending && 'animate-pulse')} />
+      {processInbox.isPending ? 'Processing PAD...' : 'Process PAD Inbox'}
+    </Button>
+  );
+}
+
 // ─── Missing Vehicle Card (Card View) ──────────────────────────────
 
 function MissingVehicleCard({
@@ -599,12 +666,13 @@ function MissingVehicleCard({
       className="group h-full"
     >
       <UICard className="h-full overflow-hidden border-0 bg-white shadow-[0_10px_28px_rgba(18,38,63,0.07)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_36px_rgba(18,38,63,0.11)] dark:bg-[#0c2530] dark:shadow-[0_18px_38px_rgba(0,0,0,0.25)]">
-        <CardContent className="p-5 flex flex-col h-full">
+        <CardContent className="flex h-full flex-col p-5">
           {/* Header: make model trim (+ year badge) + status */}
-          <div className="flex items-start justify-between mb-4 shrink-0 gap-3">
+          <div className="mb-4 flex shrink-0 items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="text-lg font-semibold text-foreground leading-tight truncate">
-                {request.name || [request.make, request.model, request.trim].filter(Boolean).join(' ')}
+              <h3 className="truncate text-lg font-semibold leading-tight text-foreground">
+                {request.name ||
+                  [request.make, request.model, request.trim].filter(Boolean).join(' ')}
               </h3>
               {request.modelYear && (
                 <span className="mt-1 inline-flex items-center rounded-full border border-[#d9e2e8] bg-[#f4f8fb] px-2.5 py-0.5 text-xs font-semibold text-[#071936] dark:border-[#31545a] dark:bg-[#071936] dark:text-white">
@@ -612,7 +680,12 @@ function MissingVehicleCard({
                 </span>
               )}
             </div>
-            <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium shrink-0', cfg.className)}>
+            <span
+              className={cn(
+                'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                cfg.className,
+              )}
+            >
               <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
               {cfg.label}
             </span>
@@ -622,15 +695,23 @@ function MissingVehicleCard({
           <div className="grid grid-cols-2 gap-2">
             {[
               { label: 'Body Type', value: request.bodyType },
-              { label: 'Engine Size', value: request.engineSize ? `${request.engineSize} cc` : null },
+              {
+                label: 'Engine Size',
+                value: request.engineSize ? `${request.engineSize} cc` : null,
+              },
               { label: 'Cylinders', value: request.cylinders ? String(request.cylinders) : null },
               { label: 'Fuel Type', value: request.fuelType },
               { label: 'Transmission', value: request.transmissionType },
               { label: 'Drive Type', value: request.driveType },
             ].map((spec) => (
-              <div key={spec.label} className="rounded-lg bg-[#f7fafc] p-3 transition-colors hover:bg-[#eef6f7] dark:bg-[#071936] dark:hover:bg-[#0f3440]">
-                <p className="text-xs font-medium text-[#7d93a5] dark:text-[#9fb8c5]">{spec.label}</p>
-                <p className="mt-0.5 text-sm font-semibold text-foreground truncate">
+              <div
+                key={spec.label}
+                className="rounded-lg bg-[#f7fafc] p-3 transition-colors hover:bg-[#eef6f7] dark:bg-[#071936] dark:hover:bg-[#0f3440]"
+              >
+                <p className="text-xs font-medium text-[#7d93a5] dark:text-[#9fb8c5]">
+                  {spec.label}
+                </p>
+                <p className="mt-0.5 truncate text-sm font-semibold text-foreground">
                   {spec.value || '—'}
                 </p>
               </div>
@@ -639,7 +720,7 @@ function MissingVehicleCard({
 
           {/* Scrape info */}
           {request.scrapeStatus && request.scrapeStatus !== 'Pending' && (
-            <div className="mt-3 space-y-2 shrink-0">
+            <div className="mt-3 shrink-0 space-y-2">
               <div className="flex items-center gap-2">
                 <ScrapeStatusBadge status={request.scrapeStatus} />
                 <ScrapedListingCount listings={request.scrapedListings} />
@@ -648,8 +729,10 @@ function MissingVehicleCard({
                 <div className="flex items-center gap-3 rounded-lg border border-[#d9e2e8] bg-[#f7fafc] p-3 dark:border-[#31545a] dark:bg-[#071936]">
                   {request.scrapedMinPrice != null && (
                     <div className="flex-1">
-                      <p className="text-xs font-medium text-[#7d93a5] dark:text-[#9fb8c5]">Scraped Min</p>
-                      <p className="text-sm font-semibold text-[#08766c] tabular-nums dark:text-[#19b8a5]">
+                      <p className="text-xs font-medium text-[#7d93a5] dark:text-[#9fb8c5]">
+                        Scraped Min
+                      </p>
+                      <p className="text-sm font-semibold tabular-nums text-[#08766c] dark:text-[#19b8a5]">
                         {formatCurrency(request.scrapedMinPrice)}
                       </p>
                     </div>
@@ -659,8 +742,10 @@ function MissingVehicleCard({
                   )}
                   {request.scrapedMaxPrice != null && (
                     <div className="flex-1">
-                      <p className="text-xs font-medium text-[#7d93a5] dark:text-[#9fb8c5]">Scraped Max</p>
-                      <p className="text-sm font-semibold text-[#08766c] tabular-nums dark:text-[#19b8a5]">
+                      <p className="text-xs font-medium text-[#7d93a5] dark:text-[#9fb8c5]">
+                        Scraped Max
+                      </p>
+                      <p className="text-sm font-semibold tabular-nums text-[#08766c] dark:text-[#19b8a5]">
                         {formatCurrency(request.scrapedMaxPrice)}
                       </p>
                     </div>
@@ -687,20 +772,33 @@ function MissingVehicleCard({
           <div className="flex-1" />
 
           {/* Footer: requested by + action */}
-          <div className="mt-3 flex items-center justify-between border-t border-[#e4edf1] pt-3 shrink-0 dark:border-[#244852]">
+          <div className="mt-3 flex shrink-0 items-center justify-between border-t border-[#e4edf1] pt-3 dark:border-[#244852]">
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-[#071936] dark:text-white">Requested by</p>
-              <p className="text-sm font-medium text-foreground truncate" title={request.contactName || request.contactEmail || ''}>
+              <p
+                className="truncate text-sm font-medium text-foreground"
+                title={request.contactName || request.contactEmail || ''}
+              >
                 <User className="mr-1 inline h-3 w-3 text-muted-foreground/60" />
                 {request.contactName || request.contactEmail || '—'}
               </p>
               {request.createdOn && (
                 <p className="text-xs text-muted-foreground/60">
-                  {new Date(request.createdOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {new Date(request.createdOn).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
                 </p>
               )}
             </div>
-            <Button variant="ghost" size="icon-sm" title="View details" onClick={onClick} className="text-[#071936] hover:bg-[#dff7f4] hover:text-[#08766c] dark:text-white dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title="View details"
+              onClick={onClick}
+              className="text-[#071936] hover:bg-[#dff7f4] hover:text-[#08766c] dark:text-white dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]"
+            >
               <Eye className="h-4 w-4" />
             </Button>
           </div>
@@ -787,18 +885,17 @@ export function AdminMissingVehiclesPage() {
   });
 
   // Sort by newest first
-  const sorted = [...filtered].sort(
-    (a, b) => {
-      const aDate = a.createdOn ? new Date(a.createdOn).getTime() : 0;
-      const bDate = b.createdOn ? new Date(b.createdOn).getTime() : 0;
-      return bDate - aDate;
-    },
-  );
+  const sorted = [...filtered].sort((a, b) => {
+    const aDate = a.createdOn ? new Date(a.createdOn).getTime() : 0;
+    const bDate = b.createdOn ? new Date(b.createdOn).getTime() : 0;
+    return bDate - aDate;
+  });
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
-  const paginated = viewMode === 'card'
-    ? sorted.slice(0, cardLimit)
-    : sorted.slice((page - 1) * pageSize, page * pageSize);
+  const paginated =
+    viewMode === 'card'
+      ? sorted.slice(0, cardLimit)
+      : sorted.slice((page - 1) * pageSize, page * pageSize);
   const hasMoreCards = viewMode === 'card' && paginated.length < sorted.length;
 
   useEffect(() => {
@@ -855,18 +952,18 @@ export function AdminMissingVehiclesPage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Missing Vehicles</h1>
             <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{requests?.length ?? 0}</span> total requests
+              <span className="font-medium text-foreground">{requests?.length ?? 0}</span> total
+              requests
               {statusCounts.pending > 0 && (
                 <>
                   <span className="mx-1.5 text-muted-foreground/30">·</span>
-                  <span className="font-medium text-[#08766c]">
-                    {statusCounts.pending} pending
-                  </span>
+                  <span className="font-medium text-[#08766c]">{statusCounts.pending} pending</span>
                 </>
               )}
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <ProcessPadInboxButton requests={requests ?? []} />
             {/* Scrape All Pending */}
             {statusFilter === 'all' || statusFilter === 'Pending' ? (
               <ScrapeAllPendingButton requests={requests ?? []} />
@@ -886,7 +983,15 @@ export function AdminMissingVehiclesPage() {
               />
             </div>
             {search && (
-              <Button variant="ghost" size="sm" onClick={() => { setSearch(''); setCardLimit(CARD_BATCH_SIZE); setPage(1); }}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearch('');
+                  setCardLimit(CARD_BATCH_SIZE);
+                  setPage(1);
+                }}
+              >
                 <RotateCcw className="mr-1.5 h-3 w-3" />
                 Clear
               </Button>
@@ -929,16 +1034,40 @@ export function AdminMissingVehiclesPage() {
         <div className="flex items-center gap-1.5 overflow-x-auto rounded-[12px] border-0 bg-white p-1.5 shadow-[0_8px_20px_rgba(18,38,63,0.05)] dark:bg-[#0c2530] dark:shadow-none">
           {[
             { key: 'all' as const, label: 'All', count: statusCounts.all, color: '' },
-            { key: 'Pending' as const, label: 'Pending', count: statusCounts.pending, color: 'bg-[#19b8a5]' },
-            { key: 'Approved' as const, label: 'Approved', count: statusCounts.approved, color: 'bg-[#19b8a5]' },
-            { key: 'In Progress' as const, label: 'In Progress', count: statusCounts.inProgress, color: 'bg-[#19b8a5]' },
-            { key: 'Reject' as const, label: 'Reject', count: statusCounts.reject, color: 'bg-destructive' },
+            {
+              key: 'Pending' as const,
+              label: 'Pending',
+              count: statusCounts.pending,
+              color: 'bg-[#19b8a5]',
+            },
+            {
+              key: 'Approved' as const,
+              label: 'Approved',
+              count: statusCounts.approved,
+              color: 'bg-[#19b8a5]',
+            },
+            {
+              key: 'In Progress' as const,
+              label: 'In Progress',
+              count: statusCounts.inProgress,
+              color: 'bg-[#19b8a5]',
+            },
+            {
+              key: 'Reject' as const,
+              label: 'Reject',
+              count: statusCounts.reject,
+              color: 'bg-destructive',
+            },
           ].map((tab) => (
             <button
               key={tab.key}
-              onClick={() => { setStatusFilter(tab.key); setCardLimit(CARD_BATCH_SIZE); setPage(1); }}
+              onClick={() => {
+                setStatusFilter(tab.key);
+                setCardLimit(CARD_BATCH_SIZE);
+                setPage(1);
+              }}
               className={cn(
-                'flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all whitespace-nowrap',
+                'flex items-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-sm font-medium transition-all',
                 statusFilter === tab.key
                   ? 'bg-[#ecfbf8] text-[#08766c] shadow-sm'
                   : 'text-[#647887] hover:bg-[#dff7f4] hover:text-[#08766c] dark:text-[#8fb6cc] dark:hover:bg-[#0f3f43] dark:hover:text-[#19b8a5]',
@@ -946,12 +1075,14 @@ export function AdminMissingVehiclesPage() {
             >
               {tab.color && <span className={cn('h-1.5 w-1.5 rounded-full', tab.color)} />}
               {tab.label}
-              <span className={cn(
-                'ml-0.5 rounded-full px-1.5 py-0.5 text-xs font-semibold',
-                statusFilter === tab.key
-                  ? 'bg-[#dff7f4] text-[#08766c]'
-                  : 'bg-[#f4f8fb] text-[#8aa0ad] dark:bg-[#071936] dark:text-[#8fb6cc]',
-              )}>
+              <span
+                className={cn(
+                  'ml-0.5 rounded-full px-1.5 py-0.5 text-xs font-semibold',
+                  statusFilter === tab.key
+                    ? 'bg-[#dff7f4] text-[#08766c]'
+                    : 'bg-[#f4f8fb] text-[#8aa0ad] dark:bg-[#071936] dark:text-[#8fb6cc]',
+                )}
+              >
                 {tab.count}
               </span>
             </button>
@@ -961,13 +1092,8 @@ export function AdminMissingVehiclesPage() {
 
       {/* ── Table View ── */}
       {viewMode === 'table' && (
-        <motion.div
-          key="table-view"
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className="rounded-2xl border bg-card overflow-hidden">
+        <motion.div key="table-view" variants={itemVariants} initial="hidden" animate="visible">
+          <div className="overflow-hidden rounded-2xl border bg-card">
             {isLoading ? (
               <div className="p-6">
                 <SkeletonTable rows={8} cols={13} />
@@ -977,29 +1103,49 @@ export function AdminMissingVehiclesPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[#e5edf2] bg-[#f4f8fb] dark:border-[#17383d] dark:bg-[#071936]">
-                      <th className="w-10 px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">#</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Make</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Model</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Year</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Trim</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Status</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Scraped</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Requester</th>
-                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Date</th>
-                      <th className="px-3 py-3 text-right text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">Actions</th>
+                      <th className="w-10 px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">
+                        #
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">
+                        Make
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">
+                        Model
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">
+                        Year
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">
+                        Trim
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">
+                        Status
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">
+                        Scraped
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">
+                        Requester
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">
+                        Date
+                      </th>
+                      <th className="px-3 py-3 text-right text-xs font-semibold text-[#8aa0ad] dark:text-[#8fb6cc]">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {paginated.map((req, i) => (
                       <tr
                         key={req.id}
-                        className="group/row transition-colors hover:bg-muted/30 cursor-pointer"
+                        className="group/row cursor-pointer transition-colors hover:bg-muted/30"
                         onClick={() => setSelectedRequest(req)}
                       >
                         <td className="px-3 py-3 text-sm text-muted-foreground">
                           {(page - 1) * pageSize + i + 1}
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap">
+                        <td className="whitespace-nowrap px-3 py-3">
                           <div className="flex items-center gap-2.5">
                             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#ecfbf8]">
                               <Car className="h-3.5 w-3.5 text-[#19b8a5]" />
@@ -1007,51 +1153,64 @@ export function AdminMissingVehiclesPage() {
                             <span className="font-medium text-foreground">{req.make}</span>
                           </div>
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap">
+                        <td className="whitespace-nowrap px-3 py-3">
                           <span className="text-foreground">{req.model}</span>
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap">
+                        <td className="whitespace-nowrap px-3 py-3">
                           <span className="inline-flex items-center rounded-full border bg-muted/50 px-2 py-0.5 text-xs font-medium text-foreground">
                             {req.modelYear}
                           </span>
                         </td>
-                        <td className="px-3 py-3 max-w-[140px]">
-                          <p className="text-sm text-foreground truncate" title={req.trim}>
+                        <td className="max-w-[140px] px-3 py-3">
+                          <p className="truncate text-sm text-foreground" title={req.trim}>
                             {req.trim || '—'}
                           </p>
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap">
+                        <td className="whitespace-nowrap px-3 py-3">
                           <StatusBadge status={req.status} />
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap">
+                        <td className="whitespace-nowrap px-3 py-3">
                           <div className="flex items-center gap-1.5">
                             <ScrapeStatusBadge status={req.scrapeStatus} />
                             <ScrapedListingCount listings={req.scrapedListings} />
                           </div>
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap">
-                          <p className="text-sm text-foreground truncate max-w-[130px]" title={req.contactName || req.contactEmail || ''}>
+                        <td className="whitespace-nowrap px-3 py-3">
+                          <p
+                            className="max-w-[130px] truncate text-sm text-foreground"
+                            title={req.contactName || req.contactEmail || ''}
+                          >
                             {req.contactName || req.contactEmail || '—'}
                           </p>
-                          {req.contactName && req.contactEmail && req.contactEmail !== req.contactName && (
-                            <p className="text-xs text-muted-foreground truncate max-w-[130px]">{req.contactEmail}</p>
-                          )}
+                          {req.contactName &&
+                            req.contactEmail &&
+                            req.contactEmail !== req.contactName && (
+                              <p className="max-w-[130px] truncate text-xs text-muted-foreground">
+                                {req.contactEmail}
+                              </p>
+                            )}
                         </td>
-                        <td className="px-3 py-3 whitespace-nowrap">
+                        <td className="whitespace-nowrap px-3 py-3">
                           <div className="flex flex-col">
                             <span className="text-sm text-foreground">
                               {req.createdOn ? formatShortDate(req.createdOn) : '—'}
                             </span>
                             {req.createdOn && (
                               <span className="text-xs text-muted-foreground">
-                                {new Date(req.createdOn).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                {new Date(req.createdOn).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                })}
                               </span>
                             )}
                           </div>
                         </td>
-                        <td className="px-3 py-3 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover/row:opacity-100 transition-opacity">
-                            {(req.scrapeStatus === 'Pending' || req.scrapeStatus === 'Failed' || req.scrapeStatus === 'Unreachable' || !req.scrapeStatus) && (
+                        <td className="whitespace-nowrap px-3 py-3 text-right">
+                          <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover/row:opacity-100">
+                            {(req.scrapeStatus === 'Pending' ||
+                              req.scrapeStatus === 'Failed' ||
+                              req.scrapeStatus === 'Unreachable' ||
+                              !req.scrapeStatus) && (
                               <ScrapeNowButton
                                 request={req}
                                 size="icon-sm"
@@ -1065,7 +1224,10 @@ export function AdminMissingVehiclesPage() {
                               variant="ghost"
                               size="icon-sm"
                               title="View details"
-                              onClick={(e) => { e.stopPropagation(); setSelectedRequest(req); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedRequest(req);
+                              }}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -1082,9 +1244,11 @@ export function AdminMissingVehiclesPage() {
                   <SearchX className="h-10 w-10 text-muted-foreground/60" />
                 </div>
                 <p className="text-lg font-medium text-foreground">
-                  {search || statusFilter !== 'all' ? 'No matching requests' : 'No missing vehicle requests yet'}
+                  {search || statusFilter !== 'all'
+                    ? 'No matching requests'
+                    : 'No missing vehicle requests yet'}
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground text-center max-w-sm">
+                <p className="mt-1 max-w-sm text-center text-sm text-muted-foreground">
                   {search
                     ? 'Try adjusting your search.'
                     : statusFilter !== 'all'
@@ -1095,7 +1259,10 @@ export function AdminMissingVehiclesPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => { setSearch(''); setStatusFilter('all'); }}
+                    onClick={() => {
+                      setSearch('');
+                      setStatusFilter('all');
+                    }}
                     className="mt-4"
                   >
                     <RotateCcw className="mr-1.5 h-3 w-3" />
@@ -1110,12 +1277,7 @@ export function AdminMissingVehiclesPage() {
 
       {/* ── Card View ── */}
       {viewMode === 'card' && (
-        <motion.div
-          key="card-view"
-          variants={itemVariants}
-          initial="hidden"
-          animate="visible"
-        >
+        <motion.div key="card-view" variants={itemVariants} initial="hidden" animate="visible">
           {isLoading ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: CARD_BATCH_SIZE }).map((_, i) => (
@@ -1148,9 +1310,11 @@ export function AdminMissingVehiclesPage() {
                   <SearchX className="h-10 w-10 text-muted-foreground/60" />
                 </div>
                 <p className="text-lg font-medium text-foreground">
-                  {search || statusFilter !== 'all' ? 'No matching requests' : 'No missing vehicle requests yet'}
+                  {search || statusFilter !== 'all'
+                    ? 'No matching requests'
+                    : 'No missing vehicle requests yet'}
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground text-center max-w-sm">
+                <p className="mt-1 max-w-sm text-center text-sm text-muted-foreground">
                   {search
                     ? 'Try adjusting your search.'
                     : statusFilter !== 'all'
@@ -1161,7 +1325,10 @@ export function AdminMissingVehiclesPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => { setSearch(''); setStatusFilter('all'); }}
+                    onClick={() => {
+                      setSearch('');
+                      setStatusFilter('all');
+                    }}
                     className="mt-4"
                   >
                     <RotateCcw className="mr-1.5 h-3 w-3" />
@@ -1179,22 +1346,38 @@ export function AdminMissingVehiclesPage() {
         <motion.div variants={itemVariants}>
           <div className="flex flex-col items-center justify-between gap-3 rounded-[12px] bg-white/70 px-3 py-2 shadow-[0_8px_20px_rgba(18,38,63,0.04)] dark:bg-[#0c2530]/80 sm:flex-row">
             <p className="text-sm font-medium text-[#647887] dark:text-[#8fb6cc]">
-              Page <span className="text-foreground">{page}</span> of <span className="text-foreground">{totalPages}</span>
+              Page <span className="text-foreground">{page}</span> of{' '}
+              <span className="text-foreground">{totalPages}</span>
               <span className="mx-2 text-muted-foreground/30">·</span>
               <span>{sorted.length} total</span>
             </p>
             <div className="flex flex-wrap items-center justify-center gap-1.5">
-              <Button variant="ghost" size="sm" className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]" disabled={page <= 1} onClick={() => setPage(1)} title="First page">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]"
+                disabled={page <= 1}
+                onClick={() => setPage(1)}
+                title="First page"
+              >
                 <ChevronLeft className="h-3.5 w-3.5" />
                 <ChevronLeft className="-ml-2 h-3.5 w-3.5" />
               </Button>
-              <Button variant="ghost" size="sm" className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]"
+                disabled={page <= 1}
+                onClick={() => setPage(page - 1)}
+              >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <div className="flex items-center gap-1">
                 {getPageNumbers().map((pageNum, idx) =>
                   pageNum === 'ellipsis' ? (
-                    <span key={`e-${idx}`} className="px-1 text-muted-foreground">…</span>
+                    <span key={`e-${idx}`} className="px-1 text-muted-foreground">
+                      …
+                    </span>
                   ) : (
                     <Button
                       key={pageNum}
@@ -1210,13 +1393,26 @@ export function AdminMissingVehiclesPage() {
                     >
                       {pageNum}
                     </Button>
-                  )
+                  ),
                 )}
               </div>
-              <Button variant="ghost" size="sm" className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]"
+                disabled={page >= totalPages}
+                onClick={() => setPage(page + 1)}
+              >
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]" disabled={page >= totalPages} onClick={() => setPage(totalPages)} title="Last page">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 min-w-9 rounded-[10px] !bg-white !px-2 !text-[#647887] shadow-[0_6px_14px_rgba(18,38,63,0.05)] hover:!bg-[#dff7f4] hover:!text-[#08766c] disabled:!bg-transparent disabled:!text-[#9aabb5] disabled:shadow-none dark:!bg-[#0c2530] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]"
+                disabled={page >= totalPages}
+                onClick={() => setPage(totalPages)}
+                title="Last page"
+              >
                 <ChevronRight className="h-3.5 w-3.5" />
                 <ChevronRight className="-ml-2 h-3.5 w-3.5" />
               </Button>

@@ -13,7 +13,11 @@ describe('mapDriveType', () => {
     expect(mapDriveType('https://schema.org/FrontWheelDriveConfiguration')).toBe('FWD');
     expect(mapDriveType('https://schema.org/AllWheelDriveConfiguration')).toBe('AWD');
     expect(mapDriveType('https://schema.org/FourWheelDriveConfiguration')).toBe('4X4');
+    expect(mapDriveType('FWD')).toBe('FWD');
+    expect(mapDriveType('RWD')).toBe('RWD');
+    expect(mapDriveType('AWD')).toBe('AWD');
     expect(mapDriveType('4WD')).toBe('4X4');
+    expect(mapDriveType('4x4')).toBe('4X4');
   });
 
   it('returns undefined for unknown/empty input', () => {

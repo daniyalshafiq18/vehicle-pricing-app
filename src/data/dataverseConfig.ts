@@ -113,6 +113,7 @@ export const MISSING_VEHICLE_REQUEST_FIELDS = {
   CREATED_ON: 'createdon',
   // Spec fields (user-submitted or deep-scraped)
   ENGINE_SIZE: 'vpi_enginesize',
+  HORSEPOWER: 'vpi_horsepower',
   DOORS: 'vpi_doors',
   SEATS: 'vpi_seats',
   CATEGORY: 'vpi_category',
@@ -124,7 +125,9 @@ export const MISSING_VEHICLE_REQUEST_FIELDS = {
   SCRAPED_SOURCES: 'vpi_scraped_sources',
 } as const;
 
-export const MISSING_VEHICLE_REQUEST_SELECT_FIELDS = Object.values(MISSING_VEHICLE_REQUEST_FIELDS).join(',');
+export const MISSING_VEHICLE_REQUEST_SELECT_FIELDS = Object.values(
+  MISSING_VEHICLE_REQUEST_FIELDS,
+).join(',');
 
 // ─── Price Suggestion Field Logical Names ────────────────────
 export const PRICE_SUGGESTION_FIELDS = {

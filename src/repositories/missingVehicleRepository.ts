@@ -60,6 +60,7 @@ export class MissingVehicleRepository {
       driveTypeValue?: number;
       cylindersValue?: number;
       engineSizeValue?: number;
+      horsepowerValue?: number;
       doorsValue?: number;
       seatsValue?: number;
       categoryValue?: number;

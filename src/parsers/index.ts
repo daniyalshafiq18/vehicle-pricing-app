@@ -12,12 +12,7 @@
  * eventually, by the Azure Functions adapter for the same values server-side.
  */
 
-export type {
-  SearchQuery,
-  DetailSpecs,
-  SearchResult,
-  NormalizedListing,
-} from './types';
+export type { SearchQuery, DetailSpecs, SearchResult, NormalizedListing } from './types';
 
 export { parseDetailJsonLd, parseSearchJsonLd } from './yallaJsonLd';
 export { extractJsonLdBlocks } from './jsonLdFromHtml';
@@ -31,4 +26,8 @@ export {
 } from './mappers';
 export { normalizeToDataverse } from './normalize';
 export type { DriveArabiaPriceRow, DriveArabiaSpecs } from './driveArabia';
-export { extractDriveArabiaPriceRows, extractDriveArabiaSpecs } from './driveArabia';
+export {
+  extractDriveArabiaPriceRows,
+  extractDriveArabiaTrimPrices,
+  extractDriveArabiaSpecs,
+} from './driveArabia';

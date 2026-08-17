@@ -114,6 +114,19 @@ Data    → render the actual content
 
 Mutations use `react-hot-toast` for success/error feedback (configured globally in `AppProviders`).
 
+### PAD Inbox Processing
+
+DriveArabia capture data follows a separate browser-assisted transport path:
+
+```
+PAD residential Chrome → Azure ingest_html → Blob/Table inbox
+    → Admin “Process PAD Inbox” → multiSourceScraper.ts
+    → DriveArabia parser → exact make/model/year/trim MVR match
+    → missingVehicleRepository → Dataverse → Complete/Error acknowledgement
+```
+
+`src/lib/multiSourceScraper.ts` drains at most 25 items per action. It derives make/model from the DriveArabia URL and year/trim/prices from fixture-tested parser output; it never guesses a target record. Exact matches are written with `transport:'pad'`. DriveArabia's per-year JSON-LD describes one selected/default `vehicleConfiguration`, even though its price table lists several trims, so body/fuel/transmission/drive/cylinders/engine/doors/horsepower are persisted only for an exact configuration/year match. Horsepower also flows into Vehicle Data on approval; torque and origin remain in scrape provenance because MVR has no dedicated columns for them. A valid capture with no exact MVR stays `Pending` and stops the drain so it can be retried after the request exists. Invalid, unsupported, or write-failed items are marked `Error` so their raw Blob remains available, while successful items are marked `Complete` and purged. `useProcessScrapeInbox` owns mutation feedback and React Query invalidation.
+
 ### Theming
 
 - Tailwind CSS `class` strategy — dark mode toggled by adding `dark` class to `<html>`
@@ -148,13 +161,14 @@ src/
 │   ├── valuation/          # 3-step wizard — Step1PersonalInfo, Step2VehicleSelection, Step3Result + components
 │   └── admin/              # Admin pages — Dashboard, Vehicles, Queries, MissingVehicles, PriceSuggestions, Settings + chart components
 ├── layouts/                # MainLayout (public), AdminLayout (sidebar + top bar)
-├── hooks/                  # React Query hooks — useVehicles, useInquiries, useDashboardAnalytics, useStartupData, etc.
+├── hooks/                  # React Query hooks — server queries/mutations, startup orchestration, PAD inbox processing
 ├── repositories/           # Data access wrappers — vehicleRepository, inquiryRepository, missingVehicleRepository, priceSuggestionRepository
 ├── providers/              # AppProviders, DataSourceContext, ThemeProvider
 ├── stores/                 # Zustand stores — adminStore, inquiryStore, vehicleStore, themeStore, dashboardStore
 ├── types/                  # All TS interfaces — datasource.ts, vehicle.ts, inquiry.ts, analytics.ts, priceSuggestion.ts, missingVehicleRequest.ts
 ├── utils/                  # Helpers — formatCurrency, formatNumber, cn, memoize, debounce, validators, pdfExport
-├── lib/                    # API modules — safeAjax, vehicleApi, contactApi, inquiryApi, priceSuggestionApi, missingVehicleApi, optionSetApi, yallaMotorHttpScraper
+├── lib/                    # API/scraper modules — Dataverse APIs, YallaMotor transports, multiSourceScraper PAD processor
+├── parsers/                # Fixture-tested YallaMotor/DriveArabia extraction + Dataverse normalization
 ├── data/                   # Data source context + DataverseDataSource + config + option sets
 ├── styles/                 # globals.css (CSS variables, Tailwind layers)
 └── testing/                # Test setup (Vitest)

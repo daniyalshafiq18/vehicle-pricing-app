@@ -25,7 +25,12 @@ export interface IDataSource {
   isInitialized(): boolean;
 
   // ─── Vehicles ─────────────────────────────────────────
-  getVehicles(filters?: VehicleFilters, sort?: VehicleSortOption, page?: number, pageSize?: number): Promise<{ vehicles: Vehicle[]; total: number }>;
+  getVehicles(
+    filters?: VehicleFilters,
+    sort?: VehicleSortOption,
+    page?: number,
+    pageSize?: number,
+  ): Promise<{ vehicles: Vehicle[]; total: number }>;
   getVehicleById(id: string): Promise<Vehicle | null>;
   getVehicleHierarchy(): Promise<VehicleHierarchy>;
   getVehicleSpecs(year: number, make: string, model: string): Promise<Vehicle[]>;
@@ -33,15 +38,28 @@ export interface IDataSource {
 
   // ─── Pricing ──────────────────────────────────────────
   getPricing(vehicleId: string): Promise<VehiclePricing | null>;
-  getPricingByCriteria(year: number, make: string, model: string, spec: string): Promise<VehiclePricing | null>;
+  getPricingByCriteria(
+    year: number,
+    make: string,
+    model: string,
+    spec: string,
+  ): Promise<VehiclePricing | null>;
   getComparableVehicles(vehicleId: string, limit?: number): Promise<ComparableVehicle[]>;
-  getValuation(year: number, make: string, model: string, spec: string, bodyType?: string): Promise<ValuationResult | null>;
+  getValuation(
+    year: number,
+    make: string,
+    model: string,
+    spec: string,
+    bodyType?: string,
+  ): Promise<ValuationResult | null>;
   getPriceRange(filters?: VehicleFilters): Promise<{ min: number; max: number; average: number }>;
 
   // ─── Analytics ────────────────────────────────────────
   getAnalytics(): Promise<AnalyticsData>;
   getDashboardAnalytics(filters?: DashboardFilters): Promise<DashboardAnalytics>;
-  getAllVehiclesWithPricing(filters?: VehicleFilters): Promise<{ vehicle: Vehicle; pricing: VehiclePricing }[]>;
+  getAllVehiclesWithPricing(
+    filters?: VehicleFilters,
+  ): Promise<{ vehicle: Vehicle; pricing: VehiclePricing }[]>;
 
   // ─── Makes / Models / Years (lookups) ────────────────
   getYears(): Promise<number[]>;
@@ -80,24 +98,31 @@ export interface IDataSource {
   getMissingVehicleRequests(): Promise<MissingVehicleRequest[]>;
   getMissingVehicleRequestById(id: string): Promise<MissingVehicleRequest | null>;
   updateMissingVehicleRequestStatus(id: string, status: string): Promise<void>;
-  updateMissingVehicleRequest(id: string, fields: { minPrice?: number; maxPrice?: number }): Promise<void>;
-  updateMissingVehicleScrapeResult(id: string, fields: {
-    scrapedMinPrice: number;
-    scrapedMaxPrice: number;
-    scrapedListings: string;
-    scrapedSources: string;
-    scrapeStatusValue: number;
-    bodyTypeValue?: number;
-    fuelTypeValue?: number;
-    transmissionValue?: number;
-    driveTypeValue?: number;
-    cylindersValue?: number;
-    engineSizeValue?: number;
-    doorsValue?: number;
-    seatsValue?: number;
-    categoryValue?: number;
-    mileageValue?: number;
-  }): Promise<void>;
+  updateMissingVehicleRequest(
+    id: string,
+    fields: { minPrice?: number; maxPrice?: number },
+  ): Promise<void>;
+  updateMissingVehicleScrapeResult(
+    id: string,
+    fields: {
+      scrapedMinPrice: number;
+      scrapedMaxPrice: number;
+      scrapedListings: string;
+      scrapedSources: string;
+      scrapeStatusValue: number;
+      bodyTypeValue?: number;
+      fuelTypeValue?: number;
+      transmissionValue?: number;
+      driveTypeValue?: number;
+      cylindersValue?: number;
+      engineSizeValue?: number;
+      horsepowerValue?: number;
+      doorsValue?: number;
+      seatsValue?: number;
+      categoryValue?: number;
+      mileageValue?: number;
+    },
+  ): Promise<void>;
   approveAndCreateVehicle(mvr: MissingVehicleRequest): Promise<void>;
 
   // ─── Price Suggestions ────────────────────────────
@@ -110,6 +135,10 @@ export interface IDataSource {
     vehicleId: string;
   }): Promise<string>;
   getPriceSuggestions(): Promise<PriceSuggestion[]>;
-  updatePriceSuggestion(id: string, minPrice: number | null, maxPrice: number | null): Promise<void>;
+  updatePriceSuggestion(
+    id: string,
+    minPrice: number | null,
+    maxPrice: number | null,
+  ): Promise<void>;
   updatePriceSuggestionStatus(id: string, statusValue: number): Promise<void>;
 }

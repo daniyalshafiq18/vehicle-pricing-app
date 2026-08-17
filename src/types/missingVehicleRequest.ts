@@ -11,6 +11,7 @@ export interface MissingVehicleRequest {
   transmissionType?: string;
   driveType?: string;
   engineSize?: number;
+  horsepower?: number;
   doors?: string;
   seats?: string;
   category?: string;

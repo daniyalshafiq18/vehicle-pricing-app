@@ -8,7 +8,12 @@
  * @see ../data/dataverseOptionSets.ts for choice field mappings
  */
 
-import { API_BASE, ENTITIES, VEHICLE_FIELDS, MISSING_VEHICLE_REQUEST_FIELDS } from '@data/dataverseConfig';
+import {
+  API_BASE,
+  ENTITIES,
+  VEHICLE_FIELDS,
+  MISSING_VEHICLE_REQUEST_FIELDS,
+} from '@data/dataverseConfig';
 import {
   missingVehicleBodyTypeValue,
   missingVehicleCylindersValue,
@@ -55,7 +60,9 @@ function parseRawRecord(raw: Record<string, unknown>): MissingVehicleRequest {
   const seatsKey = `${MISSING_VEHICLE_REQUEST_FIELDS.SEATS}@OData.Community.Display.V1.FormattedValue`;
 
   // Extract expanded contact data if available
-  const contactRaw = raw[MISSING_VEHICLE_REQUEST_FIELDS.CONTACT_LOOKUP] as Record<string, unknown> | undefined;
+  const contactRaw = raw[MISSING_VEHICLE_REQUEST_FIELDS.CONTACT_LOOKUP] as
+    | Record<string, unknown>
+    | undefined;
 
   return {
     id: (raw[MISSING_VEHICLE_REQUEST_FIELDS.ID] as string) ?? '',
@@ -67,9 +74,12 @@ function parseRawRecord(raw: Record<string, unknown>): MissingVehicleRequest {
     modelYear: (raw[MISSING_VEHICLE_REQUEST_FIELDS.MODEL_YEAR] as number) ?? 0,
     cylinders: missingVehicleCylindersLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.CYLINDERS]),
     fuelType: missingVehicleFuelTypeLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.FUEL_TYPE]),
-    transmissionType: missingVehicleTransmissionTypeLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.TRANSMISSION_TYPE]),
+    transmissionType: missingVehicleTransmissionTypeLabel(
+      raw[MISSING_VEHICLE_REQUEST_FIELDS.TRANSMISSION_TYPE],
+    ),
     driveType: missingVehicleDriveTypeLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.DRIVE_TYPE]),
     engineSize: raw[MISSING_VEHICLE_REQUEST_FIELDS.ENGINE_SIZE] as number | undefined,
+    horsepower: raw[MISSING_VEHICLE_REQUEST_FIELDS.HORSEPOWER] as number | undefined,
     doors: (raw[doorsKey] as string) ?? undefined,
     seats: (raw[seatsKey] as string) ?? undefined,
     category: (raw[categoryKey] as string) ?? undefined,
@@ -92,7 +102,9 @@ function parseRawRecord(raw: Record<string, unknown>): MissingVehicleRequest {
       : undefined,
     contactEmail: (contactRaw?.emailaddress1 as string) ?? undefined,
     // Scrape result fields
-    scrapeStatus: missingVehicleScrapeStatusLabel(raw[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPE_STATUS]),
+    scrapeStatus: missingVehicleScrapeStatusLabel(
+      raw[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPE_STATUS],
+    ),
     scrapeStatusValue: raw[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPE_STATUS] as number | undefined,
     scrapedListings: raw[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_LISTINGS] as string | undefined,
     scrapedMinPrice: raw[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MIN_PRICE] as number | undefined,
@@ -166,23 +178,17 @@ export async function upsertMissingVehicleRequest(payload: {
   }
 
   // Optional choice fields — only send if provided
-  const bodyTypeInt = payload.bodyType
-    ? missingVehicleBodyTypeValue(payload.bodyType)
-    : null;
+  const bodyTypeInt = payload.bodyType ? missingVehicleBodyTypeValue(payload.bodyType) : null;
   if (bodyTypeInt !== null) {
     record[MISSING_VEHICLE_REQUEST_FIELDS.BODY_TYPE] = bodyTypeInt;
   }
 
-  const cylindersInt = payload.cylinders
-    ? missingVehicleCylindersValue(payload.cylinders)
-    : null;
+  const cylindersInt = payload.cylinders ? missingVehicleCylindersValue(payload.cylinders) : null;
   if (cylindersInt !== null) {
     record[MISSING_VEHICLE_REQUEST_FIELDS.CYLINDERS] = cylindersInt;
   }
 
-  const fuelTypeInt = payload.fuelType
-    ? missingVehicleFuelTypeValue(payload.fuelType)
-    : null;
+  const fuelTypeInt = payload.fuelType ? missingVehicleFuelTypeValue(payload.fuelType) : null;
   if (fuelTypeInt !== null) {
     record[MISSING_VEHICLE_REQUEST_FIELDS.FUEL_TYPE] = fuelTypeInt;
   }
@@ -194,9 +200,7 @@ export async function upsertMissingVehicleRequest(payload: {
     record[MISSING_VEHICLE_REQUEST_FIELDS.TRANSMISSION_TYPE] = transmissionInt;
   }
 
-  const driveTypeInt = payload.driveType
-    ? missingVehicleDriveTypeValue(payload.driveType)
-    : null;
+  const driveTypeInt = payload.driveType ? missingVehicleDriveTypeValue(payload.driveType) : null;
   if (driveTypeInt !== null) {
     record[MISSING_VEHICLE_REQUEST_FIELDS.DRIVE_TYPE] = driveTypeInt;
   }
@@ -219,7 +223,8 @@ export async function upsertMissingVehicleRequest(payload: {
       }
     }
     if (contactId) {
-      record[`${MISSING_VEHICLE_REQUEST_FIELDS.CONTACT_LOOKUP}@odata.bind`] = `/contacts(${contactId})`;
+      record[`${MISSING_VEHICLE_REQUEST_FIELDS.CONTACT_LOOKUP}@odata.bind`] =
+        `/contacts(${contactId})`;
     }
   }
 
@@ -231,8 +236,7 @@ export async function upsertMissingVehicleRequest(payload: {
   });
 
   const entityId =
-    meta.getHeader('entityid')
-    ?? meta.getHeader('OData-EntityId')?.match(/\(([^)]+)\)/)?.[1];
+    meta.getHeader('entityid') ?? meta.getHeader('OData-EntityId')?.match(/\(([^)]+)\)/)?.[1];
 
   if (entityId) return entityId;
   throw new Error('Missing vehicle request created but no entity ID returned');
@@ -257,6 +261,7 @@ export async function fetchMissingVehicleRequests(): Promise<MissingVehicleReque
     MISSING_VEHICLE_REQUEST_FIELDS.TRANSMISSION_TYPE,
     MISSING_VEHICLE_REQUEST_FIELDS.DRIVE_TYPE,
     MISSING_VEHICLE_REQUEST_FIELDS.ENGINE_SIZE,
+    MISSING_VEHICLE_REQUEST_FIELDS.HORSEPOWER,
     MISSING_VEHICLE_REQUEST_FIELDS.DOORS,
     MISSING_VEHICLE_REQUEST_FIELDS.SEATS,
     MISSING_VEHICLE_REQUEST_FIELDS.CATEGORY,
@@ -284,7 +289,9 @@ export async function fetchMissingVehicleRequests(): Promise<MissingVehicleReque
  * Fetch a single missing vehicle request by ID.
  * Returns null if not found or on error (caller should handle gracefully).
  */
-export async function fetchMissingVehicleRequestById(id: string): Promise<MissingVehicleRequest | null> {
+export async function fetchMissingVehicleRequestById(
+  id: string,
+): Promise<MissingVehicleRequest | null> {
   const baseUrl = `${API_BASE}/${ENTITIES.MISSING_VEHICLE_REQUEST}`;
 
   const select = [
@@ -300,6 +307,7 @@ export async function fetchMissingVehicleRequestById(id: string): Promise<Missin
     MISSING_VEHICLE_REQUEST_FIELDS.TRANSMISSION_TYPE,
     MISSING_VEHICLE_REQUEST_FIELDS.DRIVE_TYPE,
     MISSING_VEHICLE_REQUEST_FIELDS.ENGINE_SIZE,
+    MISSING_VEHICLE_REQUEST_FIELDS.HORSEPOWER,
     MISSING_VEHICLE_REQUEST_FIELDS.DOORS,
     MISSING_VEHICLE_REQUEST_FIELDS.SEATS,
     MISSING_VEHICLE_REQUEST_FIELDS.CATEGORY,
@@ -402,6 +410,7 @@ export async function updateMissingVehicleScrapeResult(
     driveTypeValue?: number;
     cylindersValue?: number;
     engineSizeValue?: number;
+    horsepowerValue?: number;
     doorsValue?: number;
     seatsValue?: number;
     categoryValue?: number;
@@ -419,16 +428,29 @@ export async function updateMissingVehicleScrapeResult(
   };
 
   // Write spec fields when the flow returned them
-  if (fields.bodyTypeValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.BODY_TYPE] = fields.bodyTypeValue;
-  if (fields.fuelTypeValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.FUEL_TYPE] = fields.fuelTypeValue;
-  if (fields.transmissionValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.TRANSMISSION_TYPE] = fields.transmissionValue;
-  if (fields.driveTypeValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.DRIVE_TYPE] = fields.driveTypeValue;
-  if (fields.cylindersValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.CYLINDERS] = fields.cylindersValue;
-  if (fields.engineSizeValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.ENGINE_SIZE] = fields.engineSizeValue;
-  if (fields.doorsValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.DOORS] = fields.doorsValue;
-  if (fields.seatsValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.SEATS] = fields.seatsValue;
-  if (fields.categoryValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.CATEGORY] = fields.categoryValue;
-  if (fields.mileageValue !== undefined) body[MISSING_VEHICLE_REQUEST_FIELDS.MILEAGE] = fields.mileageValue;
+  if (fields.bodyTypeValue !== undefined)
+    body[MISSING_VEHICLE_REQUEST_FIELDS.BODY_TYPE] = fields.bodyTypeValue;
+  if (fields.fuelTypeValue !== undefined)
+    body[MISSING_VEHICLE_REQUEST_FIELDS.FUEL_TYPE] = fields.fuelTypeValue;
+  if (fields.transmissionValue !== undefined)
+    body[MISSING_VEHICLE_REQUEST_FIELDS.TRANSMISSION_TYPE] = fields.transmissionValue;
+  if (fields.driveTypeValue !== undefined)
+    body[MISSING_VEHICLE_REQUEST_FIELDS.DRIVE_TYPE] = fields.driveTypeValue;
+  if (fields.cylindersValue !== undefined)
+    body[MISSING_VEHICLE_REQUEST_FIELDS.CYLINDERS] = fields.cylindersValue;
+  if (fields.engineSizeValue !== undefined)
+    body[MISSING_VEHICLE_REQUEST_FIELDS.ENGINE_SIZE] = fields.engineSizeValue;
+  if (fields.horsepowerValue !== undefined) {
+    body[MISSING_VEHICLE_REQUEST_FIELDS.HORSEPOWER] = fields.horsepowerValue;
+  }
+  if (fields.doorsValue !== undefined)
+    body[MISSING_VEHICLE_REQUEST_FIELDS.DOORS] = fields.doorsValue;
+  if (fields.seatsValue !== undefined)
+    body[MISSING_VEHICLE_REQUEST_FIELDS.SEATS] = fields.seatsValue;
+  if (fields.categoryValue !== undefined)
+    body[MISSING_VEHICLE_REQUEST_FIELDS.CATEGORY] = fields.categoryValue;
+  if (fields.mileageValue !== undefined)
+    body[MISSING_VEHICLE_REQUEST_FIELDS.MILEAGE] = fields.mileageValue;
 
   await safeFetch<void>({
     url: `${baseUrl}(${id})`,
@@ -504,6 +526,9 @@ export async function approveAndCreateVehicle(mvr: MissingVehicleRequest): Promi
     // Plain decimal — no optionset conversion needed
     vehicle[VEHICLE_FIELDS.ENGINE_SIZE] = mvr.engineSize;
   }
+  if (mvr.horsepower) {
+    vehicle[VEHICLE_FIELDS.HORSEPOWER] = mvr.horsepower;
+  }
   if (mvr.doors) {
     const d = DOORS[mvr.doors];
     if (d !== undefined) vehicle[VEHICLE_FIELDS.DOORS] = d;
@@ -534,8 +559,7 @@ export async function approveAndCreateVehicle(mvr: MissingVehicleRequest): Promi
   });
 
   const vehicleId =
-    meta.getHeader('entityid')
-    ?? meta.getHeader('OData-EntityId')?.match(/\(([^)]+)\)/)?.[1];
+    meta.getHeader('entityid') ?? meta.getHeader('OData-EntityId')?.match(/\(([^)]+)\)/)?.[1];
 
   if (!vehicleId) {
     throw new Error('Vehicle created but no entity ID returned');

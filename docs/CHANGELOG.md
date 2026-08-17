@@ -1,6 +1,47 @@
 
 # Changelog
 
+## 2026-08-13
+
+### DriveArabia exact-trim specification enrichment implemented
+- PAD inbox failure notifications now include the processor's retained Dataverse/API error detail instead of reporting only completed/failed counts. This makes rejected enrichment writes diagnosable directly from the admin page on the next capture.
+- Extended `extractDriveArabiaSpecs()` to prefer the current per-year page's schema.org `Product`/`Vehicle` JSON-LD over generic visible page copy. It now returns the selected `vehicleConfiguration`, year, normalized body/transmission, fuel, drive, cylinders, engine size, doors, horsepower, torque, and country of origin when present.
+- Fixed a real correctness issue: generic Camry page copy mentions several engines and could incorrectly report `Hybrid` for the selected petrol trim.
+- Updated the PAD inbox processor to apply specification fields only when the JSON-LD trim/year exactly match the Missing Vehicle Request. Other trims in the same price table receive prices only, preventing cross-trim contamination.
+- Existing MVR fields now receive body type, fuel, transmission, drive, cylinders, engine size, doors, and horsepower through the repository/DataSource path. Horsepower also threads into Vehicle Data on approval. Torque and origin remain in scrape provenance because MVR has no dedicated columns for them.
+- Generalized the shared drive mapper to accept short labels (`FWD`, `RWD`, `AWD`, `4WD`, `4x4`) as well as schema.org URLs.
+- Added fixture-backed parser and processor regression coverage. Focused suites pass **34/34**, the full suite passes **68 tests / 2 live tests skipped**, focused ESLint passes, TypeScript type-checking is clean, and the production build succeeds.
+- **First enrichment live acceptance:** inbox `d6438800e4ce` wrote exact Camry SE prices and body/fuel/transmission/drive/cylinders/engine/doors correctly; provenance preserved `204 hp`, `243 Nm`, and `Japan`. This exposed and fixed an application mapping omission for the already-existing `vpi_horsepower` MVR column.
+- **Fresh-request end-to-end acceptance passed:** after deleting the previous test MVR, submitting the exact Toyota Camry 2024 trim through Valuation created a new Missing Vehicle Request; a fresh PAD capture and **Process PAD Inbox** completed successfully and updated it through the published Horsepower-enabled path. This closes the attended DriveArabia enrichment live gate.
+- Removed the separate Horsepower tiles from the Missing Vehicle modal and summary card after live visual review. Adding one tile made both two-column grids odd-length and left a single unpaired tile; horsepower remains stored in Dataverse and in scrape provenance without changing the balanced UI layout.
+
+## 2026-08-12
+
+### DriveArabia PAD inbox processor implemented in the admin app
+- Added `src/lib/multiSourceScraper.ts`: derives relay endpoints from `VITE_AZURE_FUNCTION_URL`, drains a safety-capped batch of pending captures, loads raw HTML, dispatches DriveArabia price parsing, and acknowledges every processed item as `Complete` or `Error`.
+- Resolved the missing-MVR-ID contract safely without guessing: the processor derives make/model from the captured DriveArabia URL and matches parser-produced year/trim values exactly against MVR records already loaded by the admin page. One capture can update every exact matching request. A valid unmatched capture remains `Pending` for retry; unsupported, malformed, and write-failed captures become `Error` and keep their Blob evidence.
+- Successful writes use the existing repository/DataSource path and persist the price range, source URL, inbox ID, `source:'DriveArabia'`, and `transport:'pad'` in the scrape-result JSON. A successful `Complete` acknowledgement purges the relay Blob.
+- Added `useProcessScrapeInbox` plus a **Process PAD Inbox** admin action with React Query invalidation and toast summaries. The scrape detail panel now displays transport provenance.
+- Added `multiSourceScraper.test.ts` covering a real 2024 PAD fixture success, reversed-range write, Complete acknowledgement, empty queue, safe unmatched-record waiting, unsupported-source Error acknowledgement, and queue draining.
+- **Verification:** `npm run typecheck` passes; full suite **66 passed / 2 live tests skipped**; production build passes and refreshed the tracked Power Pages SPA shell asset references; new processor/hook/test files pass ESLint.
+- **Read-only live relay check:** `next_pending` returned DriveArabia item `e2b396579733`; its fetched HTML is correctly decoded (**391,377 bytes, 17,188 literal spaces, valid `<html ...>`, no `<html+...>` corruption, 42 visible AED range occurrences**). This confirms the deployed relay is on the `unquote_plus` revision. The item was deliberately left `Pending`; no acknowledgement or Dataverse mutation was performed.
+- **First live Dataverse acceptance passed:** inbox `e2b396579733` matched the Toyota Camry 2024 `2.5L I4 SE FWD` MVR and wrote `Scraped`, count `1`, AED `111,900–112,000`, source `DriveArabia`, transport `PAD`, source URL, inbox ID, trim, and year; the admin modal and raw Dataverse JSON both showed the expected values.
+- **Live acknowledgement bug found and fixed:** the Dataverse PATCH succeeded but the item remained `Pending`. Azure's platform-level CORS handler intercepted the browser's `OPTIONS` preflight with `204` and no allow headers, so `POST /inbox_status` never reached the function. The client now sends its JSON body with safelisted `Content-Type: text/plain;charset=UTF-8`; `_try_parse_json` is content-type agnostic, so this avoids preflight without changing the server contract. The already-applied item was marked `Complete` directly and its Blob was purged; queue advanced to the next capture.
+- **Queue cleanup after frontend republish:** the next item, `a68628c4aa6a` (`toyota-camry/?page=2`), was verified as a valid DriveArabia summary page but contained only year-card “Orig. From” values and no exact trim-level ranges, so it could not safely match an MVR. It was marked `Error` (Blob retained) and the pending queue was confirmed empty. No Dataverse write was attempted for it.
+- **Second live run — full automatic completion passed:** the completed four-action PAD flow (Chrome 2024 page → JSON payload via JavaScript → local payload file → `Invoke web service`) returned HTTP `202` with inbox `894f3e21ca95`. Read-only validation found correctly decoded 120,204-byte HTML and all four 2024 trim ranges. Clicking **Process PAD Inbox** updated the existing exact Camry SE MVR and automatically acknowledged the item: direct lookup now returns `502 blob_missing` (expected after `Complete` purge) and the queue returns `404 no_pending`. The `text/plain` acknowledgement fix is therefore live-proven end-to-end.
+- **DriveArabia price-transport gate:** complete for the attended single-page path. Full specification enrichment was still pending at this point; see the 2026-08-13 entry. Dubizzle and unattended scheduling remain deferred.
+
+### DriveArabia per-model-year price parsing completed and fixture-pinned
+- Added a real PAD-captured fixture for the Toyota Camry 2024 per-model-year page: `tests/fixtures/drivearabia-camry-2024-pad.html`.
+- Completed `extractDriveArabiaTrimPrices(html)` in `src/parsers/driveArabia.ts`. It reads the page year from the canonical URL, data layer, or title, then extracts full trim names and normalized AED min/max ranges from the bounded visible **Original Trim Prices** table.
+- Fixed a duplicate-heading bug found in the real fixture: DriveArabia renders the label in both tab navigation and the table heading, so extraction now anchors on the final occurrence and stops at the following dealer/spec section.
+- Generalized drivetrain matching from FWD-only to `FWD`, `RWD`, `AWD`, `4WD`, `4x4`, and `2WD`; supports hyphen/en-dash/em-dash price separators and defensively handles missing years/headings, duplicates, invalid prices, reversed ranges, and oversized matches.
+- Added four per-year test cases. The real fixture asserts all four 2024 Camry trims and the live reversed-range glitch; synthetic coverage verifies non-FWD variants, de-duplication, section boundaries, and missing-input behavior. DriveArabia parser suite: **17/17 passing**.
+- Exported the new extractor through `src/parsers/index.ts` and removed the temporary `scripts/scratch-map-2024.mjs` investigation artifact.
+- Made the Azure “no probe URL configured” unit test deterministic by explicitly overriding `.env.local` with an empty function URL; previously it could make a live request and time out on developer machines with `VITE_AZURE_FUNCTION_URL` configured.
+- **Verification:** `npm run typecheck` passes; full suite **61 passed / 2 live tests skipped**; production build passes; changed parser/test files pass ESLint. Repository-wide ESLint still reports the pre-existing application backlog outside this change.
+- **Next:** confirm the deployed Azure Function contains the `unquote_plus` relay fix, then build `src/lib/multiSourceScraper.ts` and produce the first live Dataverse row with `transport:'pad'`.
+
 ## 2026-08-11
 
 ### ingest_html URL-decode fix — PAD's Invoke web service percent-encodes the request body
