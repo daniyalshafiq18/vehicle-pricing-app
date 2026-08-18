@@ -287,7 +287,7 @@ interface EngineSignature {
 
 function engineSignature(value: string): EngineSignature | undefined {
   const normalized = value.toUpperCase().replace(/[^A-Z0-9.]+/g, ' ').trim();
-  const size = /(?:^|\s)(\d+(?:\.\d+)?)\s*(?:L|H)?(?:\s|$)/.exec(normalized);
+  const size = /(?:^|\s)(\d+(?:\.\d+)?)\s*(?:TC|L|H)?(?:\s|$)/.exec(normalized);
   const layout = /(?:^|\s)([IV]\d{1,2})(?:\s|$)/.exec(normalized);
   const drive = /(?:^|\s)(FWD|RWD|AWD|4WD|4X4|2WD)(?:\s|$)/.exec(normalized);
   if (!size || !layout || !drive) {
@@ -312,7 +312,7 @@ function signaturesEqual(left: EngineSignature, right: EngineSignature): boolean
 
 function engineLitres(value: string): string | undefined {
   const normalized = value.toUpperCase().replace(/[^A-Z0-9.]+/g, ' ').trim();
-  const size = /(?:^|\s)(\d+(?:\.\d+)?)\s*(?:L|H)?(?:\s|$)/.exec(normalized);
+  const size = /(?:^|\s)(\d+(?:\.\d+)?)\s*(?:TC|L|H)?(?:\s|$)/.exec(normalized);
   return size ? String(Number(size[1])) : undefined;
 }
 
@@ -329,6 +329,14 @@ function specsFromCapturedGroup(configuration: string, text: string): DriveArabi
     out.engineSize = String(Math.round(Number(signature.litres) * 1000));
     out.cylinders = signature.layout.slice(1);
     out.driveType = signature.driveType;
+  }
+  const engineSize = numberValue(firstLine(text, 'Engine Size')?.replace(/[^0-9.]/g, ''));
+  if (engineSize) {
+    out.engineSize = String(Math.round(engineSize * 1000));
+  }
+  const engineLayout = /\b[IVH](\d{1,2})\b/i.exec(firstLine(text, 'Engine Layout') ?? '');
+  if (engineLayout) {
+    out.cylinders = engineLayout[1];
   }
   const fuelType = firstLine(text, 'Engine Type');
   if (fuelType) {
@@ -385,7 +393,7 @@ function specsFromVehicleJsonLd(vehicle: JsonRecord): DriveArabiaSpecs {
   const trim = stringValue(vehicle.vehicleConfiguration);
   if (trim) {
     out.trim = trim;
-    const litres = /(?:^|\s)(\d+(?:\.\d+)?)\s*L\b/i.exec(trim);
+    const litres = /(?:^|\s)(\d+(?:\.\d+)?)\s*(?:L|TC)\b/i.exec(trim);
     if (litres) {
       out.engineSize = String(Math.round(Number(litres[1]) * 1000));
     }
@@ -483,20 +491,55 @@ function specsFromUniqueGroup(
   };
 }
 
+function unanimousGroupValue<T>(
+  groups: DriveArabiaSpecGroup[],
+  select: (group: DriveArabiaSpecGroup) => T | undefined,
+): T | undefined {
+  if (groups.length === 0) {
+    return undefined;
+  }
+  const first = select(groups[0]!);
+  return first !== undefined && groups.every((group) => select(group) === first)
+    ? first
+    : undefined;
+}
+
+function consensusSpecGroup(groups: DriveArabiaSpecGroup[]): DriveArabiaSpecGroup {
+  const fuelType = unanimousGroupValue(groups, (group) => group.fuelType);
+  const driveType = unanimousGroupValue(groups, (group) => group.driveType);
+  const transmission = unanimousGroupValue(groups, (group) => group.transmission);
+  const cylinders = unanimousGroupValue(groups, (group) => group.cylinders);
+  const engineSize = unanimousGroupValue(groups, (group) => group.engineSize);
+  const horsepower = unanimousGroupValue(groups, (group) => group.horsepower);
+  const torqueNm = unanimousGroupValue(groups, (group) => group.torqueNm);
+  return {
+    configuration: 'consensus',
+    ...(fuelType !== undefined && { fuelType }),
+    ...(driveType !== undefined && { driveType }),
+    ...(transmission !== undefined && { transmission }),
+    ...(cylinders !== undefined && { cylinders }),
+    ...(engineSize !== undefined && { engineSize }),
+    ...(horsepower !== undefined && { horsepower }),
+    ...(torqueNm !== undefined && { torqueNm }),
+  };
+}
+
 /**
  * Resolve the specification block for one exact commercial trim. Shared
  * model fields come from JSON-LD; mechanical fields come from one uniquely
- * matching PAD-captured engine accordion. Ambiguous/missing groups never
- * fall through to another trim's specs.
+ * matching PAD-captured engine accordion. Exact generic trims may receive
+ * only mechanical values on which every captured group agrees; ambiguous
+ * values never fall through from an arbitrary engine group.
  */
 export function extractDriveArabiaSpecsForTrim(
   html: string,
   trim: string,
 ): DriveArabiaSpecs {
   const selected = extractDriveArabiaSpecs(html);
+  const groups = extractDriveArabiaSpecGroups(html);
   const requestedSignature = engineSignature(trim);
   if (requestedSignature) {
-    const matchingGroups = extractDriveArabiaSpecGroups(html).filter((group) => {
+    const matchingGroups = groups.filter((group) => {
       const groupSignature = engineSignature(group.configuration);
       return groupSignature && signaturesEqual(requestedSignature, groupSignature);
     });
@@ -508,13 +551,16 @@ export function extractDriveArabiaSpecsForTrim(
   if (selected.trim && comparableTrim(selected.trim) === comparableTrim(trim)) {
     const litres = engineLitres(trim);
     if (litres) {
-      const capacityMatches = extractDriveArabiaSpecGroups(html).filter((group) => {
+      const capacityMatches = groups.filter((group) => {
         const groupSignature = engineSignature(group.configuration);
         return groupSignature?.litres === litres;
       });
       if (capacityMatches.length === 1) {
         return specsFromUniqueGroup(trim, selected, capacityMatches[0]!);
       }
+    }
+    if (groups.length > 0) {
+      return specsFromUniqueGroup(trim, selected, consensusSpecGroup(groups));
     }
     return selected;
   }

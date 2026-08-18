@@ -288,6 +288,81 @@ describe('DriveArabia multi-trim spec groups', () => {
     });
   });
 
+  it('bridges a MINI TC commercial trim to its unique explicit engine spec group', () => {
+    const groups = [
+      {
+        configuration: '1.5 TC I3 FWD',
+        text: 'Engine Layout\nI3\nEngine Size\n1.5 L\nEngine Type\nPetrol\nDrive Train\nFWD\nTransmission\n7A\nHorsepower\n136 HP\nTorque\n219 Nm',
+      },
+      {
+        configuration: '2.0 TC I4 FWD',
+        text: 'Engine Layout\nI4\nEngine Size\n2.0 L\nEngine Type\nPetrol\nDrive Train\nFWD\nTransmission\n7A\nHorsepower\n192 HP\nTorque\n280 Nm',
+      },
+    ];
+    const html = `
+      <script type="application/ld+json">${JSON.stringify({
+        '@type': 'Vehicle',
+        vehicleConfiguration: '1.5TC I4 Cooper FWD',
+        vehicleModelDate: '2024',
+        bodyType: 'Mini Hatchback',
+        numberOfDoors: 3,
+      })}</script>
+      <script type="application/json" id="vpi-pad-spec-groups">${JSON.stringify(groups)}</script>
+    `;
+
+    expect(extractDriveArabiaSpecsForTrim(html, '1.5TC I4 Cooper FWD')).toMatchObject({
+      trim: '1.5TC I4 Cooper FWD',
+      year: 2024,
+      bodyType: 'Hatchback',
+      doors: '3',
+      fuelType: 'Petrol',
+      transmission: 'Automatic',
+      driveType: 'FWD',
+      cylinders: '3',
+      engineSize: '1500',
+      horsepower: 136,
+      torqueNm: 219,
+    });
+  });
+
+  it('enriches a generic D-Max trim only with unanimous engine-group values', () => {
+    const groups = [
+      {
+        configuration: '2.5 TD I4 RWD',
+        text: 'Engine Layout\nI4\nEngine Size\n2.5 L\nEngine Type\nDiesel\nDrive Train\nRWD\nTransmission\n5M\nHorsepower\n78 HP\nTorque\n176 Nm',
+      },
+      {
+        configuration: '3.0 TD I4 4WD',
+        text: 'Engine Layout\nI4\nEngine Size\n3.0 L\nEngine Type\nDiesel\nDrive Train\n4WD\nTransmission\n5A\nHorsepower\n163 HP\nTorque\n380 Nm',
+      },
+    ];
+    const html = `
+      <script type="application/ld+json">${JSON.stringify({
+        '@type': 'Vehicle',
+        vehicleConfiguration: 'D-Max',
+        vehicleModelDate: '2019',
+        bodyType: 'Midsize Pickup',
+        numberOfDoors: 4,
+      })}</script>
+      <script type="application/json" id="vpi-pad-spec-groups">${JSON.stringify(groups)}</script>
+    `;
+
+    const specs = extractDriveArabiaSpecsForTrim(html, 'D-Max');
+    expect(specs).toMatchObject({
+      trim: 'D-Max',
+      year: 2019,
+      bodyType: 'Pick Up',
+      doors: '4',
+      fuelType: 'Diesel',
+      cylinders: '4',
+    });
+    expect(specs.engineSize).toBeUndefined();
+    expect(specs.driveType).toBeUndefined();
+    expect(specs.transmission).toBeUndefined();
+    expect(specs.horsepower).toBeUndefined();
+    expect(specs.torqueNm).toBeUndefined();
+  });
+
   it('returns no non-default specs when two engine groups match ambiguously', () => {
     const ambiguousHtml = `${pad2024Html}<script type="application/json" id="vpi-pad-spec-groups">${JSON.stringify([
       capturedCamrySpecGroups[2],

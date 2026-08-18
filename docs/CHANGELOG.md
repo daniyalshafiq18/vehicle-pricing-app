@@ -3,6 +3,16 @@
 
 ## 2026-08-18
 
+### DriveArabia turbocharged engine-size parsing fixed
+- Fixed DriveArabia specification enrichment for commercial trims that concatenate turbocharged notation with capacity, such as **MINI Cooper 2024 `1.5TC I4 Cooper FWD`**. `TC` is now accepted when resolving engine capacity, so the unique 1.5-litre Specs group can supply `1500 cc` instead of leaving Engine Size empty.
+- Captured Specs accordions now prefer their explicit **Engine Size** and **Engine Layout** rows over values inferred from a configuration heading. This safely handles DriveArabia's MINI inconsistency where the price row says `1.5TC I4`, but the Specs group and overview identify the engine as `1.5 TC I3` / `1.5 L`.
+- Added regression coverage for the inconsistent MINI labels and retained the conservative rule that capacity-based enrichment occurs only when the commercial trim matches exactly and one unique capacity group exists. Focused DriveArabia parser/inbox verification passes **32/32** tests; the full suite passes **80 tests / 2 live tests skipped**, TypeScript and focused ESLint are clean, and the production build succeeds.
+
+### DriveArabia generic-trim consensus enrichment implemented
+- Exact generic commercial trims that do not identify an engine, such as **Isuzu D-Max 2019 `D-Max`**, now receive only mechanical values shared by every PAD-captured Specs group. The live page's 2.5L/3.0L configurations unanimously support Diesel and I4, so Cylinders can safely become `4` while Engine Size remains empty.
+- Conflicting drivetrain, transmission, horsepower, torque, and engine-size values are deliberately omitted instead of copying the first/default accordion. Shared model fields from JSON-LD remain available, and non-exact request trims still receive no cross-trim enrichment.
+- Added a D-Max regression covering unanimous and conflicting fields. Focused DriveArabia parser/inbox verification passes **33/33** tests; the full suite passes **81 tests / 2 live tests skipped**, TypeScript and focused ESLint are clean, and the production build succeeds.
+
 ### DriveArabia non-Camry live acceptance passed
 - Successfully processed a fresh **Honda Accord 2.4 DX/LX 2013** Missing Vehicle Request through the dynamic attended workflow: the request-specific URL was supplied through `DriveArabiaUrl`, PAD captured and uploaded the page, Azure accepted it, and **Process PAD Inbox** populated all required vehicle details and prices in Dataverse.
 - This closes the dynamic-navigation and non-Camry compatibility gate. The next planned milestone is one-click cloud-triggered PAD orchestration so the app can start DriveArabia scraping and process its correlated result without Copy PAD URL, manually running PAD, or manually processing the inbox.
