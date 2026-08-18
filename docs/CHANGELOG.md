@@ -1,6 +1,32 @@
 
 # Changelog
 
+## 2026-08-18
+
+### DriveArabia non-Camry live acceptance passed
+- Successfully processed a fresh **Honda Accord 2.4 DX/LX 2013** Missing Vehicle Request through the dynamic attended workflow: the request-specific URL was supplied through `DriveArabiaUrl`, PAD captured and uploaded the page, Azure accepted it, and **Process PAD Inbox** populated all required vehicle details and prices in Dataverse.
+- This closes the dynamic-navigation and non-Camry compatibility gate. The next planned milestone is one-click cloud-triggered PAD orchestration so the app can start DriveArabia scraping and process its correlated result without Copy PAD URL, manually running PAD, or manually processing the inbox.
+
+## 2026-08-17
+
+### Dynamic DriveArabia PAD navigation implemented
+- Added `buildDriveArabiaModelYearUrl()` with regression coverage for Toyota, Land Rover, and Mercedes-Benz routes. It emits DriveArabia's short `/uae/<make>/<model>/<year>/` route and lets DriveArabia redirect to its current canonical, make-prefixed route instead of hard-coding site aliases in the app.
+- Added **Copy PAD URL** to each Missing Vehicle Request modal. The copied URL is built from that request's make, model, and model year, so the attended PAD flow is no longer tied to the Toyota Camry 2024 page.
+- Changed the documented PAD setup to use a required text input variable named `DriveArabiaUrl` as the Launch Chrome initial URL. Each attended run now prompts for the copied request URL; the capture, Azure inbox, exact matching, and Dataverse processing stages remain unchanged.
+- Verification is clean: **33/33** focused URL/parser/inbox tests pass, TypeScript type-checking and new-module ESLint pass, and the production build succeeds. Live acceptance with a non-Camry MVR remains the explicit rollout gate.
+- **First non-Camry live capture diagnosed:** dynamic navigation correctly opened and uploaded Honda Accord 2011, but inbox processing failed with `DriveArabia capture produced no price rows`. The retained payload contained two valid rows (`2.4L sedan` and `3.5L sedan`); the parser had incorrectly required every trim label to contain a drivetrain token. Price extraction now accepts bounded trim-table labels without `FWD`/`RWD`/`AWD`, while the existing section boundary still excludes unrelated vehicle prices.
+- **Honda cylinder follow-up:** the successful `2.4L sedan` write initially left Cylinders empty because that commercial trim omits `I4`; the captured Specs group is named `2.4 I4 FWD`. Exact JSON-LD-selected trims can now inherit mechanical fields from a single uniquely matching engine capacity. If multiple groups share that capacity, the parser keeps the selected JSON-LD fields and does not guess.
+- The Honda follow-up passes **31/31** focused parser/inbox tests, changed-parser ESLint, TypeScript type-checking, and the production build.
+
+### DriveArabia multi-trim specification mapping implemented
+- Added a PAD capture protocol for DriveArabia's Specs accordions. Closed Radix accordion bodies are unmounted from `document.outerHTML`, so the capture script now opens each engine group, records its rendered text, and embeds the groups in a `vpi-pad-spec-groups` JSON marker before upload.
+- **First multi-trim live capture diagnosed:** Azure accepted the capture and the processor updated two exact Camry price requests, but the Limited Hybrid remained price-only. The retained local PAD payload proved the marker contained only `2.5 I4 FWD` (`groups=1`); React had not mounted the next accordion before the single synchronous JavaScript action read it. This was a capture-timing issue, not a parser, matching, Azure, or Dataverse failure.
+- Replaced the single capture function with a two-stage PAD protocol: start a timer-paced accordion collector, wait five seconds in PAD, then build the upload payload only after `groups.length` equals the recorded button count. Incomplete captures now fail before Azure upload instead of silently degrading to price-only.
+- **Multi-trim live acceptance passed:** the revised six-action PAD flow returned HTTP `202`, **Process PAD Inbox** completed, and the existing Limited Hybrid request received its required vehicle details. The retained payload contained all three expected engine groups: `2.5 I4 FWD` (Petrol/8A/204 HP), `3.5 V6 FWD` (Petrol/8A/298 HP), and `2.5 H I4 FWD` (Hybrid/CVT/208 HP). This proves the Hybrid request was enriched from its correct engine group rather than the selected SE data.
+- Added `extractDriveArabiaSpecGroups()` and `extractDriveArabiaSpecsForTrim()`. Commercial trims are matched to engine groups only by a normalized signature of engine capacity, I/V cylinder layout, hybrid marker, and drivetrain; marketing labels such as Sport/Limited are ignored.
+- Multiple commercial trims may safely share one unique engine group (for example both 3.5L V6 Camry trims). Missing or ambiguous engine groups produce price-only updates instead of guessed specifications, and captures without the new marker retain the previously proven selected-JSON-LD-trim behavior.
+- Updated the PAD inbox processor to resolve specifications independently for every exact MVR trim. Added parser and processor regression tests covering petrol SE, both V6 commercial trims, Limited Hybrid, legacy captures, and ambiguous duplicate groups. Focused verification passes **29/29**; the full suite passes **73 tests / 2 live tests skipped**; changed-file ESLint, TypeScript type-checking, and the production build are clean. Live PAD multi-trim validation has passed.
+
 ## 2026-08-13
 
 ### DriveArabia exact-trim specification enrichment implemented

@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   extractDriveArabiaPriceRows,
+  extractDriveArabiaSpecGroups,
   extractDriveArabiaSpecs,
+  extractDriveArabiaSpecsForTrim,
   extractDriveArabiaTrimPrices,
 } from './driveArabia';
 // Real view-source captures (2026-08-07): Toyota Camry model landing page + a trim detail page.
@@ -10,6 +12,23 @@ import padPricesHtml from '../../tests/fixtures/drivearabia-camry-prices-pad.htm
 import trimHtml from '../../tests/fixtures/drivearabia-camry-trim.html?raw';
 // Real PAD capture (2026-08-12): the per-model-year page for the 2024 Camry.
 import pad2024Html from '../../tests/fixtures/drivearabia-camry-2024-pad.html?raw';
+
+export const capturedCamrySpecGroups = [
+  {
+    configuration: '2.5 I4 FWD',
+    text: 'Engine Layout\nI4\nEngine Size\n2.5 L\nEngine Type\nPetrol\nDrive Train\nFWD\nTransmission\n8A\nHorsepower\n204 HP\nTorque\n243 Nm',
+  },
+  {
+    configuration: '3.5 V6 FWD',
+    text: 'Engine Layout\nV6\nEngine Size\n3.5 L\nEngine Type\nPetrol\nDrive Train\nFWD\nTransmission\n8A\nHorsepower\n298 HP\nTorque\n356 Nm',
+  },
+  {
+    configuration: '2.5 H I4 FWD',
+    text: 'Engine Layout\nI4\nEngine Size\n2.5 L\nEngine Type\nHybrid\nDrive Train\nFWD\nTransmission\nCVT\nHorsepower\n208 HP\nTorque\n221 Nm',
+  },
+];
+
+export const multiTrimPad2024Html = `${pad2024Html}<script type="application/json" id="vpi-pad-spec-groups">${JSON.stringify(capturedCamrySpecGroups)}</script>`;
 
 describe('extractDriveArabiaPriceRows (model landing page)', () => {
   const rows = extractDriveArabiaPriceRows(pricesHtml);
@@ -109,6 +128,22 @@ describe('extractDriveArabiaTrimPrices (PAD per-model-year page)', () => {
     ]);
   });
 
+  it('supports older trim labels that omit drivetrain details', () => {
+    const html = `
+      <title>Honda Accord 2011 Price in UAE</title>
+      <h2>Original Trim Prices</h2>
+      <div><span>2.4L sedan</span><span>AED 89,000 - 119,900</span></div>
+      <div><span>3.5L sedan</span><span>AED 120,000 - 138,000</span></div>
+      <div>Contact Dealer</div>
+      <div>Unrelated model AED 1 - 999,999</div>
+    `;
+
+    expect(extractDriveArabiaTrimPrices(html)).toEqual([
+      { year: 2011, trim: '2.4L sedan', minPrice: 89000, maxPrice: 119900 },
+      { year: 2011, trim: '3.5L sedan', minPrice: 120000, maxPrice: 138000 },
+    ]);
+  });
+
   it('returns [] when the year or trim-table heading is missing', () => {
     expect(
       extractDriveArabiaTrimPrices('<h2>Original Trim Prices</h2> Base AWD AED 1 - 2'),
@@ -155,5 +190,109 @@ describe('extractDriveArabiaSpecs (trim detail page)', () => {
       torqueNm: 243,
       countryOfOrigin: 'Japan',
     });
+  });
+});
+
+describe('DriveArabia multi-trim spec groups', () => {
+  it('parses every PAD-captured engine accordion', () => {
+    expect(extractDriveArabiaSpecGroups(multiTrimPad2024Html)).toEqual([
+      expect.objectContaining({
+        configuration: '2.5 I4 FWD',
+        fuelType: 'Petrol',
+        transmission: 'Automatic',
+        engineSize: '2500',
+        cylinders: '4',
+        horsepower: 204,
+      }),
+      expect.objectContaining({
+        configuration: '3.5 V6 FWD',
+        engineSize: '3500',
+        cylinders: '6',
+        horsepower: 298,
+        torqueNm: 356,
+      }),
+      expect.objectContaining({
+        configuration: '2.5 H I4 FWD',
+        fuelType: 'Hybrid',
+        transmission: 'CVT',
+        horsepower: 208,
+      }),
+    ]);
+  });
+
+  it('maps two commercial V6 trims to the one shared V6 engine group', () => {
+    for (const trim of ['3.5L V6 40th Anniversary FWD', '3.5L V6 Sport FWD']) {
+      expect(extractDriveArabiaSpecsForTrim(multiTrimPad2024Html, trim)).toMatchObject({
+        trim,
+        year: 2024,
+        bodyType: 'Sedan',
+        fuelType: 'Petrol',
+        transmission: 'Automatic',
+        driveType: 'FWD',
+        cylinders: '6',
+        engineSize: '3500',
+        horsepower: 298,
+        torqueNm: 356,
+      });
+    }
+  });
+
+  it('maps the Limited Hybrid trim to the hybrid group rather than the petrol SE group', () => {
+    expect(
+      extractDriveArabiaSpecsForTrim(multiTrimPad2024Html, '2.5H I4 Limited FWD'),
+    ).toMatchObject({
+      trim: '2.5H I4 Limited FWD',
+      fuelType: 'Hybrid',
+      transmission: 'CVT',
+      cylinders: '4',
+      engineSize: '2500',
+      horsepower: 208,
+      torqueNm: 221,
+    });
+  });
+
+  it('enriches an exact older trim from one uniquely matching engine capacity', () => {
+    const groups = [
+      {
+        configuration: '2.4 I4 FWD',
+        text: 'Engine Layout\nI4\nEngine Size\n2.4 L\nEngine Type\nPetrol\nDrive Train\nFWD\nTransmission\n5A\nHorsepower\n178 HP\nTorque\n222 Nm',
+      },
+      {
+        configuration: '3.5 V6 FWD',
+        text: 'Engine Layout\nV6\nEngine Size\n3.5 L\nEngine Type\nPetrol\nDrive Train\nFWD\nTransmission\n5A\nHorsepower\n271 HP\nTorque\n339 Nm',
+      },
+    ];
+    const html = `
+      <script type="application/ld+json">${JSON.stringify({
+        '@type': 'Vehicle',
+        vehicleConfiguration: '2.4L sedan',
+        vehicleModelDate: '2011',
+        bodyType: 'Midsize Sedan',
+        numberOfDoors: 4,
+      })}</script>
+      <script type="application/json" id="vpi-pad-spec-groups">${JSON.stringify(groups)}</script>
+    `;
+
+    expect(extractDriveArabiaSpecsForTrim(html, '2.4L sedan')).toMatchObject({
+      trim: '2.4L sedan',
+      year: 2011,
+      bodyType: 'Sedan',
+      doors: '4',
+      fuelType: 'Petrol',
+      transmission: 'Automatic',
+      driveType: 'FWD',
+      cylinders: '4',
+      engineSize: '2400',
+      horsepower: 178,
+      torqueNm: 222,
+    });
+  });
+
+  it('returns no non-default specs when two engine groups match ambiguously', () => {
+    const ambiguousHtml = `${pad2024Html}<script type="application/json" id="vpi-pad-spec-groups">${JSON.stringify([
+      capturedCamrySpecGroups[2],
+      capturedCamrySpecGroups[2],
+    ])}</script>`;
+    expect(extractDriveArabiaSpecsForTrim(ambiguousHtml, '2.5H I4 Limited FWD')).toEqual({});
   });
 });

@@ -1,7 +1,7 @@
 import { missingVehicleScrapeStatusValue } from '@data/dataverseOptionSets';
 import {
   extractDriveArabiaPriceRows,
-  extractDriveArabiaSpecs,
+  extractDriveArabiaSpecsForTrim,
   extractDriveArabiaTrimPrices,
   normalizeToDataverse,
 } from '@parsers';
@@ -253,12 +253,12 @@ export async function processNextScrapeInboxItem(
     }
 
     const scrapedValue = missingVehicleScrapeStatusValue('Scraped') ?? 4;
-    const specs = extractDriveArabiaSpecs(item.html!);
     const updatedRequestIds: string[] = [];
     for (const match of matches) {
-      // A per-year page can list several trims while its Product/Vehicle block
-      // describes only the selected/default trim. Never leak those specs into
-      // another trim merely because its price row appears on the same page.
+      // Resolve one unique engine-signature match from PAD-captured accordion
+      // bodies. Without that evidence, only the exact JSON-LD-selected trim is
+      // eligible, preserving the previous no-cross-trim-contamination rule.
+      const specs = extractDriveArabiaSpecsForTrim(item.html!, match.request.trim);
       const specsMatch =
         specs.trim !== undefined &&
         comparable(specs.trim) === comparable(match.request.trim) &&

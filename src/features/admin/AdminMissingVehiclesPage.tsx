@@ -30,9 +30,12 @@ import {
   ExternalLink,
   Loader,
   Inbox,
+  Copy,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { MissingVehicleRequest } from '@types';
 import { cn, formatCurrency } from '@utils';
+import { buildDriveArabiaModelYearUrl } from '@lib/driveArabiaUrl';
 
 // ─── Status helpers ────────────────────────────────────────────
 
@@ -295,6 +298,21 @@ function MissingVehicleDetailModal({
     const raw = scrape && scrape.mileage != null ? String(scrape.mileage).replace(/\D/g, '') : '';
     return raw ? `${Number(raw).toLocaleString()} km` : null;
   })();
+  const driveArabiaUrl = buildDriveArabiaModelYearUrl({
+    make: request.make,
+    model: request.model,
+    year: request.modelYear,
+  });
+
+  const copyDriveArabiaUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(driveArabiaUrl);
+      toast.success('DriveArabia PAD URL copied');
+    } catch {
+      toast.error('Could not copy the DriveArabia URL');
+    }
+  };
+
   return (
     <Dialog isOpen={isOpen} onClose={onClose} title="" description="" size="xl" hideCloseButton>
       <div className="flex max-h-[75vh] flex-col gap-0 text-[#071936] dark:text-white">
@@ -317,6 +335,16 @@ function MissingVehicleDetailModal({
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copyDriveArabiaUrl}
+                aria-label="Copy DriveArabia PAD URL"
+                title={`Copy ${request.make} ${request.model} ${request.modelYear} URL for the attended PAD flow`}
+              >
+                <Copy className="h-3.5 w-3.5 sm:mr-1.5" />
+                <span className="hidden sm:inline">Copy PAD URL</span>
+              </Button>
               <StatusSelect request={request} />
               <button
                 onClick={onClose}

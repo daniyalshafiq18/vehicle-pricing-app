@@ -25,9 +25,15 @@ export {
   lookupSeatsValue,
 } from './mappers';
 export { normalizeToDataverse } from './normalize';
-export type { DriveArabiaPriceRow, DriveArabiaSpecs } from './driveArabia';
+export type {
+  DriveArabiaPriceRow,
+  DriveArabiaSpecs,
+  DriveArabiaSpecGroup,
+} from './driveArabia';
 export {
   extractDriveArabiaPriceRows,
   extractDriveArabiaTrimPrices,
   extractDriveArabiaSpecs,
+  extractDriveArabiaSpecGroups,
+  extractDriveArabiaSpecsForTrim,
 } from './driveArabia';

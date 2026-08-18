@@ -47,6 +47,11 @@ export interface DriveArabiaSpecs {
   countryOfOrigin?: string;
 }
 
+/** One rendered DriveArabia Specs accordion, keyed by its engine heading. */
+export interface DriveArabiaSpecGroup extends DriveArabiaSpecs {
+  configuration: string;
+}
+
 const Q = String.fromCharCode(34); // hold onto a bare double-quote char
 const BS = String.fromCharCode(92); // backslash, for unescaping the payload
 const ESCAPED_Q = BS + Q;
@@ -104,7 +109,9 @@ export function extractDriveArabiaPriceRows(html: string): DriveArabiaPriceRow[]
  *    unlike the landing page's abbreviated serialized names.
  *  - The rest of the page ("See Similar Cars" / "Key Information") lists OTHER
  *    makes with their own AED ranges, so extraction is bounded to the actual
- *    trim-table section and requires a known drivetrain before each AED range.
+ *    trim-table section. Some older pages use generic labels such as
+ *    "2.4L sedan" without a drivetrain, so the section boundary—not a trim
+ *    naming convention—is the safety constraint.
  *
  * Returns rows for the page's single model year; `[]` if the year is missing.
  */
@@ -128,7 +135,7 @@ export function extractDriveArabiaTrimPrices(html: string): DriveArabiaPriceRow[
   const section = end === -1 ? afterHeading : afterHeading.slice(0, end);
 
   const pairRe = new RegExp(
-    "([A-Za-z0-9][A-Za-z0-9 .'+/\\\\-]*?\\b(?:FWD|RWD|AWD|4WD|4x4|2WD))" +
+    "([A-Za-z0-9][A-Za-z0-9 .'+/&()\\\\-]{0,59}?)" +
       '\\s+AED\\s+([0-9,]+)\\s*[-\\u2013\\u2014]\\s*([0-9,]+)',
     'gi',
   );
@@ -271,6 +278,108 @@ function normalizeTransmission(value: string): string {
   return value;
 }
 
+interface EngineSignature {
+  litres: string;
+  layout: string;
+  hybrid: boolean;
+  driveType: string;
+}
+
+function engineSignature(value: string): EngineSignature | undefined {
+  const normalized = value.toUpperCase().replace(/[^A-Z0-9.]+/g, ' ').trim();
+  const size = /(?:^|\s)(\d+(?:\.\d+)?)\s*(?:L|H)?(?:\s|$)/.exec(normalized);
+  const layout = /(?:^|\s)([IV]\d{1,2})(?:\s|$)/.exec(normalized);
+  const drive = /(?:^|\s)(FWD|RWD|AWD|4WD|4X4|2WD)(?:\s|$)/.exec(normalized);
+  if (!size || !layout || !drive) {
+    return undefined;
+  }
+  return {
+    litres: String(Number(size[1])),
+    layout: layout[1]!,
+    hybrid: /\d+(?:\.\d+)?\s*H(?:\s|$)|(?:^|\s)HYBRID(?:\s|$)/.test(normalized),
+    driveType: drive[1]!,
+  };
+}
+
+function signaturesEqual(left: EngineSignature, right: EngineSignature): boolean {
+  return (
+    left.litres === right.litres &&
+    left.layout === right.layout &&
+    left.hybrid === right.hybrid &&
+    left.driveType === right.driveType
+  );
+}
+
+function engineLitres(value: string): string | undefined {
+  const normalized = value.toUpperCase().replace(/[^A-Z0-9.]+/g, ' ').trim();
+  const size = /(?:^|\s)(\d+(?:\.\d+)?)\s*(?:L|H)?(?:\s|$)/.exec(normalized);
+  return size ? String(Number(size[1])) : undefined;
+}
+
+function firstLine(text: string, label: string): string | undefined {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = new RegExp(`${escaped}\\s*[\\r\\n]+\\s*([^\\r\\n]+)`, 'i').exec(text);
+  return match?.[1]?.trim();
+}
+
+function specsFromCapturedGroup(configuration: string, text: string): DriveArabiaSpecGroup {
+  const out: DriveArabiaSpecGroup = { configuration };
+  const signature = engineSignature(configuration);
+  if (signature) {
+    out.engineSize = String(Math.round(Number(signature.litres) * 1000));
+    out.cylinders = signature.layout.slice(1);
+    out.driveType = signature.driveType;
+  }
+  const fuelType = firstLine(text, 'Engine Type');
+  if (fuelType) {
+    out.fuelType = fuelType;
+  }
+  const driveType = firstLine(text, 'Drive Train');
+  if (driveType) {
+    out.driveType = driveType;
+  }
+  const transmission = firstLine(text, 'Transmission');
+  if (transmission) {
+    out.transmission = normalizeTransmission(transmission);
+  }
+  const horsepower = numberValue(firstLine(text, 'Horsepower')?.replace(/[^0-9.]/g, ''));
+  if (horsepower) {
+    out.horsepower = horsepower;
+  }
+  const torque = numberValue(firstLine(text, 'Torque')?.replace(/[^0-9.]/g, ''));
+  if (torque) {
+    out.torqueNm = torque;
+  }
+  return out;
+}
+
+/**
+ * Read the spec accordions captured by PAD. DriveArabia unmounts closed
+ * accordion bodies, so PAD serializes each rendered body into this marker
+ * before it uploads document.outerHTML.
+ */
+export function extractDriveArabiaSpecGroups(html: string): DriveArabiaSpecGroup[] {
+  const marker =
+    /<script[^>]+id=["']vpi-pad-spec-groups["'][^>]*>([\s\S]*?)<\/script>/i.exec(html);
+  if (!marker) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(marker[1]!) as unknown;
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed.flatMap((candidate) => {
+      const item = record(candidate);
+      const configuration = stringValue(item?.configuration);
+      const text = stringValue(item?.text);
+      return configuration && text ? [specsFromCapturedGroup(configuration, text)] : [];
+    });
+  } catch {
+    return [];
+  }
+}
+
 function specsFromVehicleJsonLd(vehicle: JsonRecord): DriveArabiaSpecs {
   const out: DriveArabiaSpecs = {};
   const trim = stringValue(vehicle.vehicleConfiguration);
@@ -349,4 +458,69 @@ export function extractDriveArabiaSpecs(html: string): DriveArabiaSpecs {
     }
   }
   return out;
+}
+
+function specsFromUniqueGroup(
+  trim: string,
+  selected: DriveArabiaSpecs,
+  group: DriveArabiaSpecGroup,
+): DriveArabiaSpecs {
+  return {
+    trim,
+    ...(selected.year !== undefined && { year: selected.year }),
+    ...(selected.bodyType !== undefined && { bodyType: selected.bodyType }),
+    ...(selected.doors !== undefined && { doors: selected.doors }),
+    ...(selected.countryOfOrigin !== undefined && {
+      countryOfOrigin: selected.countryOfOrigin,
+    }),
+    ...(group.fuelType !== undefined && { fuelType: group.fuelType }),
+    ...(group.driveType !== undefined && { driveType: group.driveType }),
+    ...(group.transmission !== undefined && { transmission: group.transmission }),
+    ...(group.cylinders !== undefined && { cylinders: group.cylinders }),
+    ...(group.engineSize !== undefined && { engineSize: group.engineSize }),
+    ...(group.horsepower !== undefined && { horsepower: group.horsepower }),
+    ...(group.torqueNm !== undefined && { torqueNm: group.torqueNm }),
+  };
+}
+
+/**
+ * Resolve the specification block for one exact commercial trim. Shared
+ * model fields come from JSON-LD; mechanical fields come from one uniquely
+ * matching PAD-captured engine accordion. Ambiguous/missing groups never
+ * fall through to another trim's specs.
+ */
+export function extractDriveArabiaSpecsForTrim(
+  html: string,
+  trim: string,
+): DriveArabiaSpecs {
+  const selected = extractDriveArabiaSpecs(html);
+  const requestedSignature = engineSignature(trim);
+  if (requestedSignature) {
+    const matchingGroups = extractDriveArabiaSpecGroups(html).filter((group) => {
+      const groupSignature = engineSignature(group.configuration);
+      return groupSignature && signaturesEqual(requestedSignature, groupSignature);
+    });
+    if (matchingGroups.length === 1) {
+      return specsFromUniqueGroup(trim, selected, matchingGroups[0]!);
+    }
+  }
+
+  if (selected.trim && comparableTrim(selected.trim) === comparableTrim(trim)) {
+    const litres = engineLitres(trim);
+    if (litres) {
+      const capacityMatches = extractDriveArabiaSpecGroups(html).filter((group) => {
+        const groupSignature = engineSignature(group.configuration);
+        return groupSignature?.litres === litres;
+      });
+      if (capacityMatches.length === 1) {
+        return specsFromUniqueGroup(trim, selected, capacityMatches[0]!);
+      }
+    }
+    return selected;
+  }
+  return {};
+}
+
+function comparableTrim(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
 }

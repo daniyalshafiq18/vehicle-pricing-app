@@ -1,6 +1,6 @@
 # Power Automate Desktop (PAD) Multi-Source Scraper — Implementation Guide
 
-> **Status:** IN PROGRESS · **The attended DriveArabia exact-trim workflow is live-proven end to end**, including a Missing Vehicle Request freshly created through Valuation and the dedicated Horsepower write. Specs are applied only to the JSON-LD-selected trim. Automatic PAD launching/inbox processing and Dubizzle remain pending; YallaMotor stays untouched.
+> **Status:** IN PROGRESS · **The attended DriveArabia multi-trim workflow is live-proven end to end.** A single page capture now supplies exact prices plus uniquely matched petrol, V6, and hybrid engine groups. Automatic PAD launching/inbox processing and Dubizzle remain pending; YallaMotor stays untouched.
 > **Date written:** 2026-08-07 · **Series:** [evaluation-report](azure-functions-scraper-evaluation-report.md) → [egress-campaign](azure-egress-experiment-campaign-report.md) → [implementation-report](azure-functions-scraper-implementation-report.md) → **this guide**
 > **Companion to:** [azure-functions-scraper-guide.md](azure-functions-scraper-guide.md) (the single-source Azure path — still the YallaMotor transport).
 >
@@ -111,8 +111,8 @@ All three write the **same MVR fields** with the **same `transport`/`scrapedSour
 
 ### 5.1 Flow outline
 
-1. **Launch browser** — `Launch new Microsoft Edge/Chrome` with a **real user profile** (default session; never `--incognito`, never `--headless`, never `--disable-web-security`).
-2. **Go to the search URL** — built per source (§7.3). Use the same make/model/trim/year query the app would send.
+1. **Receive the request URL** — create a required PAD input variable named `DriveArabiaUrl` with data type **Text**. An attended console run displays the Flow inputs dialog; paste the URL copied from **Admin Missing Vehicle Requests → request modal → Copy PAD URL**.
+2. **Launch browser** — `Launch new Microsoft Edge/Chrome` with a **real user profile** (default session; never `--incognito`, never `--headless`, never `--disable-web-security`). Replace the fixed Camry Initial URL with `%DriveArabiaUrl%`.
 3. **Human pacing** — wait 0.5–2 s randomly between navigations (mirrors guide §6.6). One listing at a time; no burst of tabs.
 4. **Open the first listing detail** — read the search page listing link, `Go to web page`.
 5. **Capture full HTML** — either:
@@ -125,7 +125,104 @@ All three write the **same MVR fields** with the **same `transport`/`scrapedSour
    (Use **Application/JSON** content type; capture the returned `inboxId`.)
 7. **Loop/stop** — for the attended first run, stop after one detail (manual validation); scale to N listings later.
 
-### 5.2 Anti-detection checklist (the layer PAD wins on — don't undo it)
+### 5.2 DriveArabia multi-trim capture function
+
+DriveArabia unmounts the contents of closed Specs accordions, so plain `document.documentElement.outerHTML` contains only the initially open engine. React also renders a programmatically opened accordion asynchronously: clicking every button and reading immediately captured only the first Camry group in live PAD acceptance on 2026-08-17. Use two JavaScript actions separated by a PAD wait.
+
+**Action 2 — Start asynchronous spec capture.** Set its produced variable to `SpecCaptureStartResult`:
+
+```javascript
+function ExecuteScript() {
+  const specs = document.querySelector('#specs');
+  if (!specs) {
+    return 'NO_SPECS_SECTION';
+  }
+
+  const buttons = Array.from(specs.querySelectorAll('button[aria-controls]'));
+  const groups = [];
+
+  function finish() {
+    let marker = document.getElementById('vpi-pad-spec-groups');
+    if (!marker) {
+      marker = document.createElement('script');
+      marker.id = 'vpi-pad-spec-groups';
+      marker.type = 'application/json';
+      document.body.appendChild(marker);
+    }
+    marker.dataset.expectedCount = String(buttons.length);
+    marker.textContent = JSON.stringify(groups);
+  }
+
+  function captureAt(index) {
+    if (index >= buttons.length) {
+      finish();
+      return;
+    }
+
+    const button = buttons[index];
+    const captureRenderedGroup = function () {
+      const regionId = button.getAttribute('aria-controls');
+      const region = regionId ? document.getElementById(regionId) : null;
+      const configuration = button.innerText.trim();
+      const text = region ? region.innerText.trim() : '';
+      if (configuration && text) {
+        groups.push({ configuration, text });
+      }
+      captureAt(index + 1);
+    };
+
+    if (button.getAttribute('aria-expanded') === 'true') {
+      captureRenderedGroup();
+    } else {
+      button.click();
+      window.setTimeout(captureRenderedGroup, 750);
+    }
+  }
+
+  captureAt(0);
+  return 'STARTED:' + buttons.length;
+}
+```
+
+**Action 3 — Wait:** add PAD's **Wait** action for **5 seconds**. This is intentionally outside JavaScript because PAD's browser action does not wait for Promise results.
+
+**Action 4 — Build and validate the upload payload.** Keep its produced variable as `JavaScriptResult`, which the existing Write file / Invoke web service actions use:
+
+```javascript
+function ExecuteScript() {
+  const marker = document.getElementById('vpi-pad-spec-groups');
+  if (!marker) {
+    throw new Error('DriveArabia spec capture did not finish');
+  }
+
+  const groups = JSON.parse(marker.textContent || '[]');
+  const expected = Number(marker.dataset.expectedCount || '0');
+  if (!expected || groups.length !== expected) {
+    throw new Error(
+      'DriveArabia spec capture incomplete: ' + groups.length + '/' + expected
+    );
+  }
+
+  return JSON.stringify({
+    source: 'drivearabia',
+    url: window.location.href,
+    kind: 'prices',
+    html: document.documentElement.outerHTML
+  });
+}
+```
+
+The resulting flow is: enter `DriveArabiaUrl` → Launch Chrome → Start spec capture → Wait 5 seconds → Build payload → Write file → Invoke web service. The validation prevents an incomplete capture from being uploaded. The parser ignores marketing words and requires one unique engine signature: capacity + I/V cylinder layout + hybrid marker + drivetrain.
+
+The app deliberately builds DriveArabia's short route:
+
+```text
+https://www.drivearabia.com/carprices/uae/<make>/<model>/<year>/
+```
+
+DriveArabia redirects this to its current canonical route. This is safer than encoding canonical aliases in the app; for example, canonical model segments may repeat the make name. The uploaded payload records `window.location.href`, so exact MVR matching uses the final redirected URL.
+
+### 5.3 Anti-detection checklist (the layer PAD wins on — don't undo it)
 
 - **Real browser, real profile** — do not add automation flags, don't disable JS, don't strip fingerprints.
 - **Don't scrape the same site on a burst** — 0.5–2 s jitter; a handful of requests per run; space runs out.
@@ -133,7 +230,7 @@ All three write the **same MVR fields** with the **same `transport`/`scrapedSour
 - **Don't blind-retry on a challenge** — if the page shows a Cloudflare/Imperva interstitial, stop the flow and surface the URL (same principle as guide §6.6).
 - **Use the source's own search/filters** (year, trim) to keep the URL human-shaped — clone the YallaMotor URL-builder approach.
 
-### 5.3 Trigger options (attended → unattended)
+### 5.4 Trigger options (attended → unattended)
 
 - **Attended (now):** you click **Run** on the PAD desktop flow; it runs in your logged-in session. Zero extra licensing.
 - **Unattended (graduate):** a Power Automate **cloud flow** with an HTTP trigger (same SAS-trigger pattern as Flow 3 — see §10 for the security lesson) invokes **Run desktop flow** against a machine group. The app can then call it the way it calls Flow 3 today.
@@ -183,7 +280,7 @@ Keep it parallel to `azureYallaMotorScraper.ts`:
 
 ### 7.3 Per-source URL builders
 
-Clone `src/lib/yallaMotorUrl.ts` → `src/lib/driveArabiaUrl.ts`, `src/lib/dubizzleUrl.ts` with the same `buildSearchUrl({make, model, trim, year})` contract so the PAD flow and the app build identical URLs (keeps `sourceUrl`/`searchUrl` provenance consistent).
+`src/lib/driveArabiaUrl.ts` implements `buildDriveArabiaModelYearUrl({make, model, year})`. The Missing Vehicle Request modal copies that route for the attended PAD input; DriveArabia redirects it to the canonical model-year page, and PAD records the final `window.location.href` as provenance. A future `src/lib/dubizzleUrl.ts` should follow the same single-builder rule once its real page shape is captured.
 
 ### 7.4 Env vars
 
@@ -194,7 +291,7 @@ Clone `src/lib/yallaMotorUrl.ts` → `src/lib/driveArabiaUrl.ts`, `src/lib/dubiz
 
 ## 8. Extraction — the discovery method (unknowns are resolved this way)
 
-DriveArabia's model landing and per-model-year HTML shapes are captured and fixture-pinned. Current per-year pages contain useful schema.org `Product`/`Vehicle` JSON-LD for one selected/default `vehicleConfiguration`; `src/parsers/driveArabia.ts` prefers that block for specs and uses serialized/bounded visible content for price rows. Because the price table contains multiple trims, specs must never be copied to a different trim. Dubizzle remains uncaptured. For every new page shape, follow the same discovery method instead of guessing selectors:
+DriveArabia's model landing and per-model-year HTML shapes are captured and fixture-pinned. Current per-year pages contain useful schema.org `Product`/`Vehicle` JSON-LD for one selected/default `vehicleConfiguration`, while other engine groups are dynamically mounted accordion bodies. The §5.2 PAD marker preserves those rendered groups; `src/parsers/driveArabia.ts` combines safe model-level JSON-LD fields with one uniquely matched engine group and uses serialized/bounded visible content for price rows. Because the price table contains multiple trims, specs are never copied across an ambiguous engine signature. Dubizzle remains uncaptured. For every new page shape, follow the same discovery method instead of guessing selectors:
 
 1. **Capture real HTML fixtures** — run the PAD flow once per source, save the raw `outerHTML` into `tests/fixtures/` (`drivearabia-<model>-detail.html`, `dubizzle-<model>-detail.html`) + one search page each.
 2. **Inspect for structured data** — grep for `application/ld+json` (schema.org `Car` / `Product` / `ItemList`). If absent, fall back to the rendered spec-grid HTML (the pattern already used for YallaMotor cylinders).
@@ -235,7 +332,7 @@ No new MVR columns required for the attended-first rollout. The queue lives outs
 
 - **Function key on `ingest_html`** — the browser never calls it; only PAD does. The key lives in the PAD flow, not in committed source.
 - **The `VITE_FLOW3_URL` lesson (2026-08-05):** never commit live trigger keys; a client-invoked key is still visible in the shipped bundle — keep live values in the gitignored `.env.local` / build environment, and **rotate to invalidate** any leaked copy. Same rule for the PAD HTTP-trigger when it graduates to unattended.
-- **Residential IP = the user's home IP.** PAD runs on your machine → every scrape comes from your IP. Respect source terms + rate limits; pace (§5.2); don't run crawls.
+- **Residential IP = the user's home IP.** PAD runs on your machine → every scrape comes from your IP. Respect source terms + rate limits; pace (§5.3); don't run crawls.
 - **Inbox hygiene:** Blob inbox is transient — TTL-clean or purge on `Complete`/`Error`.
 
 ---
@@ -273,18 +370,20 @@ Rollback: stop the PAD flows; the app is unaffected — YallaMotor path is untou
 2. [x] **PAD-DriveArabia flow** (attended) captures real landing and per-model-year HTML fixtures (2026-08-11/12)
 3. [x] **DriveArabia price path** — parser + app processor + live Dataverse price row + automatic `Complete`/Blob purge verified (2026-08-12)
 4. [x] **DriveArabia enrichment live gate** — fresh Valuation-created Camry 2024 request completed through PAD/inbox processing with prices, mapped specifications, and the dedicated Horsepower write (2026-08-13)
-5. [ ] **PAD-Dubizzle flow** captures a real Dubizzle HTML fixture (Imperva confirms pass)
-6. [ ] **Dubizzle parser** — fixture + unit tests + live row (`transport:'pad'`)
-7. [x] **Frontend/admin** — `Process PAD Inbox` action added; parsed scrape details surface `transport`
-8. [ ] **Keep YallaMotor untouched** — re-verify `azure`/`flow3` after each deploy
-9. [ ] **Graduate to unattended** — only after both sources run reliably attended for weeks (licensing + machine group + HTTP-trigger cloud flow)
+5. [x] **DriveArabia multi-trim live gate** — revised six-action PAD flow captured all three Camry engine groups; Limited Hybrid received its own Hybrid/CVT/208 HP specifications rather than SE petrol specs (2026-08-17)
+6. [x] **Dynamic DriveArabia navigation live gate** — Honda Accord `2.4 DX/LX` 2013 completed through `%DriveArabiaUrl%` → PAD/Azure capture → **Process PAD Inbox** → all required details and prices persisted in Dataverse (2026-08-18)
+7. [ ] **PAD-Dubizzle flow** captures a real Dubizzle HTML fixture (Imperva confirms pass)
+8. [ ] **Dubizzle parser** — fixture + unit tests + live row (`transport:'pad'`)
+9. [x] **Frontend/admin** — `Process PAD Inbox` action added; parsed scrape details surface `transport`
+10. [ ] **Keep YallaMotor untouched** — re-verify `azure`/`flow3` after each deploy
+11. [ ] **Graduate to unattended** — only after both sources run reliably attended for weeks (licensing + machine group + HTTP-trigger cloud flow)
 
 ---
 
 ## 14. Risks & limitations
 
 - **Selector/markup brittleness** — per-source extraction depends on the site's current DOM/JSON-LD; the fixture rule + tests are the safety net.
-- **Browser/fingerprint escalation** — a site can tighten its anti-bot over time; PAD's real-browser advantage can shrink, so pace + volume discipline matters (§5.2).
+- **Browser/fingerprint escalation** — a site can tighten its anti-bot over time; PAD's real-browser advantage can shrink, so pace + volume discipline matters (§5.3).
 - **Licensing** — attended is cheap; **unattended** adds per-user plan + unattended add-on + an always-on machine. Cost decision deferred until proven.
 - **One machine** — PAD scales by machine, not horizontally; fine for low-volume valuations, not for crawls.
 - **Residential-IP responsibility** — your home IP does the scraping; keep volume human.

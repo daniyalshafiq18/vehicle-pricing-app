@@ -4,6 +4,21 @@ import type { ScrapeResultUpdate } from './multiSourceScraper';
 import type { MissingVehicleRequest } from '@types';
 import camry2024Html from '../../tests/fixtures/drivearabia-camry-2024-pad.html?raw';
 
+const multiTrimCamryHtml = `${camry2024Html}<script type="application/json" id="vpi-pad-spec-groups">${JSON.stringify([
+  {
+    configuration: '2.5 I4 FWD',
+    text: 'Engine Type\nPetrol\nDrive Train\nFWD\nTransmission\n8A\nHorsepower\n204 HP\nTorque\n243 Nm',
+  },
+  {
+    configuration: '3.5 V6 FWD',
+    text: 'Engine Type\nPetrol\nDrive Train\nFWD\nTransmission\n8A\nHorsepower\n298 HP\nTorque\n356 Nm',
+  },
+  {
+    configuration: '2.5 H I4 FWD',
+    text: 'Engine Type\nHybrid\nDrive Train\nFWD\nTransmission\nCVT\nHorsepower\n208 HP\nTorque\n221 Nm',
+  },
+])}</script>`;
+
 const BASE = 'https://mock.azurewebsites.net/api/probe_py';
 const ITEM = {
   inboxId: 'abc123',
@@ -134,6 +149,42 @@ describe('processNextScrapeInboxItem', () => {
     });
     expect(otherFields).not.toHaveProperty('bodyTypeValue');
     expect(JSON.parse(otherFields!.scrapedListings)).not.toHaveProperty('specs');
+  });
+
+  it('writes the uniquely matched non-default V6 engine group from a PAD marker', async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce(json(ITEM))
+      .mockResolvedValueOnce(json({ ...ITEM, html: multiTrimCamryHtml }))
+      .mockResolvedValueOnce(json({ inboxId: ITEM.inboxId, status: 'Complete' }));
+    const updateScrapeResult = vi.fn(async (_id: string, _fields: ScrapeResultUpdate) => undefined);
+
+    await processNextScrapeInboxItem({
+      requests: [REQUEST],
+      functionBaseUrl: BASE,
+      fetchFn,
+      updateScrapeResult,
+    });
+
+    expect(updateScrapeResult).toHaveBeenCalledWith(
+      REQUEST.id,
+      expect.objectContaining({
+        bodyTypeValue: 44,
+        fuelTypeValue: 1,
+        transmissionValue: 1,
+        driveTypeValue: 3,
+        cylindersValue: 4,
+        engineSizeValue: 3500,
+        horsepowerValue: 298,
+        doorsValue: 4,
+      }),
+    );
+    const fields = updateScrapeResult.mock.calls[0]![1];
+    expect(JSON.parse(fields.scrapedListings).specs).toMatchObject({
+      trim: REQUEST.trim,
+      horsepower: 298,
+      torqueNm: 356,
+    });
   });
 
   it('leaves a valid capture Pending when no MVR matches instead of guessing', async () => {
