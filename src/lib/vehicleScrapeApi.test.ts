@@ -14,7 +14,9 @@ vi.mock('./safeAjax', () => ({
   safeFetchWithMeta: vi.fn(),
 }));
 
-const MVR_ID = '11111111-1111-4111-8111-111111111111';
+// Dataverse sequential GUIDs are GUID-shaped but do not necessarily encode an
+// RFC UUID version/variant. Live MVR IDs can contain segments such as `f011`.
+const MVR_ID = '11111111-1111-f011-a111-111111111111';
 const RUN_ID = '22222222-2222-4222-8222-222222222222';
 const RESULT_ID = '33333333-3333-4333-8333-333333333333';
 
@@ -88,8 +90,8 @@ describe('vehicleScrapeApi', () => {
       vpi_transport: 3,
       vpi_processingstatus: 1,
       vpi_pricetype: 2,
-      vpi_minimumprice: 111900,
-      vpi_maximumprice: 112000,
+      vpi_minprice: 111900,
+      vpi_maxprice: 112000,
     });
   });
 
@@ -121,8 +123,8 @@ describe('vehicleScrapeApi', () => {
             vpi_transport: 3,
             vpi_processingstatus: 3,
             vpi_pricetype: 2,
-            vpi_minimumprice: 111900,
-            vpi_maximumprice: 112000,
+            vpi_minprice: 111900,
+            vpi_maxprice: 112000,
           },
         ],
       });

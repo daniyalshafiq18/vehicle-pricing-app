@@ -458,7 +458,6 @@ This table records vehicles that users searched for but do not currently exist i
 | **Scraped Max Price** | `vpi_scraped_maxprice` | Currency | Maximum price from scraped listings |
 | **Scraped Sources** | `vpi_scraped_sources` | Multiple Lines of Text | Source URLs where scraped listings were found |
 | **Approved Minimum Price** | `vpi_approvedminprice` | Currency | Admin-approved lower bound; independent of user suggestions and raw source prices |
-| **Approved Average Price** | `vpi_approvedaverageprice` | Currency | Admin-approved representative price |
 | **Approved Maximum Price** | `vpi_approvedmaxprice` | Currency | Admin-approved upper bound |
 | **Pricing Decision Status** | `vpi_pricingdecisionstatus` | Choice | Awaiting Scrapes / Scraping / Ready for Review / Needs Attention / Approved / Rejected |
 | **Pricing Decision Method** | `vpi_pricingmethod` | Choice | Single Source / Combined Sources / Manual Override |
@@ -643,7 +642,7 @@ One row represents one source attempt. Prices, specifications, provenance, timin
 |---|---|
 | Identity | `vpi_name`, `vpi_resultcorrelationkey`, `vpi_ScrapeRun`, `vpi_attemptnumber` |
 | Execution | `vpi_source`, `vpi_transport`, `vpi_processingstatus` |
-| Pricing | `vpi_pricetype`, `vpi_listingcount`, `vpi_minimumprice`, `vpi_averageprice`, `vpi_maximumprice` |
+| Pricing | `vpi_pricetype`, `vpi_listingcount`, `vpi_minprice`, `vpi_maxprice` |
 | Specifications | `vpi_trim`, `vpi_modelyear`, `vpi_bodytype`, `vpi_enginesize`, `vpi_cylinders`, `vpi_fueltype`, `vpi_transmissiontype`, `vpi_drivetype`, `vpi_horsepower`, `vpi_doors`, `vpi_seats`, `vpi_mileage`, `vpi_category`, `vpi_countryoforigin`, `vpi_torquenm` |
 | Provenance | `vpi_sourceurl`, `vpi_inboxkey`, `vpi_externaljobkey`, `vpi_httpstatuscode`, `vpi_startedon`, `vpi_completedon`, `vpi_capturedon`, `vpi_processedon` |
 | Evidence/errors | `vpi_normalizeddetailsjson`, `vpi_rawresultjson`, `vpi_evidencestoragereference`, `vpi_contenthash`, `vpi_errorcode`, `vpi_errormessage` |

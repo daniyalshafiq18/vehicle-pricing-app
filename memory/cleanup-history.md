@@ -10,6 +10,8 @@ metadata:
 ## 2026-08-19 — Multi-source Schema Contract Added
 - Added the configuration and TypeScript contract for the normalized Vehicle Scrape Run and Vehicle Scrape Source Result tables, plus MVR decision fields. No existing scraper or legacy MVR write path was removed in this foundation step; runtime migration is intentionally deferred until Power Pages Web API exposure is confirmed.
 - Added the Power Pages CRUD/repository foundation after the two table settings were enabled and downloaded. The legacy MVR scrape path remains intact; no consumer was switched and no code was removed.
+- Moved YallaMotor scrape orchestration and Missing Vehicle Request mapping out of `useTriggerScrape` into the dedicated `yallaMotorDualWrite` service. The hook now contains only React Query/toast behavior; no legacy scrape fields, Azure-first/Flow-3-fallback behavior, or admin controls were removed.
+- Removed the normalized Source Result Average Price and MVR Approved Average Price contracts because YallaMotor supplies only minimum/maximum evidence and the stored source average was only a calculated midpoint. Master Vehicle pricing averages and analytics were deliberately retained.
 
 ## 2026-07-31 — Fabricated Option-Set Maps Replaced + MVR Map Collapsed
 - **Removed fabricated option-set maps** in `src/data/dataverseOptionSets.ts` that were never verified against the real Dataverse:

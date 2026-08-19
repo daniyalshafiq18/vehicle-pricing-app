@@ -60,7 +60,9 @@ Missing Vehicle Request → Vehicle Scrape Run → Vehicle Scrape Source Result
 
 Do not put a direct MVR lookup on a source result or collapse source results into the legacy shared MVR scrape fields. Each source row must preserve its own price type and provenance. The MVR stores only the final admin decision and lookups to the reviewed run, primary price result, and selected specification result.
 
-The new MVR decision fields intentionally remain outside `MISSING_VEHICLE_REQUEST_SELECT_FIELDS` until their read mapping is introduced. The existing MVR portal setting already uses `fields=*`. Both new tables are now enabled with `fields=*`, and `vehicleScrapeApi.ts` provides create/read/update operations behind `VehicleScrapeRepository`. No UI or scraper invokes them yet; this keeps the migration additive and behavior-preserving.
+The new MVR decision fields intentionally remain outside `MISSING_VEHICLE_REQUEST_SELECT_FIELDS` until their read mapping is introduced. The existing MVR portal setting already uses `fields=*`. Both new tables are enabled with `fields=*`, and `vehicleScrapeApi.ts` provides create/read/update operations behind `VehicleScrapeRepository`.
+
+YallaMotor now uses an additive dual-write migration. `useTriggerScrape` delegates to `yallaMotorDualWrite.ts`, which creates a Running single-request Run, executes the existing Azure-first/Power-Automate-fallback scrape, performs the proven legacy MVR write, creates one YallaMotor Source Result, and finalizes the Run. Source Result Category uses the same `mapCategory()` normalization as the MVR (`GCC`, `NON-GCC`, `OTHER/STANDARD`); the unmodified regional-spec wording remains in Raw Result JSON. Evidence-storage failures never undo a successful legacy MVR update; they produce an administrator warning and mark the Run failed where possible. Scrape failures and unavailable/blocked results retain the existing MVR status behavior and write failed/blocked evidence when a Run exists. DriveArabia is not part of this migration yet.
 
 Run/source API rules:
 
@@ -81,7 +83,7 @@ Run/source API rules:
 
 ## API Modules (`src/lib/`)
 
-The Web API layer is split into four dedicated modules, each with a dual-path strategy:
+The Web API and scraper layer is split into dedicated modules:
 
 | Module | Purpose | Primary Path | Fallback Path |
 |---|---|---|---|
@@ -92,6 +94,7 @@ The Web API layer is split into four dedicated modules, each with a dual-path st
 | `driveArabiaUrl.ts` | Build the short model-year route copied from an MVR into PAD's attended run input | DriveArabia redirect-compatible URL | — |
 | `multiSourceScraper.ts` | Drain PAD HTML inbox, parse DriveArabia prices + selected-trim specs, match exact MVR records, persist `transport:'pad'` | Azure relay `next_pending` / `inbox_status` | — |
 | `vehicleScrapeApi.ts` | Create/read/update normalized scrape runs and per-source results | Power Pages Web API | `safeFetch` / `safeFetchWithMeta` |
+| `yallaMotorDualWrite.ts` | Orchestrate one YallaMotor scrape and persist both legacy MVR state and normalized Run/Source Result evidence | Azure-first YallaMotor scraper | Power Automate Cloud transport; legacy-only persistence with warning if evidence storage fails |
 
 All API modules read the created record's GUID from the `entityid` response header (Power Pages standard), with a fallback to `OData-EntityId` header parsing.
 

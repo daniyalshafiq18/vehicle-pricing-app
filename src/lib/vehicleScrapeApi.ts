@@ -43,7 +43,7 @@ const FORMATTED_VALUE = '@OData.Community.Display.V1.FormattedValue';
 
 function cleanGuid(value: string, label: string): string {
   const guid = value.trim().replace(/^\{?|\}?$/g, '');
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(guid)) {
+  if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(guid)) {
     throw new Error(`${label} must be a valid GUID`);
   }
   return guid;
@@ -161,7 +161,6 @@ function mapResult(raw: Record<string, unknown>): VehicleScrapeSourceResult {
     priceTypeValue,
     listingCount: raw[RESULT.LISTING_COUNT] as number | undefined,
     minimumPrice: raw[RESULT.MINIMUM_PRICE] as number | undefined,
-    averagePrice: raw[RESULT.AVERAGE_PRICE] as number | undefined,
     maximumPrice: raw[RESULT.MAXIMUM_PRICE] as number | undefined,
     trim: raw[RESULT.TRIM] as string | undefined,
     modelYear: raw[RESULT.MODEL_YEAR] as number | undefined,
@@ -276,7 +275,6 @@ function sourceResultRecord(input: UpdateVehicleScrapeSourceResultInput): Record
     [RESULT.PRICE_TYPE, input.priceTypeValue],
     [RESULT.LISTING_COUNT, input.listingCount],
     [RESULT.MINIMUM_PRICE, input.minimumPrice],
-    [RESULT.AVERAGE_PRICE, input.averagePrice],
     [RESULT.MAXIMUM_PRICE, input.maximumPrice],
     [RESULT.TRIM, input.trim],
     [RESULT.MODEL_YEAR, input.modelYear],

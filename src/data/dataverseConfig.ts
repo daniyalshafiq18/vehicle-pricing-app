@@ -143,7 +143,6 @@ export const MISSING_VEHICLE_REQUEST_SELECT_FIELDS = Object.values(
  */
 export const MISSING_VEHICLE_DECISION_FIELDS = {
   APPROVED_MIN_PRICE: 'vpi_approvedminprice',
-  APPROVED_AVERAGE_PRICE: 'vpi_approvedaverageprice',
   APPROVED_MAX_PRICE: 'vpi_approvedmaxprice',
   PRICING_DECISION_STATUS: 'vpi_pricingdecisionstatus',
   PRICING_DECISION_METHOD: 'vpi_pricingmethod',
@@ -192,9 +191,8 @@ export const VEHICLE_SCRAPE_SOURCE_RESULT_FIELDS = {
   PROCESSING_STATUS: 'vpi_processingstatus',
   PRICE_TYPE: 'vpi_pricetype',
   LISTING_COUNT: 'vpi_listingcount',
-  MINIMUM_PRICE: 'vpi_minimumprice',
-  AVERAGE_PRICE: 'vpi_averageprice',
-  MAXIMUM_PRICE: 'vpi_maximumprice',
+  MINIMUM_PRICE: 'vpi_minprice',
+  MAXIMUM_PRICE: 'vpi_maxprice',
   TRIM: 'vpi_trim',
   MODEL_YEAR: 'vpi_modelyear',
   BODY_TYPE: 'vpi_bodytype',

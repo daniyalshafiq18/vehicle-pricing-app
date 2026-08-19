@@ -93,7 +93,6 @@ export interface VehicleScrapeSourceResult {
   priceTypeValue?: number;
   listingCount?: number;
   minimumPrice?: number;
-  averagePrice?: number;
   maximumPrice?: number;
   trim?: string;
   modelYear?: number;
@@ -137,7 +136,6 @@ export interface CreateVehicleScrapeSourceResultInput {
   priceTypeValue?: number;
   listingCount?: number;
   minimumPrice?: number;
-  averagePrice?: number;
   maximumPrice?: number;
   trim?: string;
   modelYear?: number;
