@@ -124,6 +124,12 @@ metadata:
 
 ## Dataverse Option Sets — Verify, Don't Assume
 
+### Multi-source evidence must be normalized and portal-enabled in two stages (2026-08-19)
+- Preserve the chain `Missing Vehicle Request → Vehicle Scrape Run → Vehicle Scrape Source Result`. Source-specific prices/specifications/provenance belong on source-result rows; approved prices and evidence-selection lookups belong on the MVR. Writing multiple sources back into one shared MVR scrape payload recreates last-write-wins data loss and makes unlike price types look comparable.
+- A Dataverse column/table plus table permission is not sufficient for Power Pages Web API access. Confirm `Webapi/<logical-table-name>/enabled` and the field allow-list before adding the table or field to runtime requests. Keep newly created MVR fields outside a shared `Object.values(...).join(',')` `$select` until that exposure is proven, otherwise one disallowed field can break the whole query.
+- Lookup writes use the case-sensitive schema/navigation name (`vpi_ScrapeRun`), while reads expose the lowercase lookup reference (`_vpi_scraperun_value`). Pin both forms in the schema contract and never derive them from display names.
+- New evidence tables must not expose raw JSON, source URLs, job identifiers, or errors to Anonymous/Authenticated portal roles in production. Temporary broad development access is tracked debt, not an accepted final security model; never store secrets in those fields.
+
 ### Option-set maps in code MUST be verified against the actual Dataverse option set
 Two fields on the Missing Vehicle Request table had code maps that were WRONG because they were never checked against Dataverse (verified 2026-07-31):
 - **`vpi_fueltype`**: code assumed `Electric`=1, `Hybrid`=2, `Petrol/Diesel`=3 — that's the Vehicle *Powertrain* option set, copied by mistake. Actual MVR set: `Petrol`=1, `Diesel`=2, `Hybrid`=3, `Electric`=4. Consequence: scraped `Petrol` was written as value 3 → displayed **Hybrid** in Dataverse.

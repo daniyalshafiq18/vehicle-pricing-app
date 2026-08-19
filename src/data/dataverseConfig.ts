@@ -23,11 +23,16 @@ export const ENTITIES = {
   CONTACT: 'contacts',
   INQUIRY: 'vpi_vehicleinquiries',
   MISSING_VEHICLE_REQUEST: 'vpi_missingvehiclerequestses',
+  VEHICLE_SCRAPE_RUN: 'vpi_vehiclescraperuns',
+  VEHICLE_SCRAPE_SOURCE_RESULT: 'vpi_vehiclescrapesourceresults',
   PRICE_SUGGESTION: 'vpi_pricesuggestionses',
 } as const;
 
 /** Entity logical names for use with EntityDefinitions metadata API. */
 export const ENTITY_LOGICAL_NAMES = {
+  MISSING_VEHICLE_REQUEST: 'vpi_missingvehiclerequests',
+  VEHICLE_SCRAPE_RUN: 'vpi_vehiclescraperun',
+  VEHICLE_SCRAPE_SOURCE_RESULT: 'vpi_vehiclescrapesourceresult',
   PRICE_SUGGESTION: 'vpi_pricesuggestions',
 } as const;
 
@@ -128,6 +133,98 @@ export const MISSING_VEHICLE_REQUEST_FIELDS = {
 export const MISSING_VEHICLE_REQUEST_SELECT_FIELDS = Object.values(
   MISSING_VEHICLE_REQUEST_FIELDS,
 ).join(',');
+
+/**
+ * Admin-owned multi-source pricing decision fields.
+ *
+ * Kept outside MISSING_VEHICLE_REQUEST_FIELDS until the corresponding Power
+ * Pages Web API site setting allow-list has been enabled. This prevents the
+ * existing MVR query from requesting fields the portal may not expose yet.
+ */
+export const MISSING_VEHICLE_DECISION_FIELDS = {
+  APPROVED_MIN_PRICE: 'vpi_approvedminprice',
+  APPROVED_AVERAGE_PRICE: 'vpi_approvedaverageprice',
+  APPROVED_MAX_PRICE: 'vpi_approvedmaxprice',
+  PRICING_DECISION_STATUS: 'vpi_pricingdecisionstatus',
+  PRICING_DECISION_METHOD: 'vpi_pricingmethod',
+  REVIEWED_SCRAPE_RUN_LOOKUP: 'vpi_ReviewedScrapeRun',
+  REVIEWED_SCRAPE_RUN_LOOKUP_REF: '_vpi_reviewedscraperun_value',
+  PRIMARY_PRICE_RESULT_LOOKUP: 'vpi_PrimaryPriceResult',
+  PRIMARY_PRICE_RESULT_LOOKUP_REF: '_vpi_primarypriceresult_value',
+  SELECTED_SPECIFICATION_RESULT_LOOKUP: 'vpi_SelectedSpecificationResult',
+  SELECTED_SPECIFICATION_RESULT_LOOKUP_REF: '_vpi_selectedspecificationresult_value',
+  DECISION_NOTES: 'vpi_decisionnotes',
+  DECIDED_BY_CONTACT_LOOKUP: 'vpi_DecidedByContact',
+  DECIDED_BY_CONTACT_LOOKUP_REF: '_vpi_decidedbycontact_value',
+  DECIDED_ON: 'vpi_decidedon',
+} as const;
+
+// Vehicle Scrape Run field logical/schema names.
+export const VEHICLE_SCRAPE_RUN_FIELDS = {
+  ID: 'vpi_vehiclescraperunid',
+  NAME: 'vpi_name',
+  CORRELATION_ID: 'vpi_correlationkey',
+  OVERALL_STATUS: 'vpi_overallstatus',
+  STARTED_ON: 'vpi_startedon',
+  COMPLETED_ON: 'vpi_completedon',
+  REQUESTED_SOURCE_COUNT: 'vpi_requestedsourcecount',
+  SUCCESSFUL_SOURCE_COUNT: 'vpi_successfulsourcecount',
+  FAILED_SOURCE_COUNT: 'vpi_failedsourcecount',
+  TRIGGER_TYPE: 'vpi_triggertype',
+  BATCH_CORRELATION_KEY: 'vpi_batchcorrelationkey',
+  ERROR_SUMMARY: 'vpi_errorsummary',
+  MISSING_VEHICLE_REQUEST_LOOKUP: 'vpi_MissingVehicleRequest',
+  MISSING_VEHICLE_REQUEST_LOOKUP_REF: '_vpi_missingvehiclerequest_value',
+  REQUESTED_BY_CONTACT_LOOKUP: 'vpi_RequestedByContact',
+  REQUESTED_BY_CONTACT_LOOKUP_REF: '_vpi_requestedbycontact_value',
+} as const;
+
+// Vehicle Scrape Source Result field logical/schema names.
+export const VEHICLE_SCRAPE_SOURCE_RESULT_FIELDS = {
+  ID: 'vpi_vehiclescrapesourceresultid',
+  NAME: 'vpi_name',
+  RESULT_CORRELATION_ID: 'vpi_resultcorrelationkey',
+  SCRAPE_RUN_LOOKUP: 'vpi_ScrapeRun',
+  SCRAPE_RUN_LOOKUP_REF: '_vpi_scraperun_value',
+  ATTEMPT_NUMBER: 'vpi_attemptnumber',
+  SOURCE: 'vpi_source',
+  TRANSPORT: 'vpi_transport',
+  PROCESSING_STATUS: 'vpi_processingstatus',
+  PRICE_TYPE: 'vpi_pricetype',
+  LISTING_COUNT: 'vpi_listingcount',
+  MINIMUM_PRICE: 'vpi_minimumprice',
+  AVERAGE_PRICE: 'vpi_averageprice',
+  MAXIMUM_PRICE: 'vpi_maximumprice',
+  TRIM: 'vpi_trim',
+  MODEL_YEAR: 'vpi_modelyear',
+  BODY_TYPE: 'vpi_bodytype',
+  ENGINE_SIZE: 'vpi_enginesize',
+  CYLINDERS: 'vpi_cylinders',
+  FUEL_TYPE: 'vpi_fueltype',
+  TRANSMISSION_TYPE: 'vpi_transmissiontype',
+  DRIVE_TYPE: 'vpi_drivetype',
+  HORSEPOWER: 'vpi_horsepower',
+  DOORS: 'vpi_doors',
+  SEATS: 'vpi_seats',
+  MILEAGE: 'vpi_mileage',
+  CATEGORY: 'vpi_category',
+  COUNTRY_OF_ORIGIN: 'vpi_countryoforigin',
+  TORQUE_NM: 'vpi_torquenm',
+  SOURCE_URL: 'vpi_sourceurl',
+  INBOX_ID: 'vpi_inboxkey',
+  EXTERNAL_JOB_ID: 'vpi_externaljobkey',
+  HTTP_STATUS_CODE: 'vpi_httpstatuscode',
+  STARTED_ON: 'vpi_startedon',
+  COMPLETED_ON: 'vpi_completedon',
+  CAPTURED_ON: 'vpi_capturedon',
+  PROCESSED_ON: 'vpi_processedon',
+  NORMALIZED_DETAILS_JSON: 'vpi_normalizeddetailsjson',
+  RAW_RESULT_JSON: 'vpi_rawresultjson',
+  EVIDENCE_STORAGE_REFERENCE: 'vpi_evidencestoragereference',
+  CONTENT_HASH: 'vpi_contenthash',
+  ERROR_CODE: 'vpi_errorcode',
+  ERROR_MESSAGE: 'vpi_errormessage',
+} as const;
 
 // ─── Price Suggestion Field Logical Names ────────────────────
 export const PRICE_SUGGESTION_FIELDS = {

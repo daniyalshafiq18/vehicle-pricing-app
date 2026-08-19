@@ -1,6 +1,24 @@
 
 # Changelog
 
+## 2026-08-19
+
+### Multi-source Dataverse schema contract added
+- Registered the confirmed `vpi_vehiclescraperuns` and `vpi_vehiclescrapesourceresults` entity set names, case-sensitive lookup schema names, source/run field contracts, and all verified choice integers in the application configuration.
+- Added strongly typed `VehicleScrapeRun` and `VehicleScrapeSourceResult` models and extended `MissingVehicleRequest` with the admin-approved price, decision, evidence-selection, notes, contact, and timestamp fields.
+- Kept the new MVR decision fields out of the active portal `$select` and did not add runtime CRUD yet. This preserves the working YallaMotor/DriveArabia behavior until the new tables and fields are enabled in the Power Pages Web API site-setting allow-lists.
+- Added regression coverage that pins the two entity set names, five confirmed case-sensitive lookups, and every new Dataverse choice value. Updated the schema, architecture, and development references for the normalized MVR → run → source-result model.
+- Recorded the temporary portal-permission state as a mandatory pre-production security item: remove Anonymous/Authenticated access from both evidence tables and grant the required access to Administrators only.
+- Verification: TypeScript passes, the full suite passes 84 tests with 2 live-network tests skipped, focused lint on every changed TypeScript file passes, and the production build succeeds. Repository-wide lint still reports the existing unrelated backlog.
+
+### Multi-source Power Pages API foundation implemented
+- Downloaded and preserved the four live portal settings that enable `vpi_vehiclescraperun` and `vpi_vehiclescrapesourceresult` with `fields=*`, plus the two corresponding table-permission records. Both permissions currently grant read/create/write/append/append-to, deny delete, and retain the temporarily accepted Anonymous/Authenticated role assignments.
+- Added `vehicleScrapeApi.ts` with validated-GUID create/read/update operations for scrape runs and source results. Writes use the confirmed case-sensitive lookup navigation names; reads use the lowercase lookup-reference fields and deliberately exclude navigation properties from `$select`.
+- First source-result creation explicitly writes `Attempt Number=1` because Dataverse provides no column default. Run/source choice values, timestamps, price/specification evidence, provenance, and error details round-trip into typed application models.
+- Wired the new operations through `IDataSource`, `DataverseDataSource`, and `VehicleScrapeRepository`. Existing YallaMotor, DriveArabia, Scrape Now, and Process PAD Inbox behavior remains unchanged because no UI or scraper calls the new repository yet.
+- Added four isolated Web API regression tests covering lookup bindings, entity-set URLs, default status/attempt values, result mapping, sparse PATCH bodies, and malformed-GUID rejection. No live Dataverse test rows were created.
+- Verification: TypeScript passes, the full suite passes 88 tests with 2 live-network tests skipped, focused lint for the new API/repository/schema files passes, and the production build succeeds. Repository-wide lint retains its pre-existing unrelated backlog.
+
 ## 2026-08-18
 
 ### DriveArabia turbocharged engine-size parsing fixed

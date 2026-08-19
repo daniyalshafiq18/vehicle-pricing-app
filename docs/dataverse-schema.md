@@ -457,6 +457,17 @@ This table records vehicles that users searched for but do not currently exist i
 | **Scraped Min Price** | `vpi_scraped_minprice` | Currency | Minimum price from scraped listings |
 | **Scraped Max Price** | `vpi_scraped_maxprice` | Currency | Maximum price from scraped listings |
 | **Scraped Sources** | `vpi_scraped_sources` | Multiple Lines of Text | Source URLs where scraped listings were found |
+| **Approved Minimum Price** | `vpi_approvedminprice` | Currency | Admin-approved lower bound; independent of user suggestions and raw source prices |
+| **Approved Average Price** | `vpi_approvedaverageprice` | Currency | Admin-approved representative price |
+| **Approved Maximum Price** | `vpi_approvedmaxprice` | Currency | Admin-approved upper bound |
+| **Pricing Decision Status** | `vpi_pricingdecisionstatus` | Choice | Awaiting Scrapes / Scraping / Ready for Review / Needs Attention / Approved / Rejected |
+| **Pricing Decision Method** | `vpi_pricingmethod` | Choice | Single Source / Combined Sources / Manual Override |
+| **Reviewed Scrape Run** | `vpi_ReviewedScrapeRun` | Lookup | Run whose collected evidence the admin reviewed |
+| **Primary Price Result** | `vpi_PrimaryPriceResult` | Lookup | Source result selected as the main price evidence |
+| **Selected Specification Result** | `vpi_SelectedSpecificationResult` | Lookup | Source result selected as the specification authority |
+| **Decision Notes** | `vpi_decisionnotes` | Multiple Lines of Text | Admin rationale, conflicts, or manual adjustments |
+| **Decided By Contact** | `vpi_DecidedByContact` | Lookup | Contact associated with the decision |
+| **Decided On** | `vpi_decidedon` | Date and Time | Decision timestamp |
 
 #### Currency Base Fields (auto-maintained by Dataverse)
 
@@ -568,7 +579,102 @@ This table records vehicles that users searched for but do not currently exist i
 
 ---
 
-## Table 5: Price Suggestion (`vpi_pricesuggestions`)
+## Table 5: Vehicle Scrape Run (`vpi_vehiclescraperun`)
+
+### Table Information
+
+| Property | Value |
+|---|---|
+| Display Name | Vehicle Scrape Run |
+| Logical Name | `vpi_vehiclescraperun` |
+| Entity Set Name | `vpi_vehiclescraperuns` |
+| Ownership | User or team |
+| Parent | Missing Vehicle Request through `vpi_MissingVehicleRequest` |
+| Idempotency | Active alternate key on `vpi_correlationkey` |
+
+### Purpose
+
+A run is one orchestration attempt for one Missing Vehicle Request. It groups all source attempts, preserves batch/retry context, and records aggregate completion counts without allowing one source to overwrite another.
+
+### Fields
+
+| Display Name | Logical/Schema Name | Type |
+|---|---|---|
+| Name | `vpi_name` | Text |
+| Correlation ID | `vpi_correlationkey` | Text, required, alternate key |
+| Overall Status | `vpi_overallstatus` | Choice, required |
+| Started On | `vpi_startedon` | Date and Time |
+| Completed On | `vpi_completedon` | Date and Time |
+| Requested Source Count | `vpi_requestedsourcecount` | Whole Number |
+| Successful Source Count | `vpi_successfulsourcecount` | Whole Number |
+| Failed Source Count | `vpi_failedsourcecount` | Whole Number |
+| Trigger Type | `vpi_triggertype` | Choice, required |
+| Batch Correlation Key | `vpi_batchcorrelationkey` | Text |
+| Error Summary | `vpi_errorsummary` | Multiple Lines of Text |
+| Missing Vehicle Request | `vpi_MissingVehicleRequest` | Lookup, required |
+| Requested By Contact | `vpi_RequestedByContact` | Lookup, optional |
+
+**Overall Status values:** Queued=1, Running=2, Partial Success=3, Completed=4, Failed=5, Cancelled=6.
+
+**Trigger Type values:** Single Request=1, Bulk=2, Retry=3, Automatic=4.
+
+---
+
+## Table 6: Vehicle Scrape Source Result (`vpi_vehiclescrapesourceresult`)
+
+### Table Information
+
+| Property | Value |
+|---|---|
+| Display Name | Vehicle Scrape Source Result |
+| Logical Name | `vpi_vehiclescrapesourceresult` |
+| Entity Set Name | `vpi_vehiclescrapesourceresults` |
+| Ownership | User or team |
+| Parent | Vehicle Scrape Run through `vpi_ScrapeRun` |
+| Idempotency | Active alternate key on `vpi_resultcorrelationkey` |
+
+### Purpose
+
+One row represents one source attempt. Prices, specifications, provenance, timing, and errors remain source-specific so YallaMotor used-market evidence and DriveArabia reference pricing can be reviewed together without being silently blended or overwritten.
+
+### Fields
+
+| Group | Fields |
+|---|---|
+| Identity | `vpi_name`, `vpi_resultcorrelationkey`, `vpi_ScrapeRun`, `vpi_attemptnumber` |
+| Execution | `vpi_source`, `vpi_transport`, `vpi_processingstatus` |
+| Pricing | `vpi_pricetype`, `vpi_listingcount`, `vpi_minimumprice`, `vpi_averageprice`, `vpi_maximumprice` |
+| Specifications | `vpi_trim`, `vpi_modelyear`, `vpi_bodytype`, `vpi_enginesize`, `vpi_cylinders`, `vpi_fueltype`, `vpi_transmissiontype`, `vpi_drivetype`, `vpi_horsepower`, `vpi_doors`, `vpi_seats`, `vpi_mileage`, `vpi_category`, `vpi_countryoforigin`, `vpi_torquenm` |
+| Provenance | `vpi_sourceurl`, `vpi_inboxkey`, `vpi_externaljobkey`, `vpi_httpstatuscode`, `vpi_startedon`, `vpi_completedon`, `vpi_capturedon`, `vpi_processedon` |
+| Evidence/errors | `vpi_normalizeddetailsjson`, `vpi_rawresultjson`, `vpi_evidencestoragereference`, `vpi_contenthash`, `vpi_errorcode`, `vpi_errormessage` |
+
+**Source values:** YallaMotor=1, DriveArabia=2, Dubizzle=3, Other=4.
+
+**Transport values:** Azure Function=1, Power Automate Cloud=2, Power Automate Desktop=3, Manual=4, Other=5.
+
+**Processing Status values:** Queued=1, Running=2, Succeeded=3, No Data=4, Blocked=5, Failed=6, Skipped=7.
+
+**Price Type values:** Used Market Asking=1, Original Reference=2, Dealer MSRP=3, Other or Unknown=4.
+
+> `Attempt Number` has no Dataverse default. Every application/flow writer must explicitly write `1` for the first attempt. Full captured HTML belongs in external evidence storage; Dataverse stores normalized/raw result JSON, a storage reference, and a content hash.
+
+### Multi-source Relationship Chain
+
+```text
+Missing Vehicle Request (1)
+  └── Vehicle Scrape Run (many)
+        └── Vehicle Scrape Source Result (many)
+```
+
+The MVR decision fields point back to the reviewed run and the independently selected price/specification results. Approved prices remain an explicit admin decision and are the only multi-source decision prices intended for eventual promotion to Vehicle Data.
+
+### Power Pages Security Status
+
+Both new tables are enabled in Power Pages through active `Webapi/<logical-name>/enabled=true` and `Webapi/<logical-name>/fields=*` settings. Their downloaded permissions grant read/create/write/append/append-to and deny delete. Anonymous Users and Authenticated Users remain assigned to match the existing site configuration; this is accepted only as a temporary development state. Before production, remove those roles and grant the required permissions to Administrators only. Never store function keys, tokens, credentials, or secrets in source-result fields.
+
+---
+
+## Table 7: Price Suggestion (`vpi_pricesuggestions`)
 
 ### Table Information
 

@@ -1,0 +1,17 @@
+accountrelationship: 
+adx_entitypermission_webrole:
+- 2d255b08-3a0e-466d-95a9-a5452f58fc5c
+- b0ecfd4e-57d2-4044-8d82-82b6f0cdae91
+append: true
+appendto: true
+contactrelationship: 
+create: true
+delete: false
+entitylogicalname: vpi_vehiclescraperun
+entityname: Vehicle Scrape Run
+id: cb5dab4a-c9f9-47de-b22c-f47b563a6cc1
+parententitypermission: 
+parentrelationship: 
+read: true
+scope: 756150000
+write: true

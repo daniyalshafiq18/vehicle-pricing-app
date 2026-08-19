@@ -4,3 +4,4 @@ export { analyticsRepository, AnalyticsRepository } from './analyticsRepository'
 export { inquiryRepository, InquiryRepository } from './inquiryRepository';
 export { missingVehicleRepository, MissingVehicleRepository } from './missingVehicleRepository';
 export { priceSuggestionRepository, PriceSuggestionRepository } from './priceSuggestionRepository';
+export { vehicleScrapeRepository, VehicleScrapeRepository } from './vehicleScrapeRepository';

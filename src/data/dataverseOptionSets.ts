@@ -44,11 +44,15 @@ function toValue(map: Record<string, number>, label: string): number | null {
  */
 function normalizedOptionValue(map: Record<string, number>, label: string): number | null {
   const exact = toValue(map, label);
-  if (exact !== null) return exact;
+  if (exact !== null) {
+    return exact;
+  }
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
   const lc = norm(label);
   for (const [key, value] of Object.entries(map)) {
-    if (norm(key) === lc) return value;
+    if (norm(key) === lc) {
+      return value;
+    }
   }
   return null;
 }
@@ -430,3 +434,68 @@ export const priceSuggestionStatusValue = (label: string): number | null =>
   toValue(PRICE_SUGGESTION_STATUS, label);
 export const priceSuggestionStatusLabel = (v: unknown, fallback = 'Pending'): string =>
   toLabel(PRICE_SUGGESTION_STATUS, v, fallback);
+
+// ─── Multi-source scrape orchestration ────────────────────────────────────────
+
+export const VEHICLE_SCRAPE_RUN_STATUS: Record<string, number> = {
+  Queued: 1,
+  Running: 2,
+  'Partial Success': 3,
+  Completed: 4,
+  Failed: 5,
+  Cancelled: 6,
+};
+
+export const VEHICLE_SCRAPE_TRIGGER_TYPE: Record<string, number> = {
+  'Single Request': 1,
+  Bulk: 2,
+  Retry: 3,
+  Automatic: 4,
+};
+
+export const VEHICLE_SCRAPE_SOURCE: Record<string, number> = {
+  YallaMotor: 1,
+  DriveArabia: 2,
+  Dubizzle: 3,
+  Other: 4,
+};
+
+export const VEHICLE_SCRAPE_TRANSPORT: Record<string, number> = {
+  'Azure Function': 1,
+  'Power Automate Cloud': 2,
+  'Power Automate Desktop': 3,
+  Manual: 4,
+  Other: 5,
+};
+
+export const VEHICLE_SCRAPE_PROCESSING_STATUS: Record<string, number> = {
+  Queued: 1,
+  Running: 2,
+  Succeeded: 3,
+  'No Data': 4,
+  Blocked: 5,
+  Failed: 6,
+  Skipped: 7,
+};
+
+export const VEHICLE_SCRAPE_PRICE_TYPE: Record<string, number> = {
+  'Used Market Asking': 1,
+  'Original Reference': 2,
+  'Dealer MSRP': 3,
+  'Other or Unknown': 4,
+};
+
+export const MISSING_VEHICLE_PRICING_DECISION_STATUS: Record<string, number> = {
+  'Awaiting Scrapes': 1,
+  Scraping: 2,
+  'Ready for Review': 3,
+  'Needs Attention': 4,
+  Approved: 5,
+  Rejected: 6,
+};
+
+export const MISSING_VEHICLE_PRICING_DECISION_METHOD: Record<string, number> = {
+  'Single Source': 1,
+  'Combined Sources': 2,
+  'Manual Override': 3,
+};

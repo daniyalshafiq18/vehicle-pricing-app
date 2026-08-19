@@ -31,4 +31,18 @@ export interface MissingVehicleRequest {
   scrapedMinPrice?: number;
   scrapedMaxPrice?: number;
   scrapedSources?: string;
+  // Admin-owned multi-source pricing decision fields.
+  approvedMinimumPrice?: number;
+  approvedAveragePrice?: number;
+  approvedMaximumPrice?: number;
+  pricingDecisionStatus?: string;
+  pricingDecisionStatusValue?: number;
+  pricingDecisionMethod?: string;
+  pricingDecisionMethodValue?: number;
+  reviewedScrapeRunId?: string;
+  primaryPriceResultId?: string;
+  selectedSpecificationResultId?: string;
+  decisionNotes?: string;
+  decidedByContactId?: string;
+  decidedOn?: Date;
 }

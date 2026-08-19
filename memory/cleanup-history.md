@@ -7,6 +7,10 @@ metadata:
 
 # Cleanup History
 
+## 2026-08-19 — Multi-source Schema Contract Added
+- Added the configuration and TypeScript contract for the normalized Vehicle Scrape Run and Vehicle Scrape Source Result tables, plus MVR decision fields. No existing scraper or legacy MVR write path was removed in this foundation step; runtime migration is intentionally deferred until Power Pages Web API exposure is confirmed.
+- Added the Power Pages CRUD/repository foundation after the two table settings were enabled and downloaded. The legacy MVR scrape path remains intact; no consumer was switched and no code was removed.
+
 ## 2026-07-31 — Fabricated Option-Set Maps Replaced + MVR Map Collapsed
 - **Removed fabricated option-set maps** in `src/data/dataverseOptionSets.ts` that were never verified against the real Dataverse:
   - `MISSING_VEHICLE_BODY_TYPE` (MVR) — the 68-entry literal was fabricated (Sedan=42, Suv=47, non-existent labels "Convertable"/"Targah"). Replaced with the real set (Sedan=44, SUV=53, `SUV - Crossover`=57). After the user cleaned labels in Dataverse on BOTH tables, the MVR and Vehicle Data sets became fully identical → the duplicate literal was **collapsed into an alias** of `BODY_TYPE` (`MISSING_VEHICLE_BODY_TYPE = BODY_TYPE`).

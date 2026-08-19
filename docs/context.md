@@ -133,6 +133,12 @@ For an exact JSON-LD-selected older trim, a single Specs group with the same eng
 
 **Live status (2026-08-18):** the dynamic attended workflow passed a non-Camry end-to-end test with Honda Accord `2.4 DX/LX` 2013. PAD navigation/capture, Azure ingestion, exact inbox matching, all required specification fields, prices, and Dataverse persistence succeeded. The attended transport is functionally proven; remaining work is orchestration automation rather than extraction correctness.
 
+### Multi-source scrape persistence foundation (2026-08-19)
+
+Dataverse now has a normalized evidence model: one Missing Vehicle Request has many `Vehicle Scrape Run` rows, and each run has many `Vehicle Scrape Source Result` rows. A source result owns its own prices, price type, specifications, transport, URL, evidence references, timing, and errors. This removes the legacy last-write-wins limitation of the shared MVR scrape fields and prevents unlike evidence—such as YallaMotor used asking prices and DriveArabia original reference prices—from being silently blended.
+
+The MVR owns the admin decision: approved minimum/average/maximum prices, decision status/method/notes, reviewed run, independently selected price and specification results, decision contact, and timestamp. Both new tables are now enabled through Power Pages with downloaded `enabled=true` and `fields=*` site settings. `vehicleScrapeApi.ts` and `VehicleScrapeRepository` provide typed create/read/update operations, but current scrape buttons still use the legacy write path; the first migration consumer will be added only after this persistence surface is verified.
+
 ### Theming
 
 - Tailwind CSS `class` strategy — dark mode toggled by adding `dark` class to `<html>`

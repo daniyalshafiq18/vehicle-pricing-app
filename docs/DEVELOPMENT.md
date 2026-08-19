@@ -48,6 +48,29 @@ The `DataverseDataSource` class:
 4. Builds pricing index, hierarchy, and analytics in memory (same pattern)
 5. Applies central pricing algorithm to compute min/avg/max/median per make-segment
 
+### Multi-source scrape data contract
+
+`dataverseConfig.ts` defines the confirmed entity sets `vpi_vehiclescraperuns` and `vpi_vehiclescrapesourceresults`, their fields, and all case-sensitive lookup schema names. `dataverseOptionSets.ts` pins the exact Dataverse choice integers. `vehicleScrape.ts` contains the application-facing run and source-result types.
+
+The relationship direction is always:
+
+```text
+Missing Vehicle Request → Vehicle Scrape Run → Vehicle Scrape Source Result
+```
+
+Do not put a direct MVR lookup on a source result or collapse source results into the legacy shared MVR scrape fields. Each source row must preserve its own price type and provenance. The MVR stores only the final admin decision and lookups to the reviewed run, primary price result, and selected specification result.
+
+The new MVR decision fields intentionally remain outside `MISSING_VEHICLE_REQUEST_SELECT_FIELDS` until their read mapping is introduced. The existing MVR portal setting already uses `fields=*`. Both new tables are now enabled with `fields=*`, and `vehicleScrapeApi.ts` provides create/read/update operations behind `VehicleScrapeRepository`. No UI or scraper invokes them yet; this keeps the migration additive and behavior-preserving.
+
+Run/source API rules:
+
+- Validate every GUID before inserting it into an OData URL, filter, or lookup binding.
+- Use case-sensitive schema/navigation names for writes (`vpi_MissingVehicleRequest@odata.bind`, `vpi_ScrapeRun@odata.bind`).
+- Use lowercase lookup reference fields for reads (`_vpi_missingvehiclerequest_value`, `_vpi_scraperun_value`).
+- Never include a lookup navigation property itself in `$select`; select its lookup reference instead.
+- Explicitly write `vpi_attemptnumber=1` for a first source attempt.
+- Do not place secrets in raw JSON, evidence references, source URLs, external job IDs, or error fields while broad portal roles remain assigned.
+
 ## Performance Optimizations
 
 - `React.memo` on expensive chart components
@@ -68,6 +91,7 @@ The Web API layer is split into four dedicated modules, each with a dual-path st
 | `inquiryApi.ts` | Create vehicle inquiry records | `webapi.safeAjax` (reads `entityid` header) | `safeFetchWithMeta` |
 | `driveArabiaUrl.ts` | Build the short model-year route copied from an MVR into PAD's attended run input | DriveArabia redirect-compatible URL | — |
 | `multiSourceScraper.ts` | Drain PAD HTML inbox, parse DriveArabia prices + selected-trim specs, match exact MVR records, persist `transport:'pad'` | Azure relay `next_pending` / `inbox_status` | — |
+| `vehicleScrapeApi.ts` | Create/read/update normalized scrape runs and per-source results | Power Pages Web API | `safeFetch` / `safeFetchWithMeta` |
 
 All API modules read the created record's GUID from the `entityid` response header (Power Pages standard), with a fallback to `OData-EntityId` header parsing.
 

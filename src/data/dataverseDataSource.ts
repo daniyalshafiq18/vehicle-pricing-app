@@ -29,6 +29,14 @@ import {
   updatePriceSuggestion,
   updatePriceSuggestionStatus,
 } from '@lib/priceSuggestionApi';
+import {
+  createVehicleScrapeRun,
+  createVehicleScrapeSourceResult,
+  fetchVehicleScrapeRuns,
+  fetchVehicleScrapeSourceResults,
+  updateVehicleScrapeRun,
+  updateVehicleScrapeSourceResult,
+} from '@lib/vehicleScrapeApi';
 import { memoize } from '@utils';
 import type {
   IDataSource,
@@ -49,6 +57,12 @@ import type {
   Inquiry,
   MissingVehicleRequest,
   PriceSuggestion,
+  CreateVehicleScrapeRunInput,
+  CreateVehicleScrapeSourceResultInput,
+  UpdateVehicleScrapeRunInput,
+  UpdateVehicleScrapeSourceResultInput,
+  VehicleScrapeRun,
+  VehicleScrapeSourceResult,
 } from '@types';
 import {
   API_BASE,
@@ -941,6 +955,43 @@ export class DataverseDataSource implements IDataSource {
 
   async approveAndCreateVehicle(mvr: MissingVehicleRequest): Promise<void> {
     return approveAndCreateVehicle(mvr);
+  }
+
+  // Multi-source scrape evidence
+  async createVehicleScrapeRun(payload: CreateVehicleScrapeRunInput): Promise<string> {
+    return createVehicleScrapeRun(payload);
+  }
+
+  async getVehicleScrapeRuns(
+    missingVehicleRequestId: string,
+  ): Promise<VehicleScrapeRun[]> {
+    return fetchVehicleScrapeRuns(missingVehicleRequestId);
+  }
+
+  async updateVehicleScrapeRun(
+    id: string,
+    fields: UpdateVehicleScrapeRunInput,
+  ): Promise<void> {
+    return updateVehicleScrapeRun(id, fields);
+  }
+
+  async createVehicleScrapeSourceResult(
+    payload: CreateVehicleScrapeSourceResultInput,
+  ): Promise<string> {
+    return createVehicleScrapeSourceResult(payload);
+  }
+
+  async getVehicleScrapeSourceResults(
+    scrapeRunId: string,
+  ): Promise<VehicleScrapeSourceResult[]> {
+    return fetchVehicleScrapeSourceResults(scrapeRunId);
+  }
+
+  async updateVehicleScrapeSourceResult(
+    id: string,
+    fields: UpdateVehicleScrapeSourceResultInput,
+  ): Promise<void> {
+    return updateVehicleScrapeSourceResult(id, fields);
   }
 
   // ─── Price Suggestions ───────────────────────────────────

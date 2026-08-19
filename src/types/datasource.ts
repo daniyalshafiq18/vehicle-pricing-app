@@ -11,6 +11,14 @@ import type { AnalyticsData, DashboardAnalytics, DashboardFilters } from './anal
 import type { Inquiry } from './inquiry';
 import type { PriceSuggestion } from './priceSuggestion';
 import type { MissingVehicleRequest } from './missingVehicleRequest';
+import type {
+  CreateVehicleScrapeRunInput,
+  CreateVehicleScrapeSourceResultInput,
+  UpdateVehicleScrapeRunInput,
+  UpdateVehicleScrapeSourceResultInput,
+  VehicleScrapeRun,
+  VehicleScrapeSourceResult,
+} from './vehicleScrape';
 
 /**
  * IDataSource — abstract data access layer.
@@ -124,6 +132,19 @@ export interface IDataSource {
     },
   ): Promise<void>;
   approveAndCreateVehicle(mvr: MissingVehicleRequest): Promise<void>;
+
+  // Multi-source scrape evidence
+  createVehicleScrapeRun(payload: CreateVehicleScrapeRunInput): Promise<string>;
+  getVehicleScrapeRuns(missingVehicleRequestId: string): Promise<VehicleScrapeRun[]>;
+  updateVehicleScrapeRun(id: string, fields: UpdateVehicleScrapeRunInput): Promise<void>;
+  createVehicleScrapeSourceResult(
+    payload: CreateVehicleScrapeSourceResultInput,
+  ): Promise<string>;
+  getVehicleScrapeSourceResults(scrapeRunId: string): Promise<VehicleScrapeSourceResult[]>;
+  updateVehicleScrapeSourceResult(
+    id: string,
+    fields: UpdateVehicleScrapeSourceResultInput,
+  ): Promise<void>;
 
   // ─── Price Suggestions ────────────────────────────
   upsertPriceSuggestion(payload: {
