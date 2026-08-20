@@ -1,5 +1,51 @@
 # Phase 3 Revised Plan — Vehicle Pricing Intelligence Platform
 
+> **Current execution update — 2026-08-20:** Normalized multi-source evidence migration is in progress. Dataverse foundation, YallaMotor dual-write, and DriveArabia dual-write are complete and live-proven. The current execution plan below supersedes the historical implementation order retained later in this document.
+
+## Current Seven-Phase Execution Plan
+
+### Current architecture
+
+```text
+Missing Vehicle Request
+  └── Vehicle Scrape Run
+        └── Vehicle Scrape Source Result (one row per source attempt)
+```
+
+- The MVR retains legacy scrape fields during migration and owns the final administrator decision.
+- Each Source Result owns its source-specific min/max price, price type, specifications, transport, URL, timing, normalized evidence and errors.
+- YallaMotor uses Azure first with Power Automate Cloud fallback and writes `Used Market Asking` evidence.
+- DriveArabia uses attended PAD capture/inbox processing and writes `Original Reference` evidence.
+- Source Result Average Price and MVR Approved Average Price were removed because the sources provide ranges, not a true listing average.
+- Dubizzle remains a future source and is not part of the current completion gate.
+
+| Phase | Outcome | Status |
+|---|---|---|
+| 1. Dataverse foundation | Run/Source Result tables, relationships, choices, decision fields, Power Pages API and repository | Complete |
+| 2. YallaMotor dual-write | Preserve legacy MVR write and add linked normalized Run/Source Result | Complete and live-proven |
+| 3. DriveArabia dual-write | Preserve PAD/MVR behavior and add one Run/Source Result per exact MVR match | Complete and live-proven |
+| 4. Unified scrape orchestration | One admin Scrape action creates a shared run and coordinates selected sources | Not started |
+| 5. Evidence review and price decision | Compare independent sources; choose price/spec evidence and approve final min/max | Not started |
+| 6. Vehicle Data promotion | Promote only administrator-approved prices/specifications to master Vehicle Data | Not started |
+| 7. Automation and production hardening | Unattended PAD, retries/bulk reliability, monitoring and administrator-only permissions | Not started |
+
+### Phase 3 implementation contract
+
+For each exact DriveArabia make/model/year/trim match, **Process PAD Inbox** now:
+
+1. Preserves the proven legacy MVR specification and price update.
+2. Creates one Running Run linked to that MVR; all matches from one capture share the Inbox ID as batch correlation.
+3. Creates one Succeeded DriveArabia Source Result with PAD transport, Original Reference price type, min/max prices, supported specifications, source URL, Inbox ID and sanitized JSON evidence.
+4. Finalizes the Run as Completed with requested/successful/failed counts `1/1/0`.
+5. Keeps the legacy write and surfaces an evidence warning if normalized persistence fails.
+6. Preserves existing Pending/Complete/Error relay acknowledgements and never stores captured HTML in Dataverse.
+
+### Fast execution rule
+
+Each remaining phase uses one contract audit, one implementation batch, one automated verification batch and one live acceptance cycle. Documentation is updated in the same session after the implementation contract is known.
+
+---
+
 > **Date:** 2026-07-09 (Updated 2026-07-20)
 > **Status:** Path B (Puppeteer) ❌ Abandoned → Path C (Power Automate Cloud-only) ✅ Fully Working (Flow 1 ✅, Flow 2 ✅, Flow 3 ✅)
 > > **Flow 3 fully working end-to-end:** SAS token auth, Try/Catch Scope, Cloudflare Check (3 OR conditions), nested "Is Heading Available" condition, double `replace()` for clean count, `@{...}` template syntax in Response, hardcoded -1 sentinel in Catch. **Tested: 6 listings · AED 127,000 – 275,000 · 2024 Mercedes-Benz C-Class** ✅

@@ -59,18 +59,21 @@ describe('processNextScrapeInboxItem', () => {
       .mockResolvedValueOnce(json({ ...ITEM, html: camry2024Html }))
       .mockResolvedValueOnce(json({ inboxId: ITEM.inboxId, status: 'Complete' }));
     const updateScrapeResult = vi.fn(async (_id: string, _fields: ScrapeResultUpdate) => undefined);
+    const persistEvidence = vi.fn(async () => undefined);
 
     const result = await processNextScrapeInboxItem({
       requests: [REQUEST],
       functionBaseUrl: BASE,
       fetchFn,
       updateScrapeResult,
+      persistEvidence,
     });
 
     expect(result).toEqual({
       inboxId: ITEM.inboxId,
       status: 'complete',
       updatedRequestIds: [REQUEST.id],
+      evidenceWarnings: [],
     });
     expect(updateScrapeResult).toHaveBeenCalledTimes(1);
     const [, fields] = updateScrapeResult.mock.calls[0]!;
@@ -87,6 +90,15 @@ describe('processNextScrapeInboxItem', () => {
       trim: REQUEST.trim,
       year: 2024,
     });
+    expect(persistEvidence).toHaveBeenCalledWith(
+      expect.objectContaining({
+        request: REQUEST,
+        inboxId: ITEM.inboxId,
+        sourceUrl: ITEM.url,
+        minimumPrice: 130000,
+        maximumPrice: 138900,
+      }),
+    );
     expect(fetchFn).toHaveBeenNthCalledWith(
       3,
       'https://mock.azurewebsites.net/api/inbox_status',
@@ -109,7 +121,7 @@ describe('processNextScrapeInboxItem', () => {
         fetchFn,
         updateScrapeResult,
       }),
-    ).resolves.toEqual({ status: 'empty', updatedRequestIds: [] });
+    ).resolves.toEqual({ status: 'empty', updatedRequestIds: [], evidenceWarnings: [] });
     expect(updateScrapeResult).not.toHaveBeenCalled();
   });
 
@@ -126,6 +138,7 @@ describe('processNextScrapeInboxItem', () => {
       functionBaseUrl: BASE,
       fetchFn,
       updateScrapeResult,
+      persistEvidence: vi.fn(async () => undefined),
     });
 
     const selectedFields = updateScrapeResult.mock.calls.find(
@@ -164,6 +177,7 @@ describe('processNextScrapeInboxItem', () => {
       functionBaseUrl: BASE,
       fetchFn,
       updateScrapeResult,
+      persistEvidence: vi.fn(async () => undefined),
     });
 
     expect(updateScrapeResult).toHaveBeenCalledWith(
@@ -198,6 +212,7 @@ describe('processNextScrapeInboxItem', () => {
       functionBaseUrl: BASE,
       fetchFn,
       updateScrapeResult: vi.fn(async () => undefined),
+      persistEvidence: vi.fn(async () => undefined),
     });
 
     expect(result.status).toBe('waiting');
@@ -218,6 +233,7 @@ describe('processNextScrapeInboxItem', () => {
       functionBaseUrl: BASE,
       fetchFn,
       updateScrapeResult: vi.fn(async () => undefined),
+      persistEvidence: vi.fn(async () => undefined),
     });
 
     expect(result.status).toBe('error');
@@ -244,6 +260,7 @@ describe('processScrapeInbox', () => {
       functionBaseUrl: BASE,
       fetchFn,
       updateScrapeResult: vi.fn(async () => undefined),
+      persistEvidence: vi.fn(async () => undefined),
     });
 
     expect(summary).toEqual({
@@ -253,6 +270,33 @@ describe('processScrapeInbox', () => {
       waitingItems: 0,
       updatedRequestIds: [REQUEST.id],
       failures: [],
+      evidenceWarnings: [],
+    });
+  });
+
+  it('reports normalized evidence warnings without undoing a completed legacy write', async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce(json(ITEM))
+      .mockResolvedValueOnce(json({ ...ITEM, html: camry2024Html }))
+      .mockResolvedValueOnce(json({ inboxId: ITEM.inboxId, status: 'Complete' }));
+    const updateScrapeResult = vi.fn(async () => undefined);
+
+    const result = await processNextScrapeInboxItem({
+      requests: [REQUEST],
+      functionBaseUrl: BASE,
+      fetchFn,
+      updateScrapeResult,
+      persistEvidence: vi.fn(async () => 'Source Result write failed: rejected'),
+    });
+
+    expect(updateScrapeResult).toHaveBeenCalledOnce();
+    expect(result).toMatchObject({
+      status: 'complete',
+      updatedRequestIds: [REQUEST.id],
+      evidenceWarnings: [
+        { requestId: REQUEST.id, error: 'Source Result write failed: rejected' },
+      ],
     });
   });
 });

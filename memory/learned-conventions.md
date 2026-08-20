@@ -7,6 +7,8 @@ metadata:
 
 # Learned Conventions & Preferences
 
+- **DriveArabia price headings vary by model-year page**: Accept both `Original Trim Prices` and `Trim Prices`, select the final visible occurrence to avoid navigation labels, and keep extraction bounded before specs/dealer/similar-car content.
+
 ## Architecture Preferences
 - **Data flow is strictly downward**: Components → Hooks → Repositories → IDataSource → Implementation. Never bypass layers.
 - **IDataSource is the contract**: All data access goes through this interface. Dataverse is the current implementation via the Power Pages Web API.
@@ -136,6 +138,8 @@ metadata:
 - **Display names do not determine Dataverse logical names.** A column displayed as Minimum Price can legitimately be `vpi_minprice`, not an inferred `vpi_minimumprice`; the same applies to Maximum Price. Confirm the live logical name for every new payload property and pin it in API tests before enabling a writer. OData stops at the first undeclared property, so audit related field groups together instead of correcting one failure at a time.
 - **Do not manufacture source evidence.** When a scraper returns only minimum and maximum prices, storing their midpoint as an "Average Price" makes a derived value look source-reported. Keep source evidence limited to values the source supports; a later admin decision may deliberately derive or override prices, but that derivation must be explicit.
 - **Reuse canonical mappers across legacy and normalized writes.** A free-text evidence column should not invent a second regional-spec vocabulary while the MVR already defines `GCC`, `NON-GCC`, and `OTHER/STANDARD`. Store the canonical mapper output in normalized fields and keep the exact source wording in Raw Result JSON.
+- **Treat a PAD capture as a batch correlation boundary, not one shared MVR record.** One DriveArabia model-year capture can match multiple exact trims. Create one Run per MVR so ownership and final decisions remain request-specific, and use the common Inbox ID as `Batch Correlation Key` to group those Runs.
+- **Do not put captured HTML into normalized Dataverse evidence.** PAD HTML can be hundreds of kilobytes and the relay already owns its transient lifecycle. Store only min/max prices, exact normalized specifications, provenance and a sanitized raw-result JSON snapshot; preserve the legacy MVR write when evidence persistence fails and surface that failure separately.
 
 ### Option-set maps in code MUST be verified against the actual Dataverse option set
 Two fields on the Missing Vehicle Request table had code maps that were WRONG because they were never checked against Dataverse (verified 2026-07-31):

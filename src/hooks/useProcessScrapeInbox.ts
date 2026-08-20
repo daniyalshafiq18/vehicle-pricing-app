@@ -25,6 +25,10 @@ export function useProcessScrapeInbox() {
         toast.error(
           `PAD inbox: ${summary.completedItems} completed, ${summary.failedItems} failed${failureDetail}`,
         );
+      } else if (summary.evidenceWarnings.length > 0) {
+        toast.error(
+          `PAD processing completed, but evidence storage needs attention: ${summary.evidenceWarnings[0]!.error}`,
+        );
       } else {
         toast.success(
           `Processed ${summary.completedItems} PAD capture${summary.completedItems === 1 ? '' : 's'} · ${summary.updatedRequestIds.length} request${summary.updatedRequestIds.length === 1 ? '' : 's'} updated`,

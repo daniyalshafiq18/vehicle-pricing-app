@@ -7,6 +7,10 @@ import {
 } from '@parsers';
 import { missingVehicleRepository } from '@repositories';
 import type { MissingVehicleRequest } from '@types';
+import {
+  persistDriveArabiaEvidence,
+  type DriveArabiaEvidenceInput,
+} from './driveArabiaDualWrite';
 
 const AZURE_FUNCTION_URL = (import.meta.env.VITE_AZURE_FUNCTION_URL as string | undefined) ?? '';
 const DEFAULT_MAX_ITEMS = 25;
@@ -48,12 +52,19 @@ export interface ProcessScrapeInboxOptions {
   fetchFn?: typeof fetch;
   maxItems?: number;
   updateScrapeResult?: (id: string, fields: ScrapeResultUpdate) => Promise<void>;
+  persistEvidence?: (input: DriveArabiaEvidenceInput) => Promise<string | undefined>;
+}
+
+export interface InboxEvidenceWarning {
+  requestId: string;
+  error: string;
 }
 
 export interface InboxItemResult {
   inboxId?: string;
   status: 'empty' | 'complete' | 'error' | 'waiting';
   updatedRequestIds: string[];
+  evidenceWarnings: InboxEvidenceWarning[];
   error?: string;
 }
 
@@ -64,6 +75,7 @@ export interface InboxProcessSummary {
   waitingItems: number;
   updatedRequestIds: string[];
   failures: Array<{ inboxId?: string; error: string }>;
+  evidenceWarnings: InboxEvidenceWarning[];
 }
 
 class NoMatchingRequestError extends Error {}
@@ -236,10 +248,11 @@ export async function processNextScrapeInboxItem(
     options.updateScrapeResult ??
     ((id: string, fields: ScrapeResultUpdate) =>
       missingVehicleRepository.updateScrapeResult(id, fields));
+  const persistEvidence = options.persistEvidence ?? persistDriveArabiaEvidence;
 
   const pending = await fetchPendingItem(fetchFn, baseUrl);
   if (!pending) {
-    return { status: 'empty', updatedRequestIds: [] };
+    return { status: 'empty', updatedRequestIds: [], evidenceWarnings: [] };
   }
 
   let item: ScrapeInboxItem;
@@ -254,6 +267,7 @@ export async function processNextScrapeInboxItem(
 
     const scrapedValue = missingVehicleScrapeStatusValue('Scraped') ?? 4;
     const updatedRequestIds: string[] = [];
+    const evidenceWarnings: InboxEvidenceWarning[] = [];
     for (const match of matches) {
       // Resolve one unique engine-signature match from PAD-captured accordion
       // bodies. Without that evidence, only the exact JSON-LD-selected trim is
@@ -295,10 +309,33 @@ export async function processNextScrapeInboxItem(
           }),
         ...(mapped.doorsValue !== undefined && { doorsValue: mapped.doorsValue }),
       });
+      try {
+        const warning = await persistEvidence({
+          request: match.request,
+          inboxId: item.inboxId,
+          sourceUrl: item.url,
+          minimumPrice: match.minPrice,
+          maximumPrice: match.maxPrice,
+          ...(specsMatch && { specs }),
+        });
+        if (warning) {
+          evidenceWarnings.push({ requestId: match.request.id, error: warning });
+        }
+      } catch (error) {
+        evidenceWarnings.push({
+          requestId: match.request.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
       updatedRequestIds.push(match.request.id);
     }
     await acknowledge(fetchFn, baseUrl, item.inboxId, 'Complete');
-    return { inboxId: item.inboxId, status: 'complete', updatedRequestIds };
+    return {
+      inboxId: item.inboxId,
+      status: 'complete',
+      updatedRequestIds,
+      evidenceWarnings,
+    };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown inbox processing error';
     if (error instanceof NoMatchingRequestError) {
@@ -306,6 +343,7 @@ export async function processNextScrapeInboxItem(
         inboxId: pending.inboxId,
         status: 'waiting',
         updatedRequestIds: [],
+        evidenceWarnings: [],
         error: message,
       };
     }
@@ -318,10 +356,17 @@ export async function processNextScrapeInboxItem(
         inboxId: pending.inboxId,
         status: 'error',
         updatedRequestIds: [],
+        evidenceWarnings: [],
         error: `${message}; failed to mark Error: ${ackMessage}`,
       };
     }
-    return { inboxId: pending.inboxId, status: 'error', updatedRequestIds: [], error: message };
+    return {
+      inboxId: pending.inboxId,
+      status: 'error',
+      updatedRequestIds: [],
+      evidenceWarnings: [],
+      error: message,
+    };
   }
 }
 
@@ -337,6 +382,7 @@ export async function processScrapeInbox(
     waitingItems: 0,
     updatedRequestIds: [],
     failures: [],
+    evidenceWarnings: [],
   };
 
   for (let index = 0; index < maxItems; index += 1) {
@@ -356,6 +402,7 @@ export async function processScrapeInbox(
     if (result.status === 'complete') {
       summary.completedItems += 1;
       summary.updatedRequestIds.push(...result.updatedRequestIds);
+      summary.evidenceWarnings.push(...result.evidenceWarnings);
     } else {
       summary.failedItems += 1;
       summary.failures.push({ inboxId: result.inboxId, error: result.error ?? 'Unknown error' });

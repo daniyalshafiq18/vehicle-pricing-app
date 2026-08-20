@@ -144,6 +144,26 @@ describe('extractDriveArabiaTrimPrices (PAD per-model-year page)', () => {
     ]);
   });
 
+  it('supports newer pages whose rendered section is labelled Trim Prices', () => {
+    const html = `
+      <title>MG 5 2026 Price in UAE</title>
+      <nav>Key Information Trim Prices Specs</nav>
+      <section id="trim-prices">
+        <h2>Trim Prices</h2>
+        <div><span>std</span><span>AED 49,900 - 51,000</span></div>
+        <div><span>COM</span><span>AED 53,400 - 54,000</span></div>
+        <div><span>DEL</span><span>AED 58,400 - 59,000</span></div>
+      </section>
+      <section id="specs"><h2>Specs</h2><div>Unrelated AED 1 - 999,999</div></section>
+    `;
+
+    expect(extractDriveArabiaTrimPrices(html)).toEqual([
+      { year: 2026, trim: 'std', minPrice: 49900, maxPrice: 51000 },
+      { year: 2026, trim: 'COM', minPrice: 53400, maxPrice: 54000 },
+      { year: 2026, trim: 'DEL', minPrice: 58400, maxPrice: 59000 },
+    ]);
+  });
+
   it('returns [] when the year or trim-table heading is missing', () => {
     expect(
       extractDriveArabiaTrimPrices('<h2>Original Trim Prices</h2> Base AWD AED 1 - 2'),

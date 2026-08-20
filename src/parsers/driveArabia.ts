@@ -104,7 +104,8 @@ export function extractDriveArabiaPriceRows(html: string): DriveArabiaPriceRow[]
  * Per-model-year page (`…/carprices/uae/<make>/<model>/<year>/?page=N`), e.g.
  * `.../toyota-camry/2024/` — structure differs from the landing page:
  *  - The year is fixed by the URL — there are NO serialized year markers here.
- *  - Trims + their AED ranges render in a visible "Original Trim Prices" table
+ *  - Trims + their AED ranges render in a visible "Original Trim Prices" or
+ *    "Trim Prices" table
  *    and the FULL trim names are present ("2.5L I4 SE FWD AED 111,900 - 112,000"),
  *    unlike the landing page's abbreviated serialized names.
  *  - The rest of the page ("See Similar Cars" / "Key Information") lists OTHER
@@ -125,12 +126,18 @@ export function extractDriveArabiaTrimPrices(html: string): DriveArabiaPriceRow[
   // The label appears first in the tab navigation and again above the actual
   // table. The final occurrence is the table heading; using the first makes the
   // first trim absorb the intervening overview copy.
-  const heading = 'Original Trim Prices';
-  const start = text.lastIndexOf(heading);
-  if (start === -1) {
+  const headings = ['Original Trim Prices', 'Trim Prices'] as const;
+  const tableHeading = headings.reduce<{ label: string; index: number } | undefined>(
+    (latest, label) => {
+      const index = text.lastIndexOf(label);
+      return index !== -1 && (!latest || index > latest.index) ? { label, index } : latest;
+    },
+    undefined,
+  );
+  if (!tableHeading) {
     return [];
   }
-  const afterHeading = text.slice(start + heading.length);
+  const afterHeading = text.slice(tableHeading.index + tableHeading.label.length);
   const end = afterHeading.search(/\b(?:Contact Dealer|Specs|Similar Cars)\b/);
   const section = end === -1 ? afterHeading : afterHeading.slice(0, end);
 

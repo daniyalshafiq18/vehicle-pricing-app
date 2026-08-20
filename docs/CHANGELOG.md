@@ -1,6 +1,19 @@
 
 # Changelog
 
+## 2026-08-20
+
+### Fixed
+- Updated DriveArabia per-year price parsing to accept both rendered `Original Trim Prices` and `Trim Prices` headings. This fixes valid newer pages such as MG 5 2026 while retaining the existing bounded-section protection against unrelated AED ranges.
+
+### DriveArabia dual-write implemented
+- Added `driveArabiaDualWrite.ts`, which creates one normalized Run and DriveArabia Source Result for every exact MVR match produced by the existing PAD inbox processor. Runs from the same capture share the Inbox ID as their batch correlation key.
+- Source Results record DriveArabia, Power Automate Desktop, Original Reference, attempt `1`, listing count, min/max prices, exact trim/year, supported specifications, source URL, Inbox ID, timestamps and sanitized normalized/raw JSON. Captured HTML is never written to Dataverse.
+- Preserved the proven legacy MVR write, multi-trim matching, queue draining and Pending/Complete/Error acknowledgement behavior. Evidence failures no longer undo a successful legacy update; the admin receives a dedicated evidence warning and the Run is finalized as Failed where possible.
+- Added isolated coverage for completed evidence, Run-creation failure, rejected Source Result with bounded diagnostics, inbox integration and warning propagation. Focused TypeScript, Vitest and ESLint verification passes.
+- Refreshed the formal Phase 3 roadmap with the current seven-phase multi-source plan and marked DriveArabia dual-write complete after live acceptance.
+- **DriveArabia dual-write live acceptance passed:** an MG 5 2026 `STD` request processed through PAD and **Process PAD Inbox**, updated the legacy MVR, created a linked Completed Run with counts `1/1/0`, and created a Succeeded DriveArabia/PAD/Original Reference Source Result with the expected AED 49,900–51,000 range and specifications.
+
 ## 2026-08-19
 
 ### YallaMotor dual-write migration implemented
