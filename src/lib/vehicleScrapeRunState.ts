@@ -2,9 +2,32 @@ import {
   VEHICLE_SCRAPE_PROCESSING_STATUS,
   VEHICLE_SCRAPE_RUN_STATUS,
 } from '@data/dataverseOptionSets';
-import type { VehicleScrapeSource, VehicleScrapeSourceResult } from '@types';
+import type {
+  MissingVehiclePricingDecisionStatus,
+  VehicleScrapeSource,
+  VehicleScrapeSourceResult,
+} from '@types';
 
 const RUN_ERROR_SUMMARY_MAX_LENGTH = 2000;
+
+export type AdminPricingDecisionStatus = Exclude<
+  MissingVehiclePricingDecisionStatus,
+  'Awaiting Scrapes' | 'Scraping'
+>;
+
+/**
+ * System-managed scrape statuses are not valid selections in the admin review form.
+ * Normalize them before binding a controlled select so its visible option and submitted
+ * value cannot diverge.
+ */
+export function adminPricingDecisionStatus(
+  status: MissingVehiclePricingDecisionStatus | undefined,
+): AdminPricingDecisionStatus {
+  if (!status || status === 'Awaiting Scrapes' || status === 'Scraping') {
+    return 'Ready for Review';
+  }
+  return status;
+}
 
 type SourceAttempt = Pick<
   VehicleScrapeSourceResult,

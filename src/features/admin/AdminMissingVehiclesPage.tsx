@@ -39,6 +39,7 @@ import type { MultiSourceScrapeExecutionResult } from '@lib/multiSourceScrapeExe
 import type { OrchestratedScrapeSource } from '@lib/multiSourceOrchestrator';
 import { cn, formatCurrency } from '@utils';
 import { buildDriveArabiaModelYearUrl } from '@lib/driveArabiaUrl';
+import { VehicleScrapeEvidencePanel } from '@features/admin/VehicleScrapeEvidencePanel';
 
 // ─── Status helpers ────────────────────────────────────────────
 
@@ -405,6 +406,8 @@ function MissingVehicleDetailModal({
               </div>
             ))}
           </div>
+
+          <VehicleScrapeEvidencePanel request={request} />
 
           {/* ── Scrape Results Section ── */}
           <div className="mt-5">

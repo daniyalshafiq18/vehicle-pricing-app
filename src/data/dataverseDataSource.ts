@@ -19,6 +19,7 @@ import {
   fetchMissingVehicleRequests,
   fetchMissingVehicleRequestById,
   updateMissingVehicleRequest,
+  saveMissingVehiclePricingDecision,
   updateMissingVehicleRequestStatus,
   updateMissingVehicleScrapeResult,
   approveAndCreateVehicle,
@@ -58,6 +59,7 @@ import type {
   Inquiry,
   MissingVehicleRequest,
   PriceSuggestion,
+  SaveMissingVehiclePricingDecisionInput,
   CreateVehicleScrapeRunInput,
   CreateVehicleScrapeSourceResultInput,
   UpdateVehicleScrapeRunInput,
@@ -928,6 +930,13 @@ export class DataverseDataSource implements IDataSource {
     fields: { minPrice?: number; maxPrice?: number },
   ): Promise<void> {
     return updateMissingVehicleRequest(id, fields);
+  }
+
+  async saveMissingVehiclePricingDecision(
+    id: string,
+    input: SaveMissingVehiclePricingDecisionInput,
+  ): Promise<void> {
+    return saveMissingVehiclePricingDecision(id, input);
   }
 
   async updateMissingVehicleScrapeResult(

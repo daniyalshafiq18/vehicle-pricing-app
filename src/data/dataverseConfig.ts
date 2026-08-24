@@ -137,9 +137,10 @@ export const MISSING_VEHICLE_REQUEST_SELECT_FIELDS = Object.values(
 /**
  * Admin-owned multi-source pricing decision fields.
  *
- * Kept outside MISSING_VEHICLE_REQUEST_FIELDS until the corresponding Power
- * Pages Web API site setting allow-list has been enabled. This prevents the
- * existing MVR query from requesting fields the portal may not expose yet.
+ * Kept as a separate group so admin-owned decision evidence remains explicit.
+ * The Power Pages table setting uses fields=*, and Phase 5 reads these fields
+ * through a dedicated decision projection while preserving schema-name casing
+ * for lookup writes.
  */
 export const MISSING_VEHICLE_DECISION_FIELDS = {
   APPROVED_MIN_PRICE: 'vpi_approvedminprice',

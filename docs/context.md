@@ -33,6 +33,12 @@ The shared `Dialog` primitive renders overlays through a React portal attached t
 
 Correlated DriveArabia PAD processing resolves the prepared Run directly through the `vpi_correlationkey` carried by the URL fragment. The lookup uses a minimal Power Pages `$select`, then verifies the Run's Missing Vehicle Request ownership and active status before reading its Source Results. A correlated capture is acknowledged only after normalized evidence succeeds; resolver or persistence warnings leave it Pending so the same capture can be retried.
 
+Phase 5 begins with a read-only review boundary in the MVR modal. `useVehicleScrapeEvidence()` loads the newest Run for the request through `VehicleScrapeRepository`, loads its Source Results, polls only while that Run is active, and presents each source's price type, provenance, prices and specifications independently. Legacy aggregate MVR scrape fields remain visible during migration but are not treated as the decision source.
+
+The next Phase 5 slice persists the administrator-owned decision on the MVR. Only terminal Runs unlock the form; selected price/specification results must be Succeeded rows belonging to the displayed Run. The PATCH stores approved min/max, decision status/method, reviewed Run, primary price result, selected specification result, notes and the terminal decision timestamp. It does not yet promote or update Vehicle Data.
+
+When a terminal Run first unlocks review, the form maps the system lifecycle values `Awaiting Scrapes`/`Scraping` to `Ready for Review`. This keeps the native select's visible default synchronized with the choice integer sent to Dataverse.
+
 ### Layer Diagram
 
 ```

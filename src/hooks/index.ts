@@ -11,3 +11,5 @@ export * from './useStartupData';
 export * from './useTriggerScrape';
 export * from './useProcessScrapeInbox';
 export * from './useTriggerMultiSourceScrape';
+export * from './useVehicleScrapeEvidence';
+export * from './useSaveVehiclePricingDecision';

@@ -10,7 +10,10 @@ import type {
 import type { AnalyticsData, DashboardAnalytics, DashboardFilters } from './analytics';
 import type { Inquiry } from './inquiry';
 import type { PriceSuggestion } from './priceSuggestion';
-import type { MissingVehicleRequest } from './missingVehicleRequest';
+import type {
+  MissingVehicleRequest,
+  SaveMissingVehiclePricingDecisionInput,
+} from './missingVehicleRequest';
 import type {
   CreateVehicleScrapeRunInput,
   CreateVehicleScrapeSourceResultInput,
@@ -109,6 +112,10 @@ export interface IDataSource {
   updateMissingVehicleRequest(
     id: string,
     fields: { minPrice?: number; maxPrice?: number },
+  ): Promise<void>;
+  saveMissingVehiclePricingDecision(
+    id: string,
+    input: SaveMissingVehiclePricingDecisionInput,
   ): Promise<void>;
   updateMissingVehicleScrapeResult(
     id: string,

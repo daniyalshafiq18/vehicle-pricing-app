@@ -1,5 +1,5 @@
 import { getDataSource } from '@data';
-import type { MissingVehicleRequest } from '@types';
+import type { MissingVehicleRequest, SaveMissingVehiclePricingDecisionInput } from '@types';
 
 export class MissingVehicleRepository {
   async upsert(payload: {
@@ -44,6 +44,13 @@ export class MissingVehicleRepository {
   async update(id: string, fields: { minPrice?: number; maxPrice?: number }): Promise<void> {
     const ds = getDataSource();
     return ds.updateMissingVehicleRequest(id, fields);
+  }
+
+  async savePricingDecision(
+    id: string,
+    input: SaveMissingVehiclePricingDecisionInput,
+  ): Promise<void> {
+    return getDataSource().saveMissingVehiclePricingDecision(id, input);
   }
 
   async updateScrapeResult(

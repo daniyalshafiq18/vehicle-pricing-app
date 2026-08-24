@@ -7,6 +7,9 @@ metadata:
 
 # Learned Conventions & Preferences
 
+- **A controlled select value must exist in its rendered options**: Native selects can visually display the first option when React supplies an unmatched value while the component state still retains and submits that unmatched value. Normalize system-only lifecycle states before binding an administrator-only decision list, and test the submitted choice integer rather than trusting the visible label.
+
+- **Normalize Dataverse nulls at the mapper boundary**: Optional Dataverse columns arrive as explicit `null`, even when TypeScript declares them as `T | undefined`. Casting leaks `null` into every consumer, producing literal “null” text and formatting null currency as zero. Runtime-check optional strings/numbers during mapping and expose one consistent `undefined` state.
 - **Resolve PAD Runs by their explicit correlation key, then verify ownership**: Power Pages returned a generic HTTP `400` for a broad Vehicle Scrape Run query filtered through `_vpi_missingvehiclerequest_value`. A correlated PAD URL already carries the durable `vpi_correlationkey`; retrieve a minimal Run projection by that key, then verify the MVR lookup and active status. Do not make optional Run columns dependencies of evidence recovery.
 - **Never purge retryable correlated captures**: A successful legacy MVR write does not mean normalized evidence succeeded. When prepared-target resolution or persistence warns, retain the PAD inbox item as Pending and expose the warning; acknowledge Complete only after correlated Source Result persistence succeeds.
 - **Omit before widening fields in update types**: When a `Partial<Omit<CreateInput, ...>>` update type needs a property widened to include `null`, omit that property from the create-input base before re-declaring it. Intersecting `string | undefined` with `string | null` silently removes `null`.

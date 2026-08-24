@@ -13,6 +13,7 @@ import {
   ENTITIES,
   VEHICLE_FIELDS,
   MISSING_VEHICLE_REQUEST_FIELDS,
+  MISSING_VEHICLE_DECISION_FIELDS,
 } from '@data/dataverseConfig';
 import {
   missingVehicleBodyTypeValue,
@@ -33,13 +34,66 @@ import {
   driveTypeValue,
   categoryValue,
   DOORS,
+  MISSING_VEHICLE_PRICING_DECISION_METHOD,
+  MISSING_VEHICLE_PRICING_DECISION_STATUS,
 } from '@data/dataverseOptionSets';
-import type { MissingVehicleRequest } from '@types';
+import type {
+  MissingVehiclePricingDecisionMethod,
+  MissingVehiclePricingDecisionStatus,
+  MissingVehicleRequest,
+  SaveMissingVehiclePricingDecisionInput,
+} from '@types';
 import { safeFetch, safeFetchWithMeta } from './safeAjax';
 import { createContact } from './contactApi';
 
 interface ODataResponse {
   value: Record<string, unknown>[];
+}
+
+const FORMATTED_VALUE = '@OData.Community.Display.V1.FormattedValue';
+
+const DECISION_SELECT_FIELDS = [
+  MISSING_VEHICLE_DECISION_FIELDS.APPROVED_MIN_PRICE,
+  MISSING_VEHICLE_DECISION_FIELDS.APPROVED_MAX_PRICE,
+  MISSING_VEHICLE_DECISION_FIELDS.PRICING_DECISION_STATUS,
+  MISSING_VEHICLE_DECISION_FIELDS.PRICING_DECISION_METHOD,
+  MISSING_VEHICLE_DECISION_FIELDS.REVIEWED_SCRAPE_RUN_LOOKUP_REF,
+  MISSING_VEHICLE_DECISION_FIELDS.PRIMARY_PRICE_RESULT_LOOKUP_REF,
+  MISSING_VEHICLE_DECISION_FIELDS.SELECTED_SPECIFICATION_RESULT_LOOKUP_REF,
+  MISSING_VEHICLE_DECISION_FIELDS.DECISION_NOTES,
+  MISSING_VEHICLE_DECISION_FIELDS.DECIDED_BY_CONTACT_LOOKUP_REF,
+  MISSING_VEHICLE_DECISION_FIELDS.DECIDED_ON,
+] as const;
+
+function optionalNumber(raw: Record<string, unknown>, field: string): number | undefined {
+  const value = raw[field];
+  return typeof value === 'number' ? value : undefined;
+}
+
+function optionalString(raw: Record<string, unknown>, field: string): string | undefined {
+  const value = raw[field];
+  return typeof value === 'string' && value !== '' ? value : undefined;
+}
+
+function choiceLabel<T extends string>(
+  raw: Record<string, unknown>,
+  field: string,
+  choices: Record<string, number>,
+): T | undefined {
+  const formatted = raw[`${field}${FORMATTED_VALUE}`];
+  if (typeof formatted === 'string') {
+    return formatted as T;
+  }
+  const rawValue = raw[field];
+  return Object.entries(choices).find(([, value]) => value === rawValue)?.[0] as T | undefined;
+}
+
+function cleanGuid(value: string, label: string): string {
+  const guid = value.trim().replace(/^\{?|\}?$/g, '');
+  if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(guid)) {
+    throw new Error(`${label} must be a valid GUID`);
+  }
+  return guid;
 }
 
 /** Look up a contact by email and return its GUID, or null if not found. */
@@ -110,6 +164,52 @@ function parseRawRecord(raw: Record<string, unknown>): MissingVehicleRequest {
     scrapedMinPrice: raw[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MIN_PRICE] as number | undefined,
     scrapedMaxPrice: raw[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MAX_PRICE] as number | undefined,
     scrapedSources: raw[MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_SOURCES] as string | undefined,
+    approvedMinimumPrice: optionalNumber(
+      raw,
+      MISSING_VEHICLE_DECISION_FIELDS.APPROVED_MIN_PRICE,
+    ),
+    approvedMaximumPrice: optionalNumber(
+      raw,
+      MISSING_VEHICLE_DECISION_FIELDS.APPROVED_MAX_PRICE,
+    ),
+    pricingDecisionStatus: choiceLabel<MissingVehiclePricingDecisionStatus>(
+      raw,
+      MISSING_VEHICLE_DECISION_FIELDS.PRICING_DECISION_STATUS,
+      MISSING_VEHICLE_PRICING_DECISION_STATUS,
+    ),
+    pricingDecisionStatusValue: optionalNumber(
+      raw,
+      MISSING_VEHICLE_DECISION_FIELDS.PRICING_DECISION_STATUS,
+    ),
+    pricingDecisionMethod: choiceLabel<MissingVehiclePricingDecisionMethod>(
+      raw,
+      MISSING_VEHICLE_DECISION_FIELDS.PRICING_DECISION_METHOD,
+      MISSING_VEHICLE_PRICING_DECISION_METHOD,
+    ),
+    pricingDecisionMethodValue: optionalNumber(
+      raw,
+      MISSING_VEHICLE_DECISION_FIELDS.PRICING_DECISION_METHOD,
+    ),
+    reviewedScrapeRunId: optionalString(
+      raw,
+      MISSING_VEHICLE_DECISION_FIELDS.REVIEWED_SCRAPE_RUN_LOOKUP_REF,
+    ),
+    primaryPriceResultId: optionalString(
+      raw,
+      MISSING_VEHICLE_DECISION_FIELDS.PRIMARY_PRICE_RESULT_LOOKUP_REF,
+    ),
+    selectedSpecificationResultId: optionalString(
+      raw,
+      MISSING_VEHICLE_DECISION_FIELDS.SELECTED_SPECIFICATION_RESULT_LOOKUP_REF,
+    ),
+    decisionNotes: optionalString(raw, MISSING_VEHICLE_DECISION_FIELDS.DECISION_NOTES),
+    decidedByContactId: optionalString(
+      raw,
+      MISSING_VEHICLE_DECISION_FIELDS.DECIDED_BY_CONTACT_LOOKUP_REF,
+    ),
+    decidedOn: optionalString(raw, MISSING_VEHICLE_DECISION_FIELDS.DECIDED_ON)
+      ? new Date(raw[MISSING_VEHICLE_DECISION_FIELDS.DECIDED_ON] as string)
+      : undefined,
   };
 }
 
@@ -275,6 +375,7 @@ export async function fetchMissingVehicleRequests(): Promise<MissingVehicleReque
     MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MIN_PRICE,
     MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MAX_PRICE,
     MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_SOURCES,
+    ...DECISION_SELECT_FIELDS,
   ].join(',');
 
   const resp: ODataResponse = await safeFetchWithMeta<ODataResponse>({
@@ -321,6 +422,7 @@ export async function fetchMissingVehicleRequestById(
     MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MIN_PRICE,
     MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MAX_PRICE,
     MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_SOURCES,
+    ...DECISION_SELECT_FIELDS,
   ].join(',');
 
   try {
@@ -387,6 +489,41 @@ export async function updateMissingVehicleRequest(
       'If-Match': '*',
     },
     body: JSON.stringify(body),
+  });
+}
+
+/** Persist one reviewed multi-source pricing decision on its MVR. */
+export async function saveMissingVehiclePricingDecision(
+  id: string,
+  input: SaveMissingVehiclePricingDecisionInput,
+): Promise<void> {
+  const record: Record<string, unknown> = {
+    [MISSING_VEHICLE_DECISION_FIELDS.APPROVED_MIN_PRICE]: input.approvedMinimumPrice,
+    [MISSING_VEHICLE_DECISION_FIELDS.APPROVED_MAX_PRICE]: input.approvedMaximumPrice,
+    [MISSING_VEHICLE_DECISION_FIELDS.PRICING_DECISION_STATUS]:
+      input.pricingDecisionStatusValue,
+    [MISSING_VEHICLE_DECISION_FIELDS.PRICING_DECISION_METHOD]:
+      input.pricingDecisionMethodValue,
+    [MISSING_VEHICLE_DECISION_FIELDS.DECISION_NOTES]: input.decisionNotes,
+    [MISSING_VEHICLE_DECISION_FIELDS.DECIDED_ON]: input.decidedOn?.toISOString() ?? null,
+    [`${MISSING_VEHICLE_DECISION_FIELDS.REVIEWED_SCRAPE_RUN_LOOKUP}@odata.bind`]:
+      `/${ENTITIES.VEHICLE_SCRAPE_RUN}(${cleanGuid(input.reviewedScrapeRunId, 'Reviewed Scrape Run ID')})`,
+    [`${MISSING_VEHICLE_DECISION_FIELDS.PRIMARY_PRICE_RESULT_LOOKUP}@odata.bind`]:
+      input.primaryPriceResultId
+        ? `/${ENTITIES.VEHICLE_SCRAPE_SOURCE_RESULT}(${cleanGuid(input.primaryPriceResultId, 'Primary Price Result ID')})`
+        : null,
+    [`${MISSING_VEHICLE_DECISION_FIELDS.SELECTED_SPECIFICATION_RESULT_LOOKUP}@odata.bind`]:
+      `/${ENTITIES.VEHICLE_SCRAPE_SOURCE_RESULT}(${cleanGuid(input.selectedSpecificationResultId, 'Selected Specification Result ID')})`,
+  };
+
+  await safeFetch<void>({
+    url: `${API_BASE}/${ENTITIES.MISSING_VEHICLE_REQUEST}(${cleanGuid(id, 'Missing Vehicle Request ID')})`,
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'If-Match': '*',
+    },
+    body: JSON.stringify(record),
   });
 }
 

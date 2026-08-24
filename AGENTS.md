@@ -90,9 +90,9 @@ src/
 ├── features/
 │   ├── landing/    # Landing page
 │   ├── valuation/  # 3-step wizard (Personal Info → Vehicle → Result)
-│   └── admin/      # Dashboard, Vehicles, Queries, Settings
+│   └── admin/      # Dashboard, Vehicles, Queries, Settings, normalized scrape-evidence review
 ├── layouts/        # MainLayout (public), AdminLayout (sidebar)
-├── hooks/          # React Query hooks + startup/PAD inbox orchestration
+├── hooks/          # React Query hooks + startup/PAD inbox orchestration + evidence polling
 ├── repositories/   # Data access wrappers
 ├── providers/      # Context providers
 ├── stores/         # Zustand stores

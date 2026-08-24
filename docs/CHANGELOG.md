@@ -3,7 +3,16 @@
 
 ## 2026-08-24
 
+### Phase 5 evidence review started
+- Added the guarded pricing-decision form beneath normalized evidence. After a Run becomes terminal, admins can choose the decision method/status, authoritative price result, specification result, approved min/max prices and notes. Active Runs remain read-only; invalid ranges, non-succeeded evidence and undocumented overrides/attention/rejection decisions are blocked client-side.
+- Added the full MVR decision read/PATCH contract using the confirmed fields and case-sensitive lookup bindings for Reviewed Scrape Run, Primary Price Result and Selected Specification Result. Approved/Rejected decisions record Decided On; Vehicle Data promotion remains intentionally separate.
+- Normalized Dataverse `null` values to `undefined` at the scrape-evidence API boundary so queued fields render as unavailable instead of literal `null` or misleading `AED 0`. Source cards also convert Schema.org drivetrain identifiers to concise `FWD`/`RWD`/`AWD`/`4WD` labels.
+- Added a read-only Source Evidence section to the Missing Vehicle Request modal. It loads the latest normalized Run and displays source-specific status, price type, transport, min/max prices, listing count, trim and supported specifications side by side without changing the legacy Scrape Results section.
+- Added active-Run polling plus explicit loading, empty and retryable error states. The panel stops polling after the latest Run becomes terminal.
+- Hardened the MVR Run-list query by excluding the optional Requested By Contact lookup reference that caused the earlier broad Power Pages read to fail; the query retains the Run lifecycle, counts, correlation and ownership fields needed for review.
+
 ### Fixed
+- Fixed a controlled-select mismatch in the pricing-decision form. MVR system statuses (`Awaiting Scrapes`/`Scraping`) are now normalized to `Ready for Review` when review unlocks, so the displayed default and submitted Dataverse value agree (`3`) without requiring an administrator to change away and back first.
 - Extended conservative cross-source trim identity for the live Chevrolet Captiva case: attached `1.5T` and `1.5TC` notation now exposes the same numeric capacity and turbo identity, while `TD` remains distinct. The match still requires identical grade, compatible stated mechanics, the correct year and one unique candidate, allowing MVR `1.5T Premier` to resolve only to DriveArabia `1.5TC I4 Premier`.
 - Fixed correlated DriveArabia PAD evidence resolution after live Power Pages returned HTTP `400` for the broad Run query filtered through `_vpi_missingvehiclerequest_value`. The processor now retrieves the exact Run through its `vpi_correlationkey` using a minimal `$select`, then independently verifies that the Run belongs to the matched Missing Vehicle Request and is still active.
 - Prevented correlated PAD captures from being acknowledged as Complete when prepared evidence resolution or persistence fails. The capture remains Pending for retry, the successful legacy MVR write is refreshed in the UI, and the administrator receives the actual evidence warning instead of the unrelated “no matching vehicle request” message.

@@ -1,10 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import type { VehicleScrapeSourceResult } from '@types';
 import {
+  adminPricingDecisionStatus,
   aggregateVehicleScrapeRun,
   buildSourceResultCorrelationId,
   latestVehicleScrapeSourceAttempts,
 } from './vehicleScrapeRunState';
+
+describe('adminPricingDecisionStatus', () => {
+  it('normalizes system-managed statuses before binding the admin decision select', () => {
+    expect(adminPricingDecisionStatus(undefined)).toBe('Ready for Review');
+    expect(adminPricingDecisionStatus('Awaiting Scrapes')).toBe('Ready for Review');
+    expect(adminPricingDecisionStatus('Scraping')).toBe('Ready for Review');
+  });
+
+  it('preserves statuses that administrators can select', () => {
+    expect(adminPricingDecisionStatus('Ready for Review')).toBe('Ready for Review');
+    expect(adminPricingDecisionStatus('Needs Attention')).toBe('Needs Attention');
+    expect(adminPricingDecisionStatus('Approved')).toBe('Approved');
+    expect(adminPricingDecisionStatus('Rejected')).toBe('Rejected');
+  });
+});
 
 type Attempt = Pick<
   VehicleScrapeSourceResult,

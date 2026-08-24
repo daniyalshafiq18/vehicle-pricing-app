@@ -83,6 +83,16 @@ function optionalDate(raw: Record<string, unknown>, field: string): Date | undef
   return typeof value === 'string' ? new Date(value) : undefined;
 }
 
+function optionalNumber(raw: Record<string, unknown>, field: string): number | undefined {
+  const value = raw[field];
+  return typeof value === 'number' ? value : undefined;
+}
+
+function optionalString(raw: Record<string, unknown>, field: string): string | undefined {
+  const value = raw[field];
+  return typeof value === 'string' && value !== '' ? value : undefined;
+}
+
 function setOptional(
   record: Record<string, unknown>,
   field: string,
@@ -116,17 +126,17 @@ function mapRun(raw: Record<string, unknown>): VehicleScrapeRun {
     triggerTypeValue: (raw[RUN.TRIGGER_TYPE] as number) ?? 1,
     startedOn: optionalDate(raw, RUN.STARTED_ON),
     completedOn: optionalDate(raw, RUN.COMPLETED_ON),
-    requestedSourceCount: raw[RUN.REQUESTED_SOURCE_COUNT] as number | undefined,
-    successfulSourceCount: raw[RUN.SUCCESSFUL_SOURCE_COUNT] as number | undefined,
-    failedSourceCount: raw[RUN.FAILED_SOURCE_COUNT] as number | undefined,
-    batchCorrelationKey: raw[RUN.BATCH_CORRELATION_KEY] as string | undefined,
-    errorSummary: raw[RUN.ERROR_SUMMARY] as string | undefined,
-    requestedByContactId: raw[RUN.REQUESTED_BY_CONTACT_LOOKUP_REF] as string | undefined,
+    requestedSourceCount: optionalNumber(raw, RUN.REQUESTED_SOURCE_COUNT),
+    successfulSourceCount: optionalNumber(raw, RUN.SUCCESSFUL_SOURCE_COUNT),
+    failedSourceCount: optionalNumber(raw, RUN.FAILED_SOURCE_COUNT),
+    batchCorrelationKey: optionalString(raw, RUN.BATCH_CORRELATION_KEY),
+    errorSummary: optionalString(raw, RUN.ERROR_SUMMARY),
+    requestedByContactId: optionalString(raw, RUN.REQUESTED_BY_CONTACT_LOOKUP_REF),
   };
 }
 
 function mapResult(raw: Record<string, unknown>): VehicleScrapeSourceResult {
-  const priceTypeValue = raw[RESULT.PRICE_TYPE] as number | undefined;
+  const priceTypeValue = optionalNumber(raw, RESULT.PRICE_TYPE);
   return {
     id: (raw[RESULT.ID] as string) ?? '',
     name: (raw[RESULT.NAME] as string) ?? '',
@@ -163,38 +173,38 @@ function mapResult(raw: Record<string, unknown>): VehicleScrapeSourceResult {
           'Other or Unknown',
         ),
     priceTypeValue,
-    listingCount: raw[RESULT.LISTING_COUNT] as number | undefined,
-    minimumPrice: raw[RESULT.MINIMUM_PRICE] as number | undefined,
-    maximumPrice: raw[RESULT.MAXIMUM_PRICE] as number | undefined,
-    trim: raw[RESULT.TRIM] as string | undefined,
-    modelYear: raw[RESULT.MODEL_YEAR] as number | undefined,
-    bodyType: raw[RESULT.BODY_TYPE] as string | undefined,
-    engineSize: raw[RESULT.ENGINE_SIZE] as number | undefined,
-    cylinders: raw[RESULT.CYLINDERS] as number | undefined,
-    fuelType: raw[RESULT.FUEL_TYPE] as string | undefined,
-    transmissionType: raw[RESULT.TRANSMISSION_TYPE] as string | undefined,
-    driveType: raw[RESULT.DRIVE_TYPE] as string | undefined,
-    horsepower: raw[RESULT.HORSEPOWER] as number | undefined,
-    doors: raw[RESULT.DOORS] as number | undefined,
-    seats: raw[RESULT.SEATS] as number | undefined,
-    mileage: raw[RESULT.MILEAGE] as number | undefined,
-    category: raw[RESULT.CATEGORY] as string | undefined,
-    countryOfOrigin: raw[RESULT.COUNTRY_OF_ORIGIN] as string | undefined,
-    torqueNm: raw[RESULT.TORQUE_NM] as number | undefined,
-    sourceUrl: raw[RESULT.SOURCE_URL] as string | undefined,
-    inboxId: raw[RESULT.INBOX_ID] as string | undefined,
-    externalJobId: raw[RESULT.EXTERNAL_JOB_ID] as string | undefined,
-    httpStatusCode: raw[RESULT.HTTP_STATUS_CODE] as number | undefined,
+    listingCount: optionalNumber(raw, RESULT.LISTING_COUNT),
+    minimumPrice: optionalNumber(raw, RESULT.MINIMUM_PRICE),
+    maximumPrice: optionalNumber(raw, RESULT.MAXIMUM_PRICE),
+    trim: optionalString(raw, RESULT.TRIM),
+    modelYear: optionalNumber(raw, RESULT.MODEL_YEAR),
+    bodyType: optionalString(raw, RESULT.BODY_TYPE),
+    engineSize: optionalNumber(raw, RESULT.ENGINE_SIZE),
+    cylinders: optionalNumber(raw, RESULT.CYLINDERS),
+    fuelType: optionalString(raw, RESULT.FUEL_TYPE),
+    transmissionType: optionalString(raw, RESULT.TRANSMISSION_TYPE),
+    driveType: optionalString(raw, RESULT.DRIVE_TYPE),
+    horsepower: optionalNumber(raw, RESULT.HORSEPOWER),
+    doors: optionalNumber(raw, RESULT.DOORS),
+    seats: optionalNumber(raw, RESULT.SEATS),
+    mileage: optionalNumber(raw, RESULT.MILEAGE),
+    category: optionalString(raw, RESULT.CATEGORY),
+    countryOfOrigin: optionalString(raw, RESULT.COUNTRY_OF_ORIGIN),
+    torqueNm: optionalNumber(raw, RESULT.TORQUE_NM),
+    sourceUrl: optionalString(raw, RESULT.SOURCE_URL),
+    inboxId: optionalString(raw, RESULT.INBOX_ID),
+    externalJobId: optionalString(raw, RESULT.EXTERNAL_JOB_ID),
+    httpStatusCode: optionalNumber(raw, RESULT.HTTP_STATUS_CODE),
     startedOn: optionalDate(raw, RESULT.STARTED_ON),
     completedOn: optionalDate(raw, RESULT.COMPLETED_ON),
     capturedOn: optionalDate(raw, RESULT.CAPTURED_ON),
     processedOn: optionalDate(raw, RESULT.PROCESSED_ON),
-    normalizedDetailsJson: raw[RESULT.NORMALIZED_DETAILS_JSON] as string | undefined,
-    rawResultJson: raw[RESULT.RAW_RESULT_JSON] as string | undefined,
-    evidenceStorageReference: raw[RESULT.EVIDENCE_STORAGE_REFERENCE] as string | undefined,
-    contentHash: raw[RESULT.CONTENT_HASH] as string | undefined,
-    errorCode: raw[RESULT.ERROR_CODE] as string | undefined,
-    errorMessage: raw[RESULT.ERROR_MESSAGE] as string | undefined,
+    normalizedDetailsJson: optionalString(raw, RESULT.NORMALIZED_DETAILS_JSON),
+    rawResultJson: optionalString(raw, RESULT.RAW_RESULT_JSON),
+    evidenceStorageReference: optionalString(raw, RESULT.EVIDENCE_STORAGE_REFERENCE),
+    contentHash: optionalString(raw, RESULT.CONTENT_HASH),
+    errorCode: optionalString(raw, RESULT.ERROR_CODE),
+    errorMessage: optionalString(raw, RESULT.ERROR_MESSAGE),
   };
 }
 
@@ -234,13 +244,21 @@ export async function fetchVehicleScrapeRuns(
   missingVehicleRequestId: string,
 ): Promise<VehicleScrapeRun[]> {
   const id = cleanGuid(missingVehicleRequestId, 'Missing Vehicle Request ID');
-  const select = Object.values(RUN)
-    .filter(
-      (field) =>
-        field !== RUN.MISSING_VEHICLE_REQUEST_LOOKUP
-        && field !== RUN.REQUESTED_BY_CONTACT_LOOKUP,
-    )
-    .join(',');
+  const select = [
+    RUN.ID,
+    RUN.NAME,
+    RUN.CORRELATION_ID,
+    RUN.OVERALL_STATUS,
+    RUN.STARTED_ON,
+    RUN.COMPLETED_ON,
+    RUN.REQUESTED_SOURCE_COUNT,
+    RUN.SUCCESSFUL_SOURCE_COUNT,
+    RUN.FAILED_SOURCE_COUNT,
+    RUN.TRIGGER_TYPE,
+    RUN.BATCH_CORRELATION_KEY,
+    RUN.ERROR_SUMMARY,
+    RUN.MISSING_VEHICLE_REQUEST_LOOKUP_REF,
+  ].join(',');
   const response = await safeFetch<ODataResponse>({
     url: `${API_BASE}/${ENTITIES.VEHICLE_SCRAPE_RUN}?$select=${select}&$filter=${RUN.MISSING_VEHICLE_REQUEST_LOOKUP_REF} eq ${id}&$orderby=${RUN.STARTED_ON} desc`,
     headers: { Prefer: 'odata.include-annotations=*' },

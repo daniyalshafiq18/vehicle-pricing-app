@@ -1,3 +1,28 @@
+export type MissingVehiclePricingDecisionStatus =
+  | 'Awaiting Scrapes'
+  | 'Scraping'
+  | 'Ready for Review'
+  | 'Needs Attention'
+  | 'Approved'
+  | 'Rejected';
+
+export type MissingVehiclePricingDecisionMethod =
+  | 'Single Source'
+  | 'Combined Sources'
+  | 'Manual Override';
+
+export interface SaveMissingVehiclePricingDecisionInput {
+  approvedMinimumPrice: number;
+  approvedMaximumPrice: number;
+  pricingDecisionStatusValue: number;
+  pricingDecisionMethodValue: number;
+  reviewedScrapeRunId: string;
+  primaryPriceResultId: string | null;
+  selectedSpecificationResultId: string;
+  decisionNotes: string | null;
+  decidedOn: Date | null;
+}
+
 export interface MissingVehicleRequest {
   id: string;
   name?: string;
@@ -34,9 +59,9 @@ export interface MissingVehicleRequest {
   // Admin-owned multi-source pricing decision fields.
   approvedMinimumPrice?: number;
   approvedMaximumPrice?: number;
-  pricingDecisionStatus?: string;
+  pricingDecisionStatus?: MissingVehiclePricingDecisionStatus;
   pricingDecisionStatusValue?: number;
-  pricingDecisionMethod?: string;
+  pricingDecisionMethod?: MissingVehiclePricingDecisionMethod;
   pricingDecisionMethodValue?: number;
   reviewedScrapeRunId?: string;
   primaryPriceResultId?: string;

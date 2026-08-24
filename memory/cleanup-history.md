@@ -7,6 +7,10 @@ metadata:
 
 # Cleanup History
 
+## 2026-08-24 - Phase 5 Evidence View Added
+- Added the MVR decision read/write path and guarded review form without changing or invoking the existing Vehicle Data approval/promotion function.
+- Added a normalized, read-only source comparison panel while deliberately retaining the legacy Scrape Results section for migration safety. No scraper transport, MVR write or Dataverse schema was changed.
+
 ## 2026-08-24 - Correlated PAD Run Resolution Hardened
 - Replaced the correlated DriveArabia resolver's broad MVR lookup-filtered Run listing with a minimal direct `vpi_correlationkey` lookup while retaining the existing repository and `IDataSource` layering.
 - Removed successful acknowledgement from the correlated evidence-warning path. Retryable captures now remain Pending; uncorrelated legacy acknowledgement behavior remains unchanged.

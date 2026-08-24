@@ -150,6 +150,7 @@ describe('vehicleScrapeApi', () => {
       maximumPrice: 112000,
     });
     expect(mockedSafeFetch.mock.calls[0]![0].url).not.toContain('vpi_MissingVehicleRequest,');
+    expect(mockedSafeFetch.mock.calls[0]![0].url).not.toContain('vpi_requestedbycontact');
     expect(mockedSafeFetch.mock.calls[1]![0].url).not.toContain('vpi_ScrapeRun,');
   });
 
@@ -179,6 +180,42 @@ describe('vehicleScrapeApi', () => {
     );
     expect(url).not.toContain('vpi_requestedbycontact');
     expect(url).not.toContain('$orderby');
+  });
+
+  it('normalizes Dataverse null evidence values to undefined', async () => {
+    mockedSafeFetch.mockResolvedValue({
+      value: [
+        {
+          vpi_vehiclescrapesourceresultid: RESULT_ID,
+          vpi_name: 'Queued DriveArabia result',
+          vpi_resultcorrelationkey: 'run-correlation-1:drivearabia:1',
+          _vpi_scraperun_value: RUN_ID,
+          vpi_attemptnumber: 1,
+          vpi_source: 2,
+          vpi_transport: 3,
+          vpi_processingstatus: 1,
+          vpi_pricetype: 2,
+          vpi_listingcount: null,
+          vpi_minprice: null,
+          vpi_maxprice: null,
+          vpi_bodytype: null,
+          vpi_drivetype: null,
+          vpi_errormessage: null,
+        },
+      ],
+    });
+
+    const [result] = await fetchVehicleScrapeSourceResults(RUN_ID);
+    expect(result).toMatchObject({
+      id: RESULT_ID,
+      processingStatus: 'Queued',
+      listingCount: undefined,
+      minimumPrice: undefined,
+      maximumPrice: undefined,
+      bodyType: undefined,
+      driveType: undefined,
+      errorMessage: undefined,
+    });
   });
 
   it('patches only supplied values and rejects malformed IDs before a request', async () => {

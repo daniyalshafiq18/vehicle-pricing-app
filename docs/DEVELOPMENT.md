@@ -92,6 +92,14 @@ Run/source API rules:
 - Explicitly write `vpi_attemptnumber=1` for a first source attempt.
 - Do not place secrets in raw JSON, evidence references, source URLs, external job IDs, or error fields while broad portal roles remain assigned.
 
+Phase 5 evidence review is read-only in its first slice. `useVehicleScrapeEvidence()` reads the newest MVR Run and linked Source Results through the repository/data-source boundary, polls every 10 seconds only while the Run is Queued/Running, and renders independent source cards in the MVR modal. Decision lookups and approved prices are not written until the review form and validation contract are implemented.
+
+The pricing-decision mutation uses `saveMissingVehiclePricingDecision()` through the normal hook/repository/`IDataSource` path. It binds `vpi_ReviewedScrapeRun`, `vpi_PrimaryPriceResult` and `vpi_SelectedSpecificationResult` with their exact navigation-property casing, while reads select their lowercase lookup-reference fields. The UI allows writes only against the displayed terminal Run and its Succeeded results; manual overrides, Needs Attention and Rejected decisions require notes. Promotion to Vehicle Data remains a later explicit action.
+
+Before binding Decision Status, the review form converts the system-managed `Awaiting Scrapes` and `Scraping` states to the first valid administrator state, `Ready for Review`. A controlled native select must never receive a value absent from its options: browsers can visually show the first option while React retains and submits the unmatched value.
+
+Dataverse optional evidence fields are normalized at the API mapping boundary: `null`, missing and empty-string values become `undefined` in the TypeScript model. UI consumers therefore render one consistent unavailable state and never interpret a null currency as zero. Schema.org drivetrain identifiers remain preserved in evidence but are shortened to standard drivetrain labels for review display.
+
 ## Performance Optimizations
 
 - `React.memo` on expensive chart components
