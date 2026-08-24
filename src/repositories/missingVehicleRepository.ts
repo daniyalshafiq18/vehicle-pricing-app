@@ -1,5 +1,9 @@
 import { getDataSource } from '@data';
-import type { MissingVehicleRequest, SaveMissingVehiclePricingDecisionInput } from '@types';
+import type {
+  MissingVehiclePromotionResult,
+  MissingVehicleRequest,
+  SaveMissingVehiclePricingDecisionInput,
+} from '@types';
 
 export class MissingVehicleRepository {
   async upsert(payload: {
@@ -78,9 +82,8 @@ export class MissingVehicleRepository {
     return ds.updateMissingVehicleScrapeResult(id, fields);
   }
 
-  async approve(mvr: MissingVehicleRequest): Promise<void> {
-    const ds = getDataSource();
-    return ds.approveAndCreateVehicle(mvr);
+  async promote(id: string): Promise<MissingVehiclePromotionResult> {
+    return getDataSource().promoteApprovedMissingVehicle(id);
   }
 }
 

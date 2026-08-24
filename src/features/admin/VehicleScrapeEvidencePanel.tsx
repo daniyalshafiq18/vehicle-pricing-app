@@ -1,7 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { AlertCircle, ExternalLink, Loader, RefreshCw } from 'lucide-react';
+import { AlertCircle, Database, ExternalLink, Loader, RefreshCw } from 'lucide-react';
 import { Button, Input, Select } from '@components/ui';
-import { useSaveVehiclePricingDecision, useVehicleScrapeEvidence } from '@hooks';
+import {
+  usePromoteApprovedMissingVehicle,
+  useSaveVehiclePricingDecision,
+  useVehicleScrapeEvidence,
+} from '@hooks';
 import {
   MISSING_VEHICLE_PRICING_DECISION_METHOD,
   MISSING_VEHICLE_PRICING_DECISION_STATUS,
@@ -375,6 +379,43 @@ function PricingDecisionForm({
   );
 }
 
+function VehiclePromotionAction({ request }: { request: MissingVehicleRequest }) {
+  const promotion = usePromoteApprovedMissingVehicle();
+  const isPromoted = request.status === 'Approved' || Boolean(request.promotedVehicleId);
+  const isDecisionApproved = request.pricingDecisionStatus === 'Approved';
+
+  return (
+    <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-400/30 dark:bg-emerald-950/25">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Vehicle Data Promotion</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Uses the approved price range and selected specification evidence. Promotion is
+            checked again against Dataverse before any master record is created.
+          </p>
+        </div>
+        <Button
+          type="button"
+          disabled={!isDecisionApproved || isPromoted || promotion.isPending}
+          onClick={() => promotion.mutate(request.id)}
+        >
+          {promotion.isPending ? (
+            <Loader className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Database className="mr-2 h-4 w-4" />
+          )}
+          {isPromoted ? 'Already in Vehicle Data' : 'Push to Vehicle Data'}
+        </Button>
+      </div>
+      {!isDecisionApproved && !isPromoted ? (
+        <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+          Save the pricing decision as Approved before promotion.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export function VehicleScrapeEvidencePanel({ request }: { request: MissingVehicleRequest }) {
   const evidence = useVehicleScrapeEvidence(request.id);
 
@@ -434,6 +475,7 @@ export function VehicleScrapeEvidencePanel({ request }: { request: MissingVehicl
         </div>
       )}
       <PricingDecisionForm request={request} run={run} results={results} />
+      <VehiclePromotionAction request={request} />
     </section>
   );
 }

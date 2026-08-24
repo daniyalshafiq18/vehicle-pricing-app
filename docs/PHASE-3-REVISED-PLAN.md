@@ -24,9 +24,9 @@ Missing Vehicle Request
 | 1. Dataverse foundation | Run/Source Result tables, relationships, choices, decision fields, Power Pages API and repository | Complete |
 | 2. YallaMotor dual-write | Preserve legacy MVR write and add linked normalized Run/Source Result | Complete and live-proven |
 | 3. DriveArabia dual-write | Preserve PAD/MVR behavior and add one Run/Source Result per exact MVR match | Complete and live-proven |
-| 4. Unified scrape orchestration | One admin Scrape action creates a shared run and coordinates selected sources | Not started |
-| 5. Evidence review and price decision | Compare independent sources; choose price/spec evidence and approve final min/max | Not started |
-| 6. Vehicle Data promotion | Promote only administrator-approved prices/specifications to master Vehicle Data | Not started |
+| 4. Unified scrape orchestration | One admin Scrape action creates a shared run and coordinates selected sources | Complete and live-proven |
+| 5. Evidence review and price decision | Compare independent sources; choose price/spec evidence and approve final min/max | Complete and live-proven |
+| 6. Vehicle Data promotion | Promote only administrator-approved prices/specifications to master Vehicle Data | In implementation |
 | 7. Automation and production hardening | Unattended PAD, retries/bulk reliability, monitoring and administrator-only permissions | Not started |
 
 ### Phase 3 implementation contract

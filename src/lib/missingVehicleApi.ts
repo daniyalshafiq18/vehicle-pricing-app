@@ -34,17 +34,24 @@ import {
   driveTypeValue,
   categoryValue,
   DOORS,
+  SEATS,
   MISSING_VEHICLE_PRICING_DECISION_METHOD,
   MISSING_VEHICLE_PRICING_DECISION_STATUS,
 } from '@data/dataverseOptionSets';
 import type {
   MissingVehiclePricingDecisionMethod,
   MissingVehiclePricingDecisionStatus,
+  MissingVehiclePromotionResult,
   MissingVehicleRequest,
   SaveMissingVehiclePricingDecisionInput,
+  VehicleScrapeSourceResult,
 } from '@types';
 import { safeFetch, safeFetchWithMeta } from './safeAjax';
 import { createContact } from './contactApi';
+import {
+  fetchVehicleScrapeRuns,
+  fetchVehicleScrapeSourceResults,
+} from './vehicleScrapeApi';
 
 interface ODataResponse {
   value: Record<string, unknown>[];
@@ -210,6 +217,10 @@ function parseRawRecord(raw: Record<string, unknown>): MissingVehicleRequest {
     decidedOn: optionalString(raw, MISSING_VEHICLE_DECISION_FIELDS.DECIDED_ON)
       ? new Date(raw[MISSING_VEHICLE_DECISION_FIELDS.DECIDED_ON] as string)
       : undefined,
+    promotedVehicleId: optionalString(
+      raw,
+      MISSING_VEHICLE_REQUEST_FIELDS.MISSING_VEHICLE_LOOKUP_REF,
+    ),
   };
 }
 
@@ -375,6 +386,7 @@ export async function fetchMissingVehicleRequests(): Promise<MissingVehicleReque
     MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MIN_PRICE,
     MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MAX_PRICE,
     MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_SOURCES,
+    MISSING_VEHICLE_REQUEST_FIELDS.MISSING_VEHICLE_LOOKUP_REF,
     ...DECISION_SELECT_FIELDS,
   ].join(',');
 
@@ -422,6 +434,7 @@ export async function fetchMissingVehicleRequestById(
     MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MIN_PRICE,
     MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_MAX_PRICE,
     MISSING_VEHICLE_REQUEST_FIELDS.SCRAPED_SOURCES,
+    MISSING_VEHICLE_REQUEST_FIELDS.MISSING_VEHICLE_LOOKUP_REF,
     ...DECISION_SELECT_FIELDS,
   ].join(',');
 
@@ -614,6 +627,8 @@ function mvrFuelToPowertrainLabel(fuelType: string): string | undefined {
 }
 
 /**
+ * @deprecated Legacy compatibility function. New UI and data-source paths must use
+ * `promoteApprovedMissingVehicle()`, which revalidates normalized evidence.
  * Approve a missing vehicle request: create a Vehicle Data record and update status to Approved.
  *
  * Field mapping (MVR → Vehicle Data):
@@ -720,4 +735,194 @@ export async function approveAndCreateVehicle(mvr: MissingVehicleRequest): Promi
     },
     body: JSON.stringify(patchBody),
   });
+}
+
+function normalizedDriveTypeLabel(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const labels: Record<string, string> = {
+    'https://schema.org/FrontWheelDriveConfiguration': 'FWD',
+    'https://schema.org/RearWheelDriveConfiguration': 'RWD',
+    'https://schema.org/AllWheelDriveConfiguration': 'AWD',
+    'https://schema.org/FourWheelDriveConfiguration': '4X4',
+    '4WD': '4X4',
+  };
+  return labels[value] ?? value;
+}
+
+function odataStringLiteral(value: string): string {
+  return value.replace(/'/g, "''");
+}
+
+function succeededResultById(
+  results: VehicleScrapeSourceResult[],
+  id: string,
+  label: string,
+): VehicleScrapeSourceResult {
+  const result = results.find((item) => item.id.toLowerCase() === id.toLowerCase());
+  if (!result || result.processingStatus !== 'Succeeded') {
+    throw new Error(`${label} must be a Succeeded result from the reviewed Scrape Run`);
+  }
+  return result;
+}
+
+function buildApprovedVehicleRecord(
+  mvr: MissingVehicleRequest,
+  specifications: VehicleScrapeSourceResult,
+): Record<string, unknown> {
+  const vehicle: Record<string, unknown> = {
+    [VEHICLE_FIELDS.NAME]: [mvr.make, mvr.model, mvr.trim].filter(Boolean).join(' '),
+    [VEHICLE_FIELDS.MAKE]: mvr.make,
+    [VEHICLE_FIELDS.MODEL]: mvr.model,
+    [VEHICLE_FIELDS.YEAR]: String(mvr.modelYear),
+    [VEHICLE_FIELDS.SPEC]: mvr.trim,
+    [VEHICLE_FIELDS.MIN_PRICE]: mvr.approvedMinimumPrice,
+    [VEHICLE_FIELDS.MAX_PRICE]: mvr.approvedMaximumPrice,
+  };
+
+  const bodyType = specifications.bodyType ?? mvr.bodyType;
+  const bodyTypeChoice = bodyType ? bodyTypeValue(bodyType) : null;
+  if (bodyTypeChoice !== null) vehicle[VEHICLE_FIELDS.BODY_TYPE] = bodyTypeChoice;
+
+  const cylinders = specifications.cylinders ?? Number.parseInt(mvr.cylinders ?? '', 10);
+  if (Number.isFinite(cylinders)) vehicle[VEHICLE_FIELDS.CYLINDERS] = cylinders;
+
+  const fuelType = specifications.fuelType ?? mvr.fuelType;
+  const powertrainLabel = fuelType ? mvrFuelToPowertrainLabel(fuelType) : undefined;
+  const powertrainChoice = powertrainLabel ? powertrainValue(powertrainLabel) : null;
+  if (powertrainChoice !== null) vehicle[VEHICLE_FIELDS.POWERTRAIN_TYPE] = powertrainChoice;
+
+  const transmission = specifications.transmissionType ?? mvr.transmissionType;
+  const transmissionChoice = transmission ? transmissionValue(transmission) : null;
+  if (transmissionChoice !== null) vehicle[VEHICLE_FIELDS.TRANSMISSION] = transmissionChoice;
+
+  const driveType = normalizedDriveTypeLabel(specifications.driveType ?? mvr.driveType);
+  const driveTypeChoice = driveType ? driveTypeValue(driveType) : null;
+  if (driveTypeChoice !== null) vehicle[VEHICLE_FIELDS.DRIVE_TYPE] = driveTypeChoice;
+
+  const engineSize = specifications.engineSize ?? mvr.engineSize;
+  if (engineSize !== undefined) vehicle[VEHICLE_FIELDS.ENGINE_SIZE] = engineSize;
+  const horsepower = specifications.horsepower ?? mvr.horsepower;
+  if (horsepower !== undefined) vehicle[VEHICLE_FIELDS.HORSEPOWER] = horsepower;
+
+  const doors = specifications.doors ?? Number.parseInt(mvr.doors ?? '', 10);
+  const doorsChoice = Number.isFinite(doors) ? DOORS[String(doors)] : undefined;
+  if (doorsChoice !== undefined) vehicle[VEHICLE_FIELDS.DOORS] = doorsChoice;
+  const seats = specifications.seats ?? Number.parseInt(mvr.seats ?? '', 10);
+  const seatsChoice = Number.isFinite(seats) ? SEATS[String(seats)] : undefined;
+  if (seatsChoice !== undefined) vehicle[VEHICLE_FIELDS.SEATS] = seatsChoice;
+
+  const categoryChoice = specifications.category
+    ? categoryValue(specifications.category)
+    : (mvr.categoryValue ?? (mvr.category ? categoryValue(mvr.category) : null));
+  if (categoryChoice !== null && categoryChoice !== undefined) {
+    vehicle[VEHICLE_FIELDS.CATEGORY] = categoryChoice;
+  }
+
+  return vehicle;
+}
+
+async function findExistingPromotedVehicle(mvr: MissingVehicleRequest): Promise<string | null> {
+  const filter = [
+    `${VEHICLE_FIELDS.MAKE} eq '${odataStringLiteral(mvr.make)}'`,
+    `${VEHICLE_FIELDS.MODEL} eq '${odataStringLiteral(mvr.model)}'`,
+    `${VEHICLE_FIELDS.YEAR} eq '${mvr.modelYear}'`,
+    `${VEHICLE_FIELDS.SPEC} eq '${odataStringLiteral(mvr.trim)}'`,
+  ].join(' and ');
+  const response = await safeFetch<ODataResponse>({
+    url: `${API_BASE}/${ENTITIES.VEHICLE}?$select=${VEHICLE_FIELDS.ID}&$filter=${filter}&$top=2`,
+  });
+  const matches = response.value ?? [];
+  if (matches.length > 1) {
+    throw new Error(
+      'Multiple Vehicle Data records already match this request; resolve duplicates before promotion',
+    );
+  }
+  return optionalString(matches[0] ?? {}, VEHICLE_FIELDS.ID) ?? null;
+}
+
+async function linkPromotedVehicle(mvrId: string, vehicleId: string): Promise<void> {
+  const statusValue = missingVehicleStatusValue('Approved');
+  if (statusValue === null) throw new Error('Approved MVR status is not configured');
+  await safeFetch<void>({
+    url: `${API_BASE}/${ENTITIES.MISSING_VEHICLE_REQUEST}(${cleanGuid(mvrId, 'Missing Vehicle Request ID')})`,
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'If-Match': '*',
+    },
+    body: JSON.stringify({
+      [MISSING_VEHICLE_REQUEST_FIELDS.STATUS]: statusValue,
+      [`${MISSING_VEHICLE_REQUEST_FIELDS.MISSING_VEHICLE_LOOKUP}@odata.bind`]:
+        `/${ENTITIES.VEHICLE}(${cleanGuid(vehicleId, 'Vehicle Data ID')})`,
+    }),
+  });
+}
+
+/** Promote only an approved, evidence-backed MVR into master Vehicle Data. */
+export async function promoteApprovedMissingVehicle(
+  id: string,
+): Promise<MissingVehiclePromotionResult> {
+  const mvr = await fetchMissingVehicleRequestById(cleanGuid(id, 'Missing Vehicle Request ID'));
+  if (!mvr) throw new Error('Missing Vehicle Request could not be loaded');
+  if (mvr.promotedVehicleId) {
+    return { vehicleId: mvr.promotedVehicleId, created: false };
+  }
+  if (mvr.pricingDecisionStatus !== 'Approved') {
+    throw new Error('Approve the pricing decision before promoting this vehicle');
+  }
+  if (
+    !mvr.approvedMinimumPrice ||
+    !mvr.approvedMaximumPrice ||
+    mvr.approvedMinimumPrice > mvr.approvedMaximumPrice
+  ) {
+    throw new Error('Approved minimum and maximum prices are required for promotion');
+  }
+  if (!mvr.reviewedScrapeRunId || !mvr.selectedSpecificationResultId) {
+    throw new Error('Reviewed Run and specification evidence are required for promotion');
+  }
+
+  const runs = await fetchVehicleScrapeRuns(mvr.id);
+  const reviewedRunId = mvr.reviewedScrapeRunId;
+  const reviewedRun = runs.find((run) => run.id.toLowerCase() === reviewedRunId.toLowerCase());
+  if (!reviewedRun || reviewedRun.overallStatus === 'Queued' || reviewedRun.overallStatus === 'Running') {
+    throw new Error('Reviewed Scrape Run must belong to this request and be terminal');
+  }
+  const results = await fetchVehicleScrapeSourceResults(reviewedRun.id);
+  const specifications = succeededResultById(
+    results,
+    mvr.selectedSpecificationResultId,
+    'Selected Specification Result',
+  );
+  if (mvr.pricingDecisionMethod !== 'Manual Override') {
+    if (!mvr.primaryPriceResultId) {
+      throw new Error('Primary Price Result is required for promotion');
+    }
+    const primaryPrice = succeededResultById(
+      results,
+      mvr.primaryPriceResultId,
+      'Primary Price Result',
+    );
+    if (primaryPrice.minimumPrice === undefined || primaryPrice.maximumPrice === undefined) {
+      throw new Error('Primary Price Result must contain a price range');
+    }
+  }
+
+  const existingVehicleId = await findExistingPromotedVehicle(mvr);
+  if (existingVehicleId) {
+    await linkPromotedVehicle(mvr.id, existingVehicleId);
+    return { vehicleId: existingVehicleId, created: false };
+  }
+
+  const { meta } = await safeFetchWithMeta<Record<string, unknown>>({
+    url: `${API_BASE}/${ENTITIES.VEHICLE}`,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(buildApprovedVehicleRecord(mvr, specifications)),
+  });
+  const entityHeader = meta.getHeader('entityid') ?? meta.getHeader('OData-EntityId') ?? '';
+  const vehicleId = entityHeader.match(/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}/i)?.[0];
+  if (!vehicleId) throw new Error('Vehicle created but no entity ID returned');
+
+  await linkPromotedVehicle(mvr.id, vehicleId);
+  return { vehicleId, created: true };
 }

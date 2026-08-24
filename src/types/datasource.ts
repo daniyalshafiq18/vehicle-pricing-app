@@ -12,6 +12,7 @@ import type { Inquiry } from './inquiry';
 import type { PriceSuggestion } from './priceSuggestion';
 import type {
   MissingVehicleRequest,
+  MissingVehiclePromotionResult,
   SaveMissingVehiclePricingDecisionInput,
 } from './missingVehicleRequest';
 import type {
@@ -138,7 +139,7 @@ export interface IDataSource {
       mileageValue?: number;
     },
   ): Promise<void>;
-  approveAndCreateVehicle(mvr: MissingVehicleRequest): Promise<void>;
+  promoteApprovedMissingVehicle(id: string): Promise<MissingVehiclePromotionResult>;
 
   // Multi-source scrape evidence
   createVehicleScrapeRun(payload: CreateVehicleScrapeRunInput): Promise<string>;

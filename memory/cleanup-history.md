@@ -7,6 +7,10 @@ metadata:
 
 # Cleanup History
 
+## 2026-08-24 - Legacy Status-Driven Promotion Removed from UI
+- Removed `Approved` from the ordinary MVR Status dropdown and replaced its direct legacy aggregate-field promotion with the explicit evidence-backed Phase 6 action. Existing Approved records still render normally; only the unsafe creation shortcut was removed.
+- Replaced repository/data-source approval entry points that accepted a stale full MVR object with an ID-based guarded promotion contract that re-reads Dataverse before creating or linking Vehicle Data.
+
 ## 2026-08-24 - Phase 5 Evidence View Added
 - Added the MVR decision read/write path and guarded review form without changing or invoking the existing Vehicle Data approval/promotion function.
 - Added a normalized, read-only source comparison panel while deliberately retaining the legacy Scrape Results section for migration safety. No scraper transport, MVR write or Dataverse schema was changed.

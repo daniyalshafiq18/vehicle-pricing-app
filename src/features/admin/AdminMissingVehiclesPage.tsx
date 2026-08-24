@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   useMissingVehicleRequests,
   useUpdateMissingVehicleRequestStatus,
-  useApproveMissingVehicleRequest,
   useTriggerScrape,
   useTriggerMultiSourceScrape,
   useProcessScrapeInbox,
@@ -43,7 +42,7 @@ import { VehicleScrapeEvidencePanel } from '@features/admin/VehicleScrapeEvidenc
 
 // ─── Status helpers ────────────────────────────────────────────
 
-const STATUS_OPTIONS = ['Pending', 'Approved', 'In Progress', 'Reject'] as const;
+const STATUS_OPTIONS = ['Pending', 'In Progress', 'Reject'] as const;
 
 const STATUS_CONFIG: Record<
   string,
@@ -187,20 +186,16 @@ function StatusBadge({ status }: { status: string | undefined }) {
 
 function StatusSelect({ request }: { request: MissingVehicleRequest }) {
   const updateStatus = useUpdateMissingVehicleRequestStatus();
-  const approveRequest = useApproveMissingVehicleRequest();
   const [open, setOpen] = useState(false);
-  const isPending = updateStatus.isPending || approveRequest.isPending;
+  const isPending = updateStatus.isPending;
+  const isFinalized = request.status === 'Approved';
 
   const handleSelect = useCallback(
     (newStatus: string) => {
       setOpen(false);
-      if (newStatus === 'Approved') {
-        approveRequest.mutate(request);
-      } else {
-        updateStatus.mutate({ id: request.id, status: newStatus });
-      }
+      updateStatus.mutate({ id: request.id, status: newStatus });
     },
-    [request.id, updateStatus, approveRequest, request],
+    [request.id, updateStatus],
   );
 
   const currentCfg = STATUS_CONFIG[request.status ?? ''] ?? STATUS_CONFIG['Pending']!;
@@ -209,7 +204,7 @@ function StatusSelect({ request }: { request: MissingVehicleRequest }) {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        disabled={isPending}
+        disabled={isPending || isFinalized}
         className={cn(
           'inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all',
           'hover:bg-[#dff7f4] focus:outline-none focus:ring-2 focus:ring-[#19b8a5]/30',
@@ -1074,6 +1069,16 @@ export function AdminMissingVehiclesPage() {
   const pageSize = 15;
 
   const { data: requests, isLoading } = useMissingVehicleRequests();
+
+  useEffect(() => {
+    if (!selectedRequest || !requests) {
+      return;
+    }
+    const refreshed = requests.find((request) => request.id === selectedRequest.id);
+    if (refreshed && refreshed !== selectedRequest) {
+      setSelectedRequest(refreshed);
+    }
+  }, [requests, selectedRequest]);
 
   // Status counts for the summary bar + filter tabs
   const statusCounts = {

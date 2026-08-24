@@ -22,7 +22,7 @@ import {
   saveMissingVehiclePricingDecision,
   updateMissingVehicleRequestStatus,
   updateMissingVehicleScrapeResult,
-  approveAndCreateVehicle,
+  promoteApprovedMissingVehicle,
 } from '@lib/missingVehicleApi';
 import {
   upsertPriceSuggestion,
@@ -58,6 +58,7 @@ import type {
   TopVehicle,
   Inquiry,
   MissingVehicleRequest,
+  MissingVehiclePromotionResult,
   PriceSuggestion,
   SaveMissingVehiclePricingDecisionInput,
   CreateVehicleScrapeRunInput,
@@ -963,8 +964,8 @@ export class DataverseDataSource implements IDataSource {
     return updateMissingVehicleScrapeResult(id, fields);
   }
 
-  async approveAndCreateVehicle(mvr: MissingVehicleRequest): Promise<void> {
-    return approveAndCreateVehicle(mvr);
+  async promoteApprovedMissingVehicle(id: string): Promise<MissingVehiclePromotionResult> {
+    return promoteApprovedMissingVehicle(id);
   }
 
   // Multi-source scrape evidence

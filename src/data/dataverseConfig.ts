@@ -111,6 +111,7 @@ export const MISSING_VEHICLE_REQUEST_FIELDS = {
   DRIVE_TYPE: 'vpi_drivetype',
   CONTACT_LOOKUP: 'vpi_Contact',
   MISSING_VEHICLE_LOOKUP: 'vpi_MissingVehicle',
+  MISSING_VEHICLE_LOOKUP_REF: '_vpi_missingvehicle_value',
   STATUS: 'vpi_status',
   MIN_PRICE: 'vpi_minprice',
   MAX_PRICE: 'vpi_maxprice',

@@ -3,6 +3,13 @@
 
 ## 2026-08-24
 
+### Phase 6 Vehicle Data promotion started
+- Added an explicit **Push to Vehicle Data** action beneath the approved evidence decision. The ordinary MVR Status dropdown can no longer trigger Vehicle Data creation; it now manages only Pending, In Progress and Reject lifecycle states.
+- Replaced client-object promotion with a guarded server-read workflow. Promotion reloads the MVR, requires an Approved pricing decision and valid approved range, verifies the Reviewed Run belongs to the request and is terminal, and accepts only Succeeded selected price/specification results from that Run.
+- Vehicle Data identity remains the requested make/model/year/trim, while technical fields come from the Selected Specification Result with MVR fallback only where that evidence is absent. Prices come exclusively from Approved Minimum/Maximum Price; legacy scraped prices are no longer the promotion authority.
+- Added idempotency guards: an existing MVR Vehicle Data lookup returns safely, one exact make/model/year/spec master match is linked instead of recreated, and ambiguous duplicate matches block promotion. Successful creation links the MVR and sets its ordinary status to Approved only afterward.
+- Added MVR modal synchronization after query refresh so a newly saved Approved decision immediately unlocks promotion, plus focused regression coverage for authoritative mapping, non-approved rejection, existing-link idempotency and partial-failure recovery.
+
 ### Phase 5 evidence review started
 - Added the guarded pricing-decision form beneath normalized evidence. After a Run becomes terminal, admins can choose the decision method/status, authoritative price result, specification result, approved min/max prices and notes. Active Runs remain read-only; invalid ranges, non-succeeded evidence and undocumented overrides/attention/rejection decisions are blocked client-side.
 - Added the full MVR decision read/PATCH contract using the confirmed fields and case-sensitive lookup bindings for Reviewed Scrape Run, Primary Price Result and Selected Specification Result. Approved/Rejected decisions record Decided On; Vehicle Data promotion remains intentionally separate.

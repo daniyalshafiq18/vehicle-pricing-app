@@ -100,6 +100,10 @@ Before binding Decision Status, the review form converts the system-managed `Awa
 
 Dataverse optional evidence fields are normalized at the API mapping boundary: `null`, missing and empty-string values become `undefined` in the TypeScript model. UI consumers therefore render one consistent unavailable state and never interpret a null currency as zero. Schema.org drivetrain identifiers remain preserved in evidence but are shortened to standard drivetrain labels for review display.
 
+Phase 6 promotion is an explicit action, separate from both pricing-decision approval and the ordinary MVR Status dropdown. `promoteApprovedMissingVehicle()` reloads the current MVR, Run and Source Results before writing; it never trusts a possibly stale modal object. It requires an Approved decision, valid approved min/max, a terminal reviewed Run owned by that MVR, and Succeeded selected evidence. Master identity uses requested make/model/year/trim so the original valuation request resolves; technical fields use Selected Specification Result values with an MVR fallback for evidence gaps. Prices use only the approved range.
+
+Promotion is retry-safe at the application boundary. An existing MVR Vehicle Data lookup is a completed no-op; otherwise one exact make/model/year/spec Vehicle Data match is linked instead of recreated. Multiple exact matches stop for manual duplicate resolution. This natural-identity recovery prevents a retry from creating another master row if the initial Vehicle POST succeeded but the subsequent MVR PATCH failed.
+
 ## Performance Optimizations
 
 - `React.memo` on expensive chart components

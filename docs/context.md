@@ -39,6 +39,8 @@ The next Phase 5 slice persists the administrator-owned decision on the MVR. Onl
 
 When a terminal Run first unlocks review, the form maps the system lifecycle values `Awaiting Scrapes`/`Scraping` to `Ready for Review`. This keeps the native select's visible default synchronized with the choice integer sent to Dataverse.
 
+Phase 6 adds guarded Vehicle Data promotion as a separate administrator action. The app re-reads the saved decision and evidence, uses the MVR identity plus the selected specification result and approved price range, then creates or safely reuses one exact master record before linking it back to the MVR and setting ordinary MVR Status to Approved. Direct promotion through the generic status dropdown is disabled, and duplicate/retry checks run before the Vehicle Data POST.
+
 ### Layer Diagram
 
 ```

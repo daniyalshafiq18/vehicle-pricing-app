@@ -23,6 +23,11 @@ export interface SaveMissingVehiclePricingDecisionInput {
   decidedOn: Date | null;
 }
 
+export interface MissingVehiclePromotionResult {
+  vehicleId: string;
+  created: boolean;
+}
+
 export interface MissingVehicleRequest {
   id: string;
   name?: string;
@@ -69,4 +74,5 @@ export interface MissingVehicleRequest {
   decisionNotes?: string;
   decidedByContactId?: string;
   decidedOn?: Date;
+  promotedVehicleId?: string;
 }

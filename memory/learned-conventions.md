@@ -7,6 +7,7 @@ metadata:
 
 # Learned Conventions & Preferences
 
+- **Promotion must re-read authority and be retry-safe**: Never create a master record from a modal's cached aggregate object. Reload the approved decision and selected evidence, verify ownership/status, then check both the existing lookup and the natural master identity before POST. If creation succeeds but linking fails, the retry must recover the exact record rather than duplicate it.
 - **A controlled select value must exist in its rendered options**: Native selects can visually display the first option when React supplies an unmatched value while the component state still retains and submits that unmatched value. Normalize system-only lifecycle states before binding an administrator-only decision list, and test the submitted choice integer rather than trusting the visible label.
 
 - **Normalize Dataverse nulls at the mapper boundary**: Optional Dataverse columns arrive as explicit `null`, even when TypeScript declares them as `T | undefined`. Casting leaks `null` into every consumer, producing literal “null” text and formatting null currency as zero. Runtime-check optional strings/numbers during mapping and expose one consistent `undefined` state.

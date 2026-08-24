@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { missingVehicleRepository } from '@repositories';
-import type { MissingVehicleRequest } from '@types';
 import toast from 'react-hot-toast';
 
 const MISSING_VEHICLE_REQUESTS_KEY = 'missing-vehicle-requests';
@@ -63,18 +62,24 @@ export function useUpdateMissingVehicleRequestStatus() {
   });
 }
 
-export function useApproveMissingVehicleRequest() {
+export function usePromoteApprovedMissingVehicle() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (mvr: MissingVehicleRequest) =>
-      missingVehicleRepository.approve(mvr),
-    onSuccess: () => {
-      toast.success('Vehicle approved and added to master data');
+    mutationFn: (id: string) => missingVehicleRepository.promote(id),
+    onSuccess: (result, id) => {
+      toast.success(
+        result.created
+          ? 'Approved vehicle added to master data'
+          : 'Request linked to the existing master vehicle',
+      );
       queryClient.invalidateQueries({ queryKey: [MISSING_VEHICLE_REQUESTS_KEY] });
+      queryClient.invalidateQueries({ queryKey: ['missing-vehicle-request', id] });
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['vehicle-hierarchy'] });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to approve vehicle');
+      toast.error(error.message || 'Failed to promote approved vehicle');
     },
   });
 }
