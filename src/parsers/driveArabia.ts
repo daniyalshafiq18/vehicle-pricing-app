@@ -163,6 +163,110 @@ export function extractDriveArabiaTrimPrices(html: string): DriveArabiaPriceRow[
   return rows;
 }
 
+interface CrossSourceTrimIdentity {
+  capacity?: string;
+  induction?: 'turbo' | 'turbo-diesel';
+  layouts: string[];
+  driveTypes: string[];
+  gradeTokens: string[];
+  hybrid: boolean;
+}
+
+function crossSourceTrimIdentity(value: string): CrossSourceTrimIdentity {
+  const withoutOptionLevel = value.replace(
+    /\(\s*(?:base|basic|low|mid|middle|full|high)(?:\s+option)?\s*\)/gi,
+    ' ',
+  );
+  const normalized = withoutOptionLevel
+    .toUpperCase()
+    .replace(/(\d+(?:\.\d+)?)\s*L?\s*(TC|TD|T)\b/g, '$1 $2')
+    .replace(/(\d+(?:\.\d+)?)\s*L\b/g, '$1')
+    .replace(/[^A-Z0-9.]+/g, ' ')
+    .trim();
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+  const capacityToken = tokens.find((token) => /^\d+(?:\.\d+)?$/.test(token));
+  const layouts = tokens.filter((token) => /^[IVH]\d{1,2}$/.test(token));
+  const driveTypes = tokens.filter((token) => /^(?:FWD|RWD|AWD|4WD|4X4|2WD)$/.test(token));
+  const mechanicalTokens = new Set([
+    capacityToken,
+    ...layouts,
+    ...driveTypes,
+    'TC',
+    'T',
+    'TD',
+    'TURBO',
+    'PETROL',
+    'DIESEL',
+    'HYBRID',
+    'AUTOMATIC',
+    'MANUAL',
+    'AUTO',
+    'AT',
+    'MT',
+    'CVT',
+  ]);
+  const gradeTokens = tokens
+    .filter((token) => !mechanicalTokens.has(token))
+    .sort();
+  return {
+    ...(capacityToken && { capacity: String(Number(capacityToken)) }),
+    ...(tokens.some((token) => token === 'T' || token === 'TC' || token === 'TURBO') && {
+      induction: 'turbo' as const,
+    }),
+    ...(tokens.includes('TD') && { induction: 'turbo-diesel' as const }),
+    layouts,
+    driveTypes,
+    gradeTokens,
+    hybrid: tokens.includes('HYBRID') || /\d+(?:\.\d+)?\s*H(?:\s|$)/.test(normalized),
+  };
+}
+
+function arraysEqual(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function statedValuesCompatible(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === 0 || right.length === 0 || arraysEqual(left, right);
+}
+
+function crossSourceTrimEquivalent(requestedTrim: string, sourceTrim: string): boolean {
+  const requested = crossSourceTrimIdentity(requestedTrim);
+  const source = crossSourceTrimIdentity(sourceTrim);
+  return (
+    requested.capacity !== undefined &&
+    requested.capacity === source.capacity &&
+    requested.induction === source.induction &&
+    requested.gradeTokens.length > 0 &&
+    arraysEqual(requested.gradeTokens, source.gradeTokens) &&
+    statedValuesCompatible(requested.layouts, source.layouts) &&
+    statedValuesCompatible(requested.driveTypes, source.driveTypes) &&
+    requested.hybrid === source.hybrid
+  );
+}
+
+/**
+ * Resolve one source price row without fuzzy guessing. Exact text wins; the
+ * cross-source fallback requires a unique capacity + grade identity and rejects
+ * conflicting mechanical tokens.
+ */
+export function resolveDriveArabiaTrimPrice(
+  rows: readonly DriveArabiaPriceRow[],
+  requestedTrim: string,
+  year: number,
+): DriveArabiaPriceRow | undefined {
+  const yearRows = rows.filter((row) => row.year === year);
+  const exact = yearRows.find(
+    (row) => comparableTrim(row.trim) === comparableTrim(requestedTrim),
+  );
+  if (exact) {
+    return exact;
+  }
+  const equivalent = yearRows.filter((row) =>
+    crossSourceTrimEquivalent(requestedTrim, row.trim),
+  );
+  return equivalent.length === 1 ? equivalent[0] : undefined;
+}
+
 /** The model year of a per-year page, read from the most reliable marker first. */
 function extractDriveArabiaYear(html: string): number {
   const candidates = [

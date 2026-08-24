@@ -13,13 +13,20 @@ import type {
   CreateVehicleScrapeSourceResultInput,
   MissingVehicleRequest,
   UpdateVehicleScrapeRunInput,
+  UpdateVehicleScrapeSourceResultInput,
+  VehicleScrapeSourceResult,
 } from '@types';
+import {
+  refreshMultiSourceRun,
+  type ResolvedPreparedSourceTarget,
+} from './multiSourceOrchestrator';
 
 const RUN_ERROR_SUMMARY_MAX_LENGTH = 2000;
 const DATAVERSE_NAME_MAX_LENGTH = 100;
 
 export interface DriveArabiaEvidenceInput {
   request: MissingVehicleRequest;
+  sourceTrim?: string;
   inboxId: string;
   sourceUrl: string;
   minimumPrice: number;
@@ -31,6 +38,11 @@ interface DriveArabiaEvidenceDependencies {
   createRun: (input: CreateVehicleScrapeRunInput) => Promise<string>;
   createSourceResult: (input: CreateVehicleScrapeSourceResultInput) => Promise<string>;
   updateRun: (id: string, input: UpdateVehicleScrapeRunInput) => Promise<void>;
+  updateSourceResult: (
+    id: string,
+    input: UpdateVehicleScrapeSourceResultInput,
+  ) => Promise<void>;
+  getSourceResults: (runId: string) => Promise<VehicleScrapeSourceResult[]>;
   now: () => Date;
   correlationId: () => string;
 }
@@ -39,6 +51,9 @@ const defaultDependencies: DriveArabiaEvidenceDependencies = {
   createRun: (input) => vehicleScrapeRepository.createRun(input),
   createSourceResult: (input) => vehicleScrapeRepository.createSourceResult(input),
   updateRun: (id, input) => vehicleScrapeRepository.updateRun(id, input),
+  updateSourceResult: (id, input) =>
+    vehicleScrapeRepository.updateSourceResult(id, input),
+  getSourceResults: (runId) => vehicleScrapeRepository.getSourceResults(runId),
   now: () => new Date(),
   correlationId: () => globalThis.crypto.randomUUID(),
 };
@@ -74,10 +89,13 @@ function sourceResultInput(
   runCorrelationId: string,
   startedOn: Date,
   completedOn: Date,
+  attemptNumber = 1,
 ): CreateVehicleScrapeSourceResultInput {
   const specs = input.specs;
+  const sourceTrim = input.sourceTrim ?? input.request.trim;
   const normalizedDetails = {
-    trim: input.request.trim,
+    trim: sourceTrim,
+    ...(sourceTrim !== input.request.trim && { requestedTrim: input.request.trim }),
     modelYear: input.request.modelYear,
     bodyType: specs?.bodyType,
     engineSize: numeric(specs?.engineSize),
@@ -98,7 +116,8 @@ function sourceResultInput(
     count: 1,
     minPrice: input.minimumPrice,
     maxPrice: input.maximumPrice,
-    trim: input.request.trim,
+    trim: sourceTrim,
+    ...(sourceTrim !== input.request.trim && { requestedTrim: input.request.trim }),
     year: input.request.modelYear,
     ...(specs && { specs }),
   };
@@ -108,9 +127,9 @@ function sourceResultInput(
       0,
       DATAVERSE_NAME_MAX_LENGTH,
     ),
-    resultCorrelationId: `${runCorrelationId}:drivearabia:1`,
+    resultCorrelationId: `${runCorrelationId}:drivearabia:${attemptNumber}`,
     scrapeRunId: runId,
-    attemptNumber: 1,
+    attemptNumber,
     sourceValue: VEHICLE_SCRAPE_SOURCE.DriveArabia ?? 2,
     transportValue: VEHICLE_SCRAPE_TRANSPORT['Power Automate Desktop'] ?? 3,
     processingStatusValue: VEHICLE_SCRAPE_PROCESSING_STATUS.Succeeded,
@@ -118,7 +137,7 @@ function sourceResultInput(
     listingCount: 1,
     minimumPrice: input.minimumPrice,
     maximumPrice: input.maximumPrice,
-    trim: input.request.trim,
+    trim: sourceTrim,
     modelYear: input.request.modelYear,
     bodyType: specs?.bodyType,
     engineSize: numeric(specs?.engineSize),
@@ -138,6 +157,86 @@ function sourceResultInput(
     normalizedDetailsJson: JSON.stringify(normalizedDetails),
     rawResultJson: JSON.stringify(rawResult),
   };
+}
+
+function sourceResultUpdate(
+  input: CreateVehicleScrapeSourceResultInput,
+): UpdateVehicleScrapeSourceResultInput {
+  const { resultCorrelationId, scrapeRunId, ...update } = input;
+  void resultCorrelationId;
+  void scrapeRunId;
+  return update;
+}
+
+export type DriveArabiaPreparedTargetContext = ResolvedPreparedSourceTarget;
+
+/** Persist one PAD capture into its pre-created shared-Run evidence target. */
+export async function persistDriveArabiaEvidenceIntoPreparedTarget(
+  input: DriveArabiaEvidenceInput,
+  target: DriveArabiaPreparedTargetContext,
+  overrides: Partial<DriveArabiaEvidenceDependencies> = {},
+): Promise<string | undefined> {
+  const deps = { ...defaultDependencies, ...overrides };
+  const startedOn = deps.now();
+
+  try {
+    await deps.updateSourceResult(target.sourceResultId, {
+      processingStatusValue: VEHICLE_SCRAPE_PROCESSING_STATUS.Running,
+      startedOn,
+      sourceUrl: input.sourceUrl,
+      inboxId: input.inboxId,
+      errorCode: null,
+      errorMessage: null,
+    });
+  } catch (error) {
+    return summary(`Prepared DriveArabia target could not start: ${text(error)}`);
+  }
+
+  const completedOn = deps.now();
+  try {
+    const completedResult = sourceResultInput(
+      input,
+      target.runId,
+      target.runCorrelationId,
+      startedOn,
+      completedOn,
+      target.attemptNumber,
+    );
+    await deps.updateSourceResult(
+      target.sourceResultId,
+      sourceResultUpdate(completedResult),
+    );
+  } catch (error) {
+    const message = summary(`Prepared DriveArabia evidence write failed: ${text(error)}`);
+    try {
+      await deps.updateSourceResult(target.sourceResultId, {
+        processingStatusValue: VEHICLE_SCRAPE_PROCESSING_STATUS.Failed,
+        completedOn,
+        processedOn: completedOn,
+        errorCode: 'DRIVEARABIA_EVIDENCE_WRITE_FAILED',
+        errorMessage: message,
+      });
+      await refreshMultiSourceRun(target.runId, target.requestedSourceCount, {
+        getSourceResults: deps.getSourceResults,
+        updateRun: deps.updateRun,
+        now: deps.now,
+      });
+    } catch (finalizationError) {
+      return summary(`${message}; target finalization failed: ${text(finalizationError)}`);
+    }
+    return message;
+  }
+
+  try {
+    await refreshMultiSourceRun(target.runId, target.requestedSourceCount, {
+      getSourceResults: deps.getSourceResults,
+      updateRun: deps.updateRun,
+      now: deps.now,
+    });
+  } catch (error) {
+    return summary(`DriveArabia evidence was saved, but Run refresh failed: ${text(error)}`);
+  }
+  return undefined;
 }
 
 /** Persist normalized DriveArabia evidence after the proven legacy MVR write. */

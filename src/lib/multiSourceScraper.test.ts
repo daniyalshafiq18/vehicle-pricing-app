@@ -110,6 +110,186 @@ describe('processNextScrapeInboxItem', () => {
     );
   });
 
+  it('routes a correlated PAD capture into its prepared result without standalone fallback', async () => {
+    const correlatedUrl = `${ITEM.url}#vpiRun=shared-run-correlation&vpiAttempt=1`;
+    const correlatedItem = { ...ITEM, url: correlatedUrl };
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce(json(correlatedItem))
+      .mockResolvedValueOnce(json({ ...correlatedItem, html: camry2024Html }))
+      .mockResolvedValueOnce(json({ inboxId: ITEM.inboxId, status: 'Complete' }));
+    const updateScrapeResult = vi.fn(
+      async (_id: string, _fields: ScrapeResultUpdate) => undefined,
+    );
+    const persistEvidence = vi.fn(async () => undefined);
+    const target = {
+      runId: 'run-id',
+      runCorrelationId: 'shared-run-correlation',
+      sourceResultId: 'drive-result-id',
+      requestedSourceCount: 2,
+      attemptNumber: 1,
+    };
+    const resolvePreparedTarget = vi.fn().mockResolvedValue(target);
+    const persistPreparedEvidence = vi.fn(async () => undefined);
+
+    const result = await processNextScrapeInboxItem({
+      requests: [REQUEST],
+      functionBaseUrl: BASE,
+      fetchFn,
+      updateScrapeResult,
+      persistEvidence,
+      resolvePreparedTarget,
+      persistPreparedEvidence,
+    });
+
+    expect(result).toMatchObject({ status: 'complete', evidenceWarnings: [] });
+    const fields = updateScrapeResult.mock.calls[0]![1] as ScrapeResultUpdate;
+    expect(fields.scrapedSources).toBe(ITEM.url);
+    expect(JSON.parse(fields.scrapedListings).url).toBe(ITEM.url);
+    expect(resolvePreparedTarget).toHaveBeenCalledWith(REQUEST, {
+      runCorrelationId: 'shared-run-correlation',
+      attemptNumber: 1,
+    });
+    expect(persistPreparedEvidence).toHaveBeenCalledWith(
+      expect.objectContaining({ sourceUrl: ITEM.url, request: REQUEST }),
+      target,
+    );
+    expect(persistEvidence).not.toHaveBeenCalled();
+  });
+
+  it('matches one unique cross-source trim and preserves both trim labels', async () => {
+    const dodgeRequest = {
+      ...REQUEST,
+      id: 'dodge-request',
+      make: 'Dodge',
+      model: 'Charger',
+      trim: '3.6L SXT (Mid Option)',
+      modelYear: 2021,
+    };
+    const dodgeItem = {
+      ...ITEM,
+      inboxId: 'de96747a6d13',
+      url: 'https://www.drivearabia.com/carprices/uae/dodge/charger/2021/',
+    };
+    const dodgeHtml = `
+      <title>Dodge Charger 2021 Price in UAE</title>
+      <h2>Original Trim Prices</h2>
+      <div>3.6 V6 SXT AED 109,900 - 110,000</div>
+      <div>3.6 V6 GT AED 124,900 - 125,000</div>
+      <div>3.6 V6 GTS AED 139,900 - 140,000</div>
+      <div>5.7 V8 R/T AED 149,900 - 150,000</div>
+      <div>Specs</div>
+    `;
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce(json(dodgeItem))
+      .mockResolvedValueOnce(json({ ...dodgeItem, html: dodgeHtml }))
+      .mockResolvedValueOnce(json({ inboxId: dodgeItem.inboxId, status: 'Complete' }));
+    const updateScrapeResult = vi.fn(
+      async (_id: string, _fields: ScrapeResultUpdate) => undefined,
+    );
+    const persistEvidence = vi.fn(async () => undefined);
+
+    const result = await processNextScrapeInboxItem({
+      requests: [dodgeRequest],
+      functionBaseUrl: BASE,
+      fetchFn,
+      updateScrapeResult,
+      persistEvidence,
+    });
+
+    expect(result.status).toBe('complete');
+    const fields = updateScrapeResult.mock.calls[0]![1];
+    expect(fields).toMatchObject({
+      scrapedMinPrice: 109900,
+      scrapedMaxPrice: 110000,
+    });
+    expect(JSON.parse(fields.scrapedListings)).toMatchObject({
+      trim: '3.6 V6 SXT',
+      requestedTrim: '3.6L SXT (Mid Option)',
+    });
+    expect(persistEvidence).toHaveBeenCalledWith(
+      expect.objectContaining({
+        request: dodgeRequest,
+        sourceTrim: '3.6 V6 SXT',
+        minimumPrice: 109900,
+        maximumPrice: 110000,
+      }),
+    );
+  });
+
+  it('retains an unresolved correlated capture for retry without standalone fallback', async () => {
+    const correlatedItem = {
+      ...ITEM,
+      url: `${ITEM.url}#vpiRun=missing-run&vpiAttempt=1`,
+    };
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce(json(correlatedItem))
+      .mockResolvedValueOnce(json({ ...correlatedItem, html: camry2024Html }));
+    const persistEvidence = vi.fn(async () => undefined);
+    const persistPreparedEvidence = vi.fn(async () => undefined);
+
+    const result = await processNextScrapeInboxItem({
+      requests: [REQUEST],
+      functionBaseUrl: BASE,
+      fetchFn,
+      updateScrapeResult: vi.fn(async () => undefined),
+      persistEvidence,
+      resolvePreparedTarget: vi.fn().mockResolvedValue(null),
+      persistPreparedEvidence,
+    });
+
+    expect(result).toMatchObject({
+      status: 'waiting',
+      updatedRequestIds: [REQUEST.id],
+      evidenceWarnings: [
+        {
+          requestId: REQUEST.id,
+          error: 'No prepared DriveArabia target matches Run correlation missing-run',
+        },
+      ],
+    });
+    expect(persistPreparedEvidence).not.toHaveBeenCalled();
+    expect(persistEvidence).not.toHaveBeenCalled();
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
+  it('retains a correlated capture when its prepared evidence write warns', async () => {
+    const correlatedItem = {
+      ...ITEM,
+      url: `${ITEM.url}#vpiRun=shared-run-correlation&vpiAttempt=1`,
+    };
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce(json(correlatedItem))
+      .mockResolvedValueOnce(json({ ...correlatedItem, html: camry2024Html }));
+
+    const result = await processNextScrapeInboxItem({
+      requests: [REQUEST],
+      functionBaseUrl: BASE,
+      fetchFn,
+      updateScrapeResult: vi.fn(async () => undefined),
+      resolvePreparedTarget: vi.fn().mockResolvedValue({
+        runId: 'run-id',
+        runCorrelationId: 'shared-run-correlation',
+        sourceResultId: 'drive-result-id',
+        requestedSourceCount: 2,
+        attemptNumber: 1,
+      }),
+      persistPreparedEvidence: vi.fn(async () => 'HTTP 400 — Run resolution failed'),
+    });
+
+    expect(result).toMatchObject({
+      status: 'waiting',
+      updatedRequestIds: [REQUEST.id],
+      evidenceWarnings: [
+        { requestId: REQUEST.id, error: 'HTTP 400 — Run resolution failed' },
+      ],
+    });
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
   it('returns empty without attempting a Dataverse write', async () => {
     const fetchFn = vi.fn().mockResolvedValueOnce(json({ error: 'no_pending' }, 404));
     const updateScrapeResult = vi.fn(async (_id: string, _fields: ScrapeResultUpdate) => undefined);

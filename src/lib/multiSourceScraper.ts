@@ -4,13 +4,22 @@ import {
   extractDriveArabiaSpecsForTrim,
   extractDriveArabiaTrimPrices,
   normalizeToDataverse,
+  resolveDriveArabiaTrimPrice,
 } from '@parsers';
 import { missingVehicleRepository } from '@repositories';
 import type { MissingVehicleRequest } from '@types';
 import {
   persistDriveArabiaEvidence,
+  persistDriveArabiaEvidenceIntoPreparedTarget,
+  type DriveArabiaPreparedTargetContext,
   type DriveArabiaEvidenceInput,
 } from './driveArabiaDualWrite';
+import {
+  cleanDriveArabiaSourceUrl,
+  parseDriveArabiaPadCorrelation,
+  type DriveArabiaPadCorrelation,
+} from './driveArabiaUrl';
+import { resolvePreparedDriveArabiaTarget } from './multiSourceOrchestrator';
 
 const AZURE_FUNCTION_URL = (import.meta.env.VITE_AZURE_FUNCTION_URL as string | undefined) ?? '';
 const DEFAULT_MAX_ITEMS = 25;
@@ -53,6 +62,14 @@ export interface ProcessScrapeInboxOptions {
   maxItems?: number;
   updateScrapeResult?: (id: string, fields: ScrapeResultUpdate) => Promise<void>;
   persistEvidence?: (input: DriveArabiaEvidenceInput) => Promise<string | undefined>;
+  resolvePreparedTarget?: (
+    request: MissingVehicleRequest,
+    correlation: DriveArabiaPadCorrelation,
+  ) => Promise<DriveArabiaPreparedTargetContext | null>;
+  persistPreparedEvidence?: (
+    input: DriveArabiaEvidenceInput,
+    target: DriveArabiaPreparedTargetContext,
+  ) => Promise<string | undefined>;
 }
 
 export interface InboxEvidenceWarning {
@@ -200,10 +217,24 @@ function driveArabiaVehicle(urlValue: string): { make: string; model: string } |
   }
 }
 
+function hasPadCorrelationMarker(urlValue: string): boolean {
+  try {
+    const fragment = new URLSearchParams(new URL(urlValue).hash.replace(/^#/, ''));
+    return fragment.has('vpiRun') || fragment.has('vpiAttempt');
+  } catch {
+    return false;
+  }
+}
+
 function matchingRequests(
   item: ScrapeInboxItem,
   requests: MissingVehicleRequest[],
-): Array<{ request: MissingVehicleRequest; minPrice: number; maxPrice: number }> {
+): Array<{
+  request: MissingVehicleRequest;
+  sourceTrim: string;
+  minPrice: number;
+  maxPrice: number;
+}> {
   if (item.source !== 'drivearabia' || !item.html) {
     throw new Error(`Inbox source '${item.source}' is not implemented yet`);
   }
@@ -218,7 +249,12 @@ function matchingRequests(
     throw new Error('DriveArabia capture produced no price rows');
   }
 
-  const matches: Array<{ request: MissingVehicleRequest; minPrice: number; maxPrice: number }> = [];
+  const matches: Array<{
+    request: MissingVehicleRequest;
+    sourceTrim: string;
+    minPrice: number;
+    maxPrice: number;
+  }> = [];
   for (const request of requests) {
     const requestModel = comparable(request.model);
     const modelMatches =
@@ -226,13 +262,14 @@ function matchingRequests(
     if (comparable(request.make) !== vehicle.make || !modelMatches) {
       continue;
     }
-    const row = rows.find(
-      (candidate) =>
-        candidate.year === request.modelYear &&
-        comparable(candidate.trim) === comparable(request.trim),
-    );
+    const row = resolveDriveArabiaTrimPrice(rows, request.trim, request.modelYear);
     if (row) {
-      matches.push({ request, minPrice: row.minPrice, maxPrice: row.maxPrice });
+      matches.push({
+        request,
+        sourceTrim: row.trim,
+        minPrice: row.minPrice,
+        maxPrice: row.maxPrice,
+      });
     }
   }
   return matches;
@@ -249,6 +286,12 @@ export async function processNextScrapeInboxItem(
     ((id: string, fields: ScrapeResultUpdate) =>
       missingVehicleRepository.updateScrapeResult(id, fields));
   const persistEvidence = options.persistEvidence ?? persistDriveArabiaEvidence;
+  const resolvePreparedTarget =
+    options.resolvePreparedTarget ??
+    ((request: MissingVehicleRequest, correlation: DriveArabiaPadCorrelation) =>
+      resolvePreparedDriveArabiaTarget(request.id, correlation));
+  const persistPreparedEvidence =
+    options.persistPreparedEvidence ?? persistDriveArabiaEvidenceIntoPreparedTarget;
 
   const pending = await fetchPendingItem(fetchFn, baseUrl);
   if (!pending) {
@@ -266,16 +309,20 @@ export async function processNextScrapeInboxItem(
     }
 
     const scrapedValue = missingVehicleScrapeStatusValue('Scraped') ?? 4;
+    const sourceUrl = cleanDriveArabiaSourceUrl(item.url);
+    const correlation = parseDriveArabiaPadCorrelation(item.url);
+    const hasCorrelationMarker = hasPadCorrelationMarker(item.url);
     const updatedRequestIds: string[] = [];
     const evidenceWarnings: InboxEvidenceWarning[] = [];
+    let correlatedTargetFound = false;
     for (const match of matches) {
       // Resolve one unique engine-signature match from PAD-captured accordion
       // bodies. Without that evidence, only the exact JSON-LD-selected trim is
       // eligible, preserving the previous no-cross-trim-contamination rule.
-      const specs = extractDriveArabiaSpecsForTrim(item.html!, match.request.trim);
+      const specs = extractDriveArabiaSpecsForTrim(item.html!, match.sourceTrim);
       const specsMatch =
         specs.trim !== undefined &&
-        comparable(specs.trim) === comparable(match.request.trim) &&
+        comparable(specs.trim) === comparable(match.sourceTrim) &&
         (specs.year === undefined || specs.year === match.request.modelYear);
       const mapped = specsMatch ? normalizeToDataverse(specs) : {};
       await updateScrapeResult(match.request.id, {
@@ -286,14 +333,17 @@ export async function processNextScrapeInboxItem(
           minPrice: match.minPrice,
           maxPrice: match.maxPrice,
           source: 'DriveArabia',
-          url: item.url,
+          url: sourceUrl,
           transport: 'pad',
           inboxId: item.inboxId,
-          trim: match.request.trim,
+          trim: match.sourceTrim,
+          ...(comparable(match.sourceTrim) !== comparable(match.request.trim) && {
+            requestedTrim: match.request.trim,
+          }),
           year: match.request.modelYear,
           ...(specsMatch && { specs }),
         }),
-        scrapedSources: item.url,
+        scrapedSources: sourceUrl,
         scrapeStatusValue: scrapedValue,
         ...(mapped.bodyTypeValue !== undefined && { bodyTypeValue: mapped.bodyTypeValue }),
         ...(mapped.fuelTypeValue !== undefined && { fuelTypeValue: mapped.fuelTypeValue }),
@@ -310,14 +360,27 @@ export async function processNextScrapeInboxItem(
         ...(mapped.doorsValue !== undefined && { doorsValue: mapped.doorsValue }),
       });
       try {
-        const warning = await persistEvidence({
+        const evidenceInput: DriveArabiaEvidenceInput = {
           request: match.request,
+          sourceTrim: match.sourceTrim,
           inboxId: item.inboxId,
-          sourceUrl: item.url,
+          sourceUrl,
           minimumPrice: match.minPrice,
           maximumPrice: match.maxPrice,
           ...(specsMatch && { specs }),
-        });
+        };
+        let warning: string | undefined;
+        if (correlation) {
+          const target = await resolvePreparedTarget(match.request, correlation);
+          if (target) {
+            correlatedTargetFound = true;
+            warning = await persistPreparedEvidence(evidenceInput, target);
+          }
+        } else if (hasCorrelationMarker) {
+          warning = 'DriveArabia PAD correlation is malformed';
+        } else {
+          warning = await persistEvidence(evidenceInput);
+        }
         if (warning) {
           evidenceWarnings.push({ requestId: match.request.id, error: warning });
         }
@@ -328,6 +391,21 @@ export async function processNextScrapeInboxItem(
         });
       }
       updatedRequestIds.push(match.request.id);
+    }
+    if (correlation && !correlatedTargetFound && evidenceWarnings.length === 0) {
+      evidenceWarnings.push({
+        requestId: matches[0]!.request.id,
+        error: `No prepared DriveArabia target matches Run correlation ${correlation.runCorrelationId}`,
+      });
+    }
+    if (correlation && evidenceWarnings.length > 0) {
+      return {
+        inboxId: item.inboxId,
+        status: 'waiting',
+        updatedRequestIds,
+        evidenceWarnings,
+        error: evidenceWarnings[0]!.error,
+      };
     }
     await acknowledge(fetchFn, baseUrl, item.inboxId, 'Complete');
     return {
@@ -392,6 +470,8 @@ export async function processScrapeInbox(
     }
     if (result.status === 'waiting') {
       summary.waitingItems += 1;
+      summary.updatedRequestIds.push(...result.updatedRequestIds);
+      summary.evidenceWarnings.push(...result.evidenceWarnings);
       summary.failures.push({
         inboxId: result.inboxId,
         error: result.error ?? 'No matching request',

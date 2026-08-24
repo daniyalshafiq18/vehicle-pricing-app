@@ -1,7 +1,33 @@
 
 # Changelog
 
+## 2026-08-24
+
+### Fixed
+- Extended conservative cross-source trim identity for the live Chevrolet Captiva case: attached `1.5T` and `1.5TC` notation now exposes the same numeric capacity and turbo identity, while `TD` remains distinct. The match still requires identical grade, compatible stated mechanics, the correct year and one unique candidate, allowing MVR `1.5T Premier` to resolve only to DriveArabia `1.5TC I4 Premier`.
+- Fixed correlated DriveArabia PAD evidence resolution after live Power Pages returned HTTP `400` for the broad Run query filtered through `_vpi_missingvehiclerequest_value`. The processor now retrieves the exact Run through its `vpi_correlationkey` using a minimal `$select`, then independently verifies that the Run belongs to the matched Missing Vehicle Request and is still active.
+- Prevented correlated PAD captures from being acknowledged as Complete when prepared evidence resolution or persistence fails. The capture remains Pending for retry, the successful legacy MVR write is refreshed in the UI, and the administrator receives the actual evidence warning instead of the unrelated “no matching vehicle request” message.
+- Added regression coverage for minimal correlation-key Run retrieval, OData literal escaping, MVR ownership rejection, unresolved prepared targets, evidence-write warnings and acknowledgement suppression. Targeted verification passes with 28 tests.
+
 ## 2026-08-20
+
+### Phase 4 unified orchestration contract approved
+- Added the formal Phase 4 contract for one source-selection action, one shared Run, queued per-source results, common status aggregation, explicit DriveArabia PAD correlation, immutable retry Runs, legacy compatibility, and live acceptance gates.
+- Confirmed through a read-only audit that the existing Dataverse tables and application CRUD contracts are sufficient; Phase 4 currently requires no new table or column.
+- Kept attended PAD, final price decisions, Vehicle Data promotion, unattended automation, multi-source bulk and Dubizzle outside this phase.
+- Added the first implementation slice: pure latest-attempt selection, shared Run aggregation, bounded error summaries and deterministic per-source attempt correlation IDs, with isolated coverage for running, completed, partial, failed, cancelled and retry outcomes.
+- Added shared orchestration preparation: one Run and every selected source's queued evidence target are created before any transport starts. Partial setup is terminally failed, already-created targets are marked Skipped, and no scraper is dispatched against an incomplete evidence set.
+- Added the prepared-target YallaMotor adapter. It updates an existing queued result through Running to its terminal state, preserves the legacy MVR write, records the actual Azure/Cloud fallback transport, and invokes the common Run aggregator instead of creating or independently completing another Run.
+- Corrected the Source Result update type so `errorCode` and `errorMessage` can genuinely be cleared with `null`; their nullable update definitions previously intersected with the non-nullable create fields and lost `null` at compile time.
+- Added pure DriveArabia PAD correlation helpers. Shared Runs can be carried in a non-secret `vpiRun`/`vpiAttempt` URL fragment, parsed after canonical redirect, and stripped before source provenance is persisted.
+- Wired correlated DriveArabia PAD captures into their exact pre-created Source Result. The inbox processor now resolves the active shared Run and attempt, advances the prepared result through Running to Succeeded/Failed, strips internal URL-fragment markers from persisted provenance, and delegates parent counts/status to the common Run aggregator.
+- Preserved legacy uncorrelated PAD dual-write as a compatibility path. Explicit but malformed or unresolved correlation now produces an evidence warning and never silently creates a duplicate standalone Run.
+- Added the unified per-request admin Scrape action. It opens a source-selection dialog with YallaMotor and DriveArabia selected by default, prepares one shared Run, executes YallaMotor immediately into its prepared result, and presents the correlated DriveArabia URL for the attended PAD continuation.
+- Kept pending DriveArabia work visible even if immediate YallaMotor scraping fails, so one source failure cannot hide or discard the other selected source. Clarified the existing bulk control as YallaMotor-only; multi-source bulk remains outside Phase 4.
+- Added conservative cross-source trim resolution after the first unified live test exposed valid naming differences. YallaMotor `3.6L SXT (Mid Option)` can now map to the unique DriveArabia `3.6 V6 SXT` row through matching capacity and distinctive grade, while ambiguity and conflicting stated mechanics still refuse to match.
+- Preserved both identities in evidence: DriveArabia Source Result/provenance uses the actual source trim, and normalized/raw evidence also retains the requested MVR trim when it differs. The Pending Dodge Charger capture can therefore be retried without another PAD run after deployment.
+- Fixed the unified source-selection dialog rendering differently from modal, card and table triggers. The shared Dialog primitive now portals to `document.body`, preventing animated/transformed cards and table cells from clipping, repositioning, or lending text alignment to the overlay; nested dialog scroll locking also restores the prior body overflow state correctly.
+- Temporarily personalized PAD inbox processing for live testing. The page-wide button was removed and each MVR modal now exposes **Process PAD Capture**, passing only that record to exact matching; the Azure relay still serves the oldest Pending item and never skips or guesses past an unrelated capture.
 
 ### Fixed
 - Updated DriveArabia per-year price parsing to accept both rendered `Original Trim Prices` and `Trim Prices` headings. This fixes valid newer pages such as MG 5 2026 while retaining the existing bounded-section protection against unrelated AED ranges.

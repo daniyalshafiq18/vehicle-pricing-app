@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { VehicleScrapeSourceResult } from '@types';
 import type { TransportedResponse } from './azureYallaMotorScraper';
-import { scrapeYallaMotorWithDualWrite } from './yallaMotorDualWrite';
+import {
+  scrapeYallaMotorIntoPreparedTarget,
+  scrapeYallaMotorWithDualWrite,
+} from './yallaMotorDualWrite';
 
 const PARAMS = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -43,6 +47,8 @@ function dependencies(result: TransportedResponse = SUCCESS) {
     updateLegacy: vi.fn().mockResolvedValue(undefined),
     createRun: vi.fn().mockResolvedValue(RUN_ID),
     createSourceResult: vi.fn().mockResolvedValue('source-result-id'),
+    updateSourceResult: vi.fn().mockResolvedValue(undefined),
+    getSourceResults: vi.fn().mockResolvedValue([]),
     updateRun: vi.fn().mockResolvedValue(undefined),
     now: vi
       .fn<() => Date>()
@@ -238,5 +244,90 @@ describe('scrapeYallaMotorWithDualWrite', () => {
         errorCode: 'YALLAMOTOR_UNAVAILABLE',
       }),
     );
+  });
+});
+
+describe('scrapeYallaMotorIntoPreparedTarget', () => {
+  it('updates the queued target and keeps the shared Run active for DriveArabia', async () => {
+    const deps = dependencies();
+    deps.getSourceResults.mockResolvedValue([
+      {
+        source: 'YallaMotor',
+        sourceValue: 1,
+        attemptNumber: 1,
+        processingStatus: 'Succeeded',
+        processingStatusValue: 3,
+      },
+      {
+        source: 'DriveArabia',
+        sourceValue: 2,
+        attemptNumber: 1,
+        processingStatus: 'Queued',
+        processingStatusValue: 1,
+      },
+    ] as VehicleScrapeSourceResult[]);
+
+    await expect(
+      scrapeYallaMotorIntoPreparedTarget(
+        PARAMS,
+        {
+          runId: RUN_ID,
+          runCorrelationId: 'shared-run-correlation',
+          sourceResultId: 'prepared-yalla-result-id',
+          requestedSourceCount: 2,
+        },
+        deps,
+      ),
+    ).resolves.toMatchObject({ success: true, count: 3, transport: 'azure' });
+
+    expect(deps.createRun).not.toHaveBeenCalled();
+    expect(deps.createSourceResult).not.toHaveBeenCalled();
+    expect(deps.updateSourceResult).toHaveBeenNthCalledWith(1, 'prepared-yalla-result-id', {
+      processingStatusValue: 2,
+      startedOn: STARTED_ON,
+      errorCode: null,
+      errorMessage: null,
+    });
+    expect(deps.updateSourceResult).toHaveBeenNthCalledWith(
+      2,
+      'prepared-yalla-result-id',
+      expect.objectContaining({
+        processingStatusValue: 3,
+        transportValue: 1,
+        minimumPrice: 93000,
+        maximumPrice: 129000,
+        completedOn: COMPLETED_ON,
+      }),
+    );
+    expect(deps.updateSourceResult.mock.calls[1]![1]).not.toHaveProperty(
+      'resultCorrelationId',
+    );
+    expect(deps.updateLegacy).toHaveBeenCalledOnce();
+    expect(deps.updateRun).toHaveBeenCalledWith(RUN_ID, {
+      overallStatusValue: 2,
+      successfulSourceCount: 1,
+      failedSourceCount: 0,
+      errorSummary: null,
+    });
+  });
+
+  it('does not scrape when the queued target cannot enter Running', async () => {
+    const deps = dependencies();
+    deps.updateSourceResult.mockRejectedValueOnce(new Error('PATCH rejected'));
+
+    await expect(
+      scrapeYallaMotorIntoPreparedTarget(
+        PARAMS,
+        {
+          runId: RUN_ID,
+          runCorrelationId: 'shared-run-correlation',
+          sourceResultId: 'prepared-yalla-result-id',
+          requestedSourceCount: 2,
+        },
+        deps,
+      ),
+    ).rejects.toThrow('Unable to start YallaMotor evidence: PATCH rejected');
+    expect(deps.scrape).not.toHaveBeenCalled();
+    expect(deps.updateLegacy).not.toHaveBeenCalled();
   });
 });

@@ -11,8 +11,16 @@ export function useProcessScrapeInbox() {
   return useMutation({
     mutationFn: (requests: MissingVehicleRequest[]) => processScrapeInbox({ requests }),
     onSuccess: (summary) => {
+      if (summary.updatedRequestIds.length > 0) {
+        queryClient.invalidateQueries({ queryKey: [MISSING_VEHICLE_REQUESTS_KEY] });
+      }
       if (summary.waitingItems > 0) {
-        toast.error('Pending PAD capture has no exact matching vehicle request yet');
+        const evidenceWarning = summary.evidenceWarnings[0]?.error;
+        toast.error(
+          evidenceWarning
+            ? `PAD capture retained for retry: ${evidenceWarning}`
+            : 'Pending PAD capture has no exact matching vehicle request yet',
+        );
         return;
       }
       if (summary.processedItems === 0) {
@@ -34,7 +42,6 @@ export function useProcessScrapeInbox() {
           `Processed ${summary.completedItems} PAD capture${summary.completedItems === 1 ? '' : 's'} · ${summary.updatedRequestIds.length} request${summary.updatedRequestIds.length === 1 ? '' : 's'} updated`,
         );
       }
-      queryClient.invalidateQueries({ queryKey: [MISSING_VEHICLE_REQUESTS_KEY] });
     },
     onError: (error: Error) => {
       toast.error(error.message || 'PAD inbox processing failed');

@@ -29,6 +29,10 @@ Data is loaded from Microsoft Dataverse via the Power Pages Web API (`/_api/`). 
 
 ## Architecture
 
+The shared `Dialog` primitive renders overlays through a React portal attached to `document.body`. This keeps modal placement and typography independent of card animation transforms, overflow clipping and table formatting; nested dialogs preserve and restore the previous body scroll-lock state.
+
+Correlated DriveArabia PAD processing resolves the prepared Run directly through the `vpi_correlationkey` carried by the URL fragment. The lookup uses a minimal Power Pages `$select`, then verifies the Run's Missing Vehicle Request ownership and active status before reading its Source Results. A correlated capture is acknowledged only after normalized evidence succeeds; resolver or persistence warnings leave it Pending so the same capture can be retried.
+
 ### Layer Diagram
 
 ```
@@ -130,6 +134,8 @@ PAD residential Chrome → Azure ingest_html → Blob/Table inbox
 
 DriveArabia price rows are scoped to the final **Original Trim Prices** or **Trim Prices** section. Trim labels do not need a drivetrain suffix because pages can use names such as `2.4L sedan` or `std`; the section boundary, row length/price validation, and exact MVR trim matching provide the safety constraints.
 
+Where source naming differs, price matching remains conservative rather than fuzzy. Exact normalized text wins; otherwise one unique row must share engine capacity and distinctive grade after recognized parenthetical option-level wording is removed, with no conflict in any mechanics stated by both names. The live Dodge example maps YallaMotor `3.6L SXT (Mid Option)` to DriveArabia `3.6 V6 SXT`. Both requested and source trim labels are retained in evidence.
+
 For an exact JSON-LD-selected older trim, a single Specs group with the same engine capacity may provide cylinders, drivetrain, transmission, fuel, horsepower, and torque. This covers `2.4L sedan` → `2.4 I4 FWD`; duplicate capacity matches remain unmerged.
 
 **Live status (2026-08-18):** the dynamic attended workflow passed a non-Camry end-to-end test with Honda Accord `2.4 DX/LX` 2013. PAD navigation/capture, Azure ingestion, exact inbox matching, all required specification fields, prices, and Dataverse persistence succeeded. The attended transport is functionally proven; remaining work is orchestration automation rather than extraction correctness.
@@ -143,6 +149,10 @@ The MVR owns the admin decision: approved minimum/maximum prices, decision statu
 YallaMotor **Scrape Now** is the first migration consumer. `yallaMotorDualWrite.ts` performs one Azure-first/Power-Automate-fallback scrape, preserves the legacy MVR update, and additionally creates a linked single-request Run and YallaMotor Source Result. Successful evidence includes prices, listing count, normalized specifications, source URL, transport, attempt number, and a sanitized raw-result snapshot. Source Result Category reuses the MVR regional-spec mapper (`GCC`, `NON-GCC`, `OTHER/STANDARD`), while Raw Result JSON retains the source wording such as `american specs`. If normalized evidence persistence fails, the successful legacy MVR update remains visible and the admin receives a warning; failed or blocked scrape attempts record diagnostics whenever run creation succeeded.
 
 DriveArabia is the second migration consumer. After each exact legacy PAD/MVR update, `driveArabiaDualWrite.ts` creates a one-source Run and Source Result using DriveArabia, Power Automate Desktop and Original Reference. Every exact request matched by one capture gets its own Run; the shared Inbox ID is stored as batch correlation. The Source Result stores min/max prices, supported exact-trim specifications, URL, Inbox ID, timing and sanitized JSON but never the captured HTML. Evidence persistence warnings are surfaced separately without undoing the legacy update or changing established inbox acknowledgement semantics.
+
+Phase 4 now provides one per-request admin **Scrape** action with source selection. YallaMotor and DriveArabia are enabled by default; one shared Run and queued source results are prepared before YallaMotor executes immediately, while the dialog presents the correlated DriveArabia URL for attended PAD. A correlated PAD capture resolves only the exact active Run/MVR/attempt, updates its existing DriveArabia result, strips internal fragment keys from stored provenance, and re-aggregates the parent Run. Uncorrelated captures retain the live-proven standalone path; malformed or unresolved explicit correlation warns instead of creating a duplicate Run. The existing bulk action is explicitly YallaMotor-only, and the existing Dataverse schema remains sufficient.
+
+For temporary live-test clarity, PAD inbox processing is exposed as **Process PAD Capture** inside each MVR modal and receives only that record. The page-wide action is removed. Queue behavior remains FIFO: an unrelated oldest Pending capture is not skipped or attached by guesswork.
 
 **Live status (2026-08-20):** YallaMotor and DriveArabia dual-write are proven end to end in the published portal. Both preserve the legacy MVR update and create linked Completed Runs plus Succeeded Source Results with source-specific prices, specifications and provenance. The DriveArabia gate passed with MG 5 2026 `STD`: Run counts `1/1/0`, DriveArabia/PAD/Original Reference evidence, AED 49,900–51,000 and the expected specifications all matched in Dataverse. Source Result Average Price and MVR Approved Average Price were removed because no true listing average is supplied. Power Pages detailed inner errors remain disabled after completing diagnosis.
 

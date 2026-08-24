@@ -4,6 +4,7 @@ import {
   useUpdateMissingVehicleRequestStatus,
   useApproveMissingVehicleRequest,
   useTriggerScrape,
+  useTriggerMultiSourceScrape,
   useProcessScrapeInbox,
 } from '@hooks';
 import { Button, Dialog, SkeletonTable, Card as UICard, CardContent } from '@components/ui';
@@ -34,6 +35,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { MissingVehicleRequest } from '@types';
+import type { MultiSourceScrapeExecutionResult } from '@lib/multiSourceScrapeExecution';
+import type { OrchestratedScrapeSource } from '@lib/multiSourceOrchestrator';
 import { cn, formatCurrency } from '@utils';
 import { buildDriveArabiaModelYearUrl } from '@lib/driveArabiaUrl';
 
@@ -411,6 +414,9 @@ function MissingVehicleDetailModal({
               </div>
               <h3 className="text-sm font-semibold text-foreground">Scrape Results</h3>
               <ScrapeStatusBadge status={request.scrapeStatus} />
+              <div className="ml-auto">
+                <ProcessPadInboxButton request={request} />
+              </div>
             </div>
 
             {request.scrapeStatus === 'Scraped' || request.scrapedListings ? (
@@ -542,59 +548,236 @@ function ScrapeNowButton({
   size?: 'sm' | 'icon-sm';
   onComplete?: (id: string) => void;
 }) {
-  const triggerScrape = useTriggerScrape();
+  const triggerScrape = useTriggerMultiSourceScrape();
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedSources, setSelectedSources] = useState<OrchestratedScrapeSource[]>([
+    'YallaMotor',
+    'DriveArabia',
+  ]);
+  const [result, setResult] = useState<MultiSourceScrapeExecutionResult | null>(null);
 
-  const handleScrape = (e?: React.MouseEvent) => {
+  const openDialog = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    triggerScrape.mutate(
-      {
-        id: request.id,
-        make: request.make,
-        model: request.model,
-        trim: request.trim,
-        year: request.modelYear,
-      },
-      { onSuccess: () => onComplete?.(request.id) },
-    );
+    setResult(null);
+    triggerScrape.reset();
+    setSelectedSources(['YallaMotor', 'DriveArabia']);
+    setIsOpen(true);
   };
 
   const isPending = triggerScrape.isPending;
 
-  if (size === 'icon-sm') {
-    return (
+  const closeDialog = () => {
+    if (isPending) {
+      return;
+    }
+    setIsOpen(false);
+    setResult(null);
+  };
+
+  const toggleSource = (source: OrchestratedScrapeSource) => {
+    setSelectedSources((current) =>
+      current.includes(source)
+        ? current.filter((candidate) => candidate !== source)
+        : [...current, source],
+    );
+  };
+
+  const startScrape = async () => {
+    try {
+      const outcome = await triggerScrape.mutateAsync({
+        request,
+        sources: selectedSources,
+      });
+      setResult(outcome);
+      if (outcome.yallaMotorResult) {
+        onComplete?.(request.id);
+      }
+    } catch {
+      // Preparation errors are surfaced by the hook and kept in the dialog.
+    }
+  };
+
+  const copyCorrelatedUrl = async () => {
+    if (!result?.driveArabiaPadUrl) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(result.driveArabiaPadUrl);
+      toast.success('Correlated DriveArabia PAD URL copied');
+    } catch {
+      toast.error('Could not copy the correlated PAD URL');
+    }
+  };
+
+  const triggerButton =
+    size === 'icon-sm' ? (
       <Button
         variant="ghost"
         size="icon-sm"
         className="!text-[#647887] hover:!bg-[#dff7f4] hover:!text-[#08766c] dark:!text-[#8fb6cc] dark:hover:!bg-[#0f3f43] dark:hover:!text-[#19b8a5]"
-        title={`Scrape ${request.make} ${request.model} from YallaMotor`}
-        onClick={handleScrape}
+        title={`Choose scrape sources for ${request.make} ${request.model}`}
+        onClick={openDialog}
         disabled={isPending}
       >
         <RotateCcw className={cn('h-4 w-4', isPending && 'animate-spin')} />
       </Button>
+    ) : (
+      <Button
+        variant="outline"
+        size="sm"
+        className="!border-[#bfe9e2] !bg-white !text-[#08766c] hover:!bg-[#dff7f4] hover:!text-[#08766c] dark:!border-[#31545a] dark:!bg-[#0c2530] dark:!text-[#19b8a5] dark:hover:!bg-[#0f3f43]"
+        onClick={openDialog}
+        disabled={isPending}
+      >
+        <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+        Scrape
+      </Button>
     );
-  }
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      className="!border-[#bfe9e2] !bg-white !text-[#08766c] hover:!bg-[#dff7f4] hover:!text-[#08766c] dark:!border-[#31545a] dark:!bg-[#0c2530] dark:!text-[#19b8a5] dark:hover:!bg-[#0f3f43]"
-      onClick={handleScrape}
-      disabled={isPending}
-    >
-      {isPending ? (
-        <>
-          <span className="mr-1.5 h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-          Scraping...
-        </>
-      ) : (
-        <>
-          <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-          Scrape Now
-        </>
-      )}
-    </Button>
+    <>
+      {triggerButton}
+      <Dialog
+        isOpen={isOpen}
+        onClose={closeDialog}
+        title="Choose scrape sources"
+        description={`${request.make} ${request.model} ${request.trim} ${request.modelYear}`}
+        size="sm"
+      >
+        {!result ? (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              One shared scrape Run will keep each source's prices and specifications
+              separate for later review.
+            </p>
+            <div className="space-y-2.5">
+              {(
+                [
+                  {
+                    source: 'YallaMotor' as const,
+                    title: 'YallaMotor',
+                    description: 'Used-market asking prices. Runs immediately in the cloud.',
+                  },
+                  {
+                    source: 'DriveArabia' as const,
+                    title: 'DriveArabia',
+                    description: 'Original reference prices and specs. Requires attended PAD.',
+                  },
+                ] satisfies Array<{
+                  source: OrchestratedScrapeSource;
+                  title: string;
+                  description: string;
+                }>
+              ).map((option) => (
+                <label
+                  key={option.source}
+                  className={cn(
+                    'flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition-colors',
+                    selectedSources.includes(option.source)
+                      ? 'border-[#19b8a5] bg-[#ecfbf8] dark:border-[#19b8a5]/60 dark:bg-[#0f3f43]'
+                      : 'border-border bg-card hover:bg-muted/40',
+                    isPending && 'cursor-not-allowed opacity-60',
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 accent-[#19b8a5]"
+                    checked={selectedSources.includes(option.source)}
+                    onChange={() => toggleSource(option.source)}
+                    disabled={isPending}
+                  />
+                  <span>
+                    <span className="block text-sm font-semibold text-foreground">
+                      {option.title}
+                    </span>
+                    <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">
+                      {option.description}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            {triggerScrape.error && (
+              <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+                {triggerScrape.error.message}
+              </p>
+            )}
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="ghost" size="sm" onClick={closeDialog} disabled={isPending}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={startScrape}
+                disabled={isPending || selectedSources.length === 0}
+              >
+                {isPending ? (
+                  <>
+                    <span className="mr-1.5 h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    Preparing...
+                  </>
+                ) : (
+                  'Start scrape'
+                )}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-[#b7ead4] bg-[#eefbf5] p-3.5 dark:border-[#34d399]/35 dark:bg-[#0f3328]">
+              <p className="text-sm font-semibold text-[#067647] dark:text-[#86efac]">
+                Shared scrape Run prepared
+              </p>
+              <p className="mt-1 text-xs text-[#067647]/80 dark:text-[#86efac]/80">
+                {result.prepared.sources.length} source
+                {result.prepared.sources.length === 1 ? '' : 's'} requested.
+              </p>
+            </div>
+
+            {selectedSources.includes('YallaMotor') && (
+              <div className="rounded-xl border bg-card p-3.5">
+                <p className="text-sm font-semibold text-foreground">YallaMotor</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {result.yallaMotorResult
+                    ? `${result.yallaMotorResult.count} listings captured.`
+                    : result.sourceErrors.find((failure) => failure.source === 'YallaMotor')
+                        ?.error ?? 'No immediate result was returned.'}
+                </p>
+              </div>
+            )}
+
+            {result.driveArabiaPadUrl && (
+              <div className="space-y-3 rounded-xl border border-[#c9d8ff] bg-[#eef4ff] p-3.5 dark:border-[#5b7cc8]/40 dark:bg-[#102748]">
+                <div>
+                  <p className="text-sm font-semibold text-[#315caa] dark:text-[#9db8ff]">
+                    DriveArabia is ready for PAD
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-[#315caa]/80 dark:text-[#9db8ff]/80">
+                    Copy this correlated URL, run the attended PAD flow, confirm HTTP 202,
+                    then open this record and click Process PAD Capture.
+                  </p>
+                </div>
+                <div className="rounded-lg border bg-white p-2 text-xs text-[#071936] dark:bg-[#071936] dark:text-white">
+                  <p className="max-h-20 overflow-auto break-all">
+                    {result.driveArabiaPadUrl}
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={copyCorrelatedUrl}>
+                  <Copy className="mr-1.5 h-3.5 w-3.5" />
+                  Copy correlated PAD URL
+                </Button>
+              </div>
+            )}
+
+            <div className="flex justify-end">
+              <Button size="sm" onClick={closeDialog}>
+                Done
+              </Button>
+            </div>
+          </div>
+        )}
+      </Dialog>
+    </>
   );
 }
 
@@ -642,7 +825,7 @@ function ScrapeAllPendingButton({ requests }: { requests: MissingVehicleRequest[
       className="!border-[#bfe9e2] !bg-white !text-[#08766c] hover:!bg-[#dff7f4] hover:!text-[#08766c] dark:!border-[#31545a] dark:!bg-[#0c2530] dark:!text-[#19b8a5] dark:hover:!bg-[#0f3f43]"
       onClick={handleScrapeAll}
       disabled={isScrapingAll}
-      title={`Scrape all ${pendingRequests.length} pending items`}
+      title={`Scrape all ${pendingRequests.length} pending items from YallaMotor only`}
     >
       {isScrapingAll ? (
         <>
@@ -652,14 +835,14 @@ function ScrapeAllPendingButton({ requests }: { requests: MissingVehicleRequest[
       ) : (
         <>
           <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-          Scrape {pendingRequests.length} Pending
+          YallaMotor · {pendingRequests.length} Pending
         </>
       )}
     </Button>
   );
 }
 
-function ProcessPadInboxButton({ requests }: { requests: MissingVehicleRequest[] }) {
+function ProcessPadInboxButton({ request }: { request: MissingVehicleRequest }) {
   const processInbox = useProcessScrapeInbox();
 
   return (
@@ -667,12 +850,12 @@ function ProcessPadInboxButton({ requests }: { requests: MissingVehicleRequest[]
       variant="outline"
       size="sm"
       className="!border-[#c9d8ff] !bg-white !text-[#315caa] hover:!bg-[#eef4ff] dark:!border-[#5b7cc8]/40 dark:!bg-[#0c2530] dark:!text-[#9db8ff] dark:hover:!bg-[#102748]"
-      onClick={() => processInbox.mutate(requests)}
-      disabled={processInbox.isPending || requests.length === 0}
-      title="Process captured DriveArabia pages waiting in the PAD inbox"
+      onClick={() => processInbox.mutate([request])}
+      disabled={processInbox.isPending}
+      title={`Process the oldest pending PAD capture only if it matches ${request.make} ${request.model} ${request.trim} ${request.modelYear}`}
     >
       <Inbox className={cn('mr-1.5 h-3.5 w-3.5', processInbox.isPending && 'animate-pulse')} />
-      {processInbox.isPending ? 'Processing PAD...' : 'Process PAD Inbox'}
+      {processInbox.isPending ? 'Processing PAD...' : 'Process PAD Capture'}
     </Button>
   );
 }
@@ -991,7 +1174,6 @@ export function AdminMissingVehiclesPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <ProcessPadInboxButton requests={requests ?? []} />
             {/* Scrape All Pending */}
             {statusFilter === 'all' || statusFilter === 'Pending' ? (
               <ScrapeAllPendingButton requests={requests ?? []} />

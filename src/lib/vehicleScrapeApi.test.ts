@@ -3,6 +3,7 @@ import { safeFetch, safeFetchWithMeta } from './safeAjax';
 import {
   createVehicleScrapeRun,
   createVehicleScrapeSourceResult,
+  fetchVehicleScrapeRunByCorrelationId,
   fetchVehicleScrapeRuns,
   fetchVehicleScrapeSourceResults,
   updateVehicleScrapeRun,
@@ -150,6 +151,34 @@ describe('vehicleScrapeApi', () => {
     });
     expect(mockedSafeFetch.mock.calls[0]![0].url).not.toContain('vpi_MissingVehicleRequest,');
     expect(mockedSafeFetch.mock.calls[1]![0].url).not.toContain('vpi_ScrapeRun,');
+  });
+
+  it('resolves a prepared Run by correlation with a minimal Power Pages query', async () => {
+    mockedSafeFetch.mockResolvedValue({
+      value: [
+        {
+          vpi_vehiclescraperunid: RUN_ID,
+          vpi_correlationkey: "run'correlation",
+          vpi_overallstatus: 2,
+          _vpi_missingvehiclerequest_value: MVR_ID,
+          vpi_requestedsourcecount: 2,
+        },
+      ],
+    });
+
+    await expect(fetchVehicleScrapeRunByCorrelationId("run'correlation")).resolves.toMatchObject({
+      id: RUN_ID,
+      correlationId: "run'correlation",
+      missingVehicleRequestId: MVR_ID,
+      overallStatusValue: 2,
+      requestedSourceCount: 2,
+    });
+    const url = mockedSafeFetch.mock.calls[0]![0].url;
+    expect(url).toBe(
+      "/_api/vpi_vehiclescraperuns?$select=vpi_vehiclescraperunid,vpi_correlationkey,vpi_overallstatus,_vpi_missingvehiclerequest_value,vpi_requestedsourcecount&$filter=vpi_correlationkey eq 'run''correlation'&$top=1",
+    );
+    expect(url).not.toContain('vpi_requestedbycontact');
+    expect(url).not.toContain('$orderby');
   });
 
   it('patches only supplied values and rejects malformed IDs before a request', async () => {

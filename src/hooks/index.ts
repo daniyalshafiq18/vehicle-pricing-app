@@ -10,3 +10,4 @@ export * from './useMissingVehicleRequest';
 export * from './useStartupData';
 export * from './useTriggerScrape';
 export * from './useProcessScrapeInbox';
+export * from './useTriggerMultiSourceScrape';

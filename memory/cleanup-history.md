@@ -7,6 +7,16 @@ metadata:
 
 # Cleanup History
 
+## 2026-08-24 - Correlated PAD Run Resolution Hardened
+- Replaced the correlated DriveArabia resolver's broad MVR lookup-filtered Run listing with a minimal direct `vpi_correlationkey` lookup while retaining the existing repository and `IDataSource` layering.
+- Removed successful acknowledgement from the correlated evidence-warning path. Retryable captures now remain Pending; uncorrelated legacy acknowledgement behavior remains unchanged.
+
+## 2026-08-20 — Shared Scrape Orchestration Added
+- Added shared Run preparation/aggregation plus prepared-target adapters for YallaMotor and correlated DriveArabia PAD evidence. Existing standalone YallaMotor and uncorrelated DriveArabia dual-write paths were deliberately retained as compatibility/rollback paths; no working scraper transport or legacy MVR write was removed.
+- Replaced the per-request YallaMotor-only button behavior with a unified source-selection action backed by the shared orchestrator. The original YallaMotor-only mutation remains in use for the explicitly labeled compatibility bulk action.
+- Moved shared Dialog rendering out of trigger layout trees through a body portal, removing card/table-specific positioning and clipping without removing any modal entry point.
+- Temporarily removed the page-wide Process PAD Inbox control and replaced it with a record-scoped Process PAD Capture action inside the MVR modal to make Phase 4 live testing deterministic at the matching boundary. FIFO relay behavior is unchanged.
+
 ## 2026-08-19 — Multi-source Schema Contract Added
 - Added the configuration and TypeScript contract for the normalized Vehicle Scrape Run and Vehicle Scrape Source Result tables, plus MVR decision fields. No existing scraper or legacy MVR write path was removed in this foundation step; runtime migration is intentionally deferred until Power Pages Web API exposure is confirmed.
 - Added the Power Pages CRUD/repository foundation after the two table settings were enabled and downloaded. The legacy MVR scrape path remains intact; no consumer was switched and no code was removed.

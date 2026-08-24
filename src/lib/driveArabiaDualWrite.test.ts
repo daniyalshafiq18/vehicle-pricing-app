@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { persistDriveArabiaEvidence } from './driveArabiaDualWrite';
+import {
+  persistDriveArabiaEvidence,
+  persistDriveArabiaEvidenceIntoPreparedTarget,
+} from './driveArabiaDualWrite';
 
 const INPUT = {
   request: {
@@ -131,5 +134,93 @@ describe('persistDriveArabiaEvidence', () => {
         errorSummary: warning,
       }),
     );
+  });
+});
+
+describe('persistDriveArabiaEvidenceIntoPreparedTarget', () => {
+  it('updates one prepared result and completes its shared Run after aggregation', async () => {
+    const finishedOn = new Date('2026-08-20T09:00:03.000Z');
+    const updateSourceResult = vi.fn().mockResolvedValue(undefined);
+    const updateRun = vi.fn().mockResolvedValue(undefined);
+    const getSourceResults = vi.fn().mockResolvedValue([
+      {
+        id: 'prepared-drive-result',
+        source: 'DriveArabia',
+        sourceValue: 2,
+        attemptNumber: 1,
+        processingStatus: 'Succeeded',
+        processingStatusValue: 3,
+      },
+    ]);
+
+    await expect(
+      persistDriveArabiaEvidenceIntoPreparedTarget(
+        INPUT,
+        {
+          runId: RUN_ID,
+          runCorrelationId: 'shared-run-correlation',
+          sourceResultId: 'prepared-drive-result',
+          requestedSourceCount: 1,
+          attemptNumber: 1,
+        },
+        {
+          updateSourceResult,
+          updateRun,
+          getSourceResults,
+          now: vi
+            .fn<() => Date>()
+            .mockReturnValueOnce(STARTED_ON)
+            .mockReturnValueOnce(COMPLETED_ON)
+            .mockReturnValueOnce(finishedOn),
+        },
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(updateSourceResult).toHaveBeenNthCalledWith(
+      1,
+      'prepared-drive-result',
+      expect.objectContaining({
+        processingStatusValue: 2,
+        startedOn: STARTED_ON,
+        inboxId: INPUT.inboxId,
+      }),
+    );
+    expect(updateSourceResult).toHaveBeenNthCalledWith(
+      2,
+      'prepared-drive-result',
+      expect.objectContaining({
+        processingStatusValue: 3,
+        attemptNumber: 1,
+        minimumPrice: INPUT.minimumPrice,
+        maximumPrice: INPUT.maximumPrice,
+        completedOn: COMPLETED_ON,
+      }),
+    );
+    expect(updateRun).toHaveBeenCalledWith(RUN_ID, {
+      overallStatusValue: 4,
+      successfulSourceCount: 1,
+      failedSourceCount: 0,
+      errorSummary: null,
+      completedOn: finishedOn,
+    });
+  });
+
+  it('does not write evidence when the prepared target cannot enter Running', async () => {
+    const updateSourceResult = vi.fn().mockRejectedValue(new Error('target rejected'));
+
+    await expect(
+      persistDriveArabiaEvidenceIntoPreparedTarget(
+        INPUT,
+        {
+          runId: RUN_ID,
+          runCorrelationId: 'shared-run-correlation',
+          sourceResultId: 'prepared-drive-result',
+          requestedSourceCount: 2,
+          attemptNumber: 1,
+        },
+        { updateSourceResult },
+      ),
+    ).resolves.toBe('Prepared DriveArabia target could not start: target rejected');
+    expect(updateSourceResult).toHaveBeenCalledOnce();
   });
 });

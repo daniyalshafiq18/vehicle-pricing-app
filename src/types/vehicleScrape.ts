@@ -169,7 +169,10 @@ export interface CreateVehicleScrapeSourceResultInput {
 }
 
 export type UpdateVehicleScrapeSourceResultInput = Partial<
-  Omit<CreateVehicleScrapeSourceResultInput, 'name' | 'resultCorrelationId' | 'scrapeRunId'>
+  Omit<
+    CreateVehicleScrapeSourceResultInput,
+    'name' | 'resultCorrelationId' | 'scrapeRunId' | 'errorMessage' | 'errorCode'
+  >
 > & {
   name?: string;
   errorMessage?: string | null;

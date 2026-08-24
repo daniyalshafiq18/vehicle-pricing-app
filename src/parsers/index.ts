@@ -33,6 +33,7 @@ export type {
 export {
   extractDriveArabiaPriceRows,
   extractDriveArabiaTrimPrices,
+  resolveDriveArabiaTrimPrice,
   extractDriveArabiaSpecs,
   extractDriveArabiaSpecGroups,
   extractDriveArabiaSpecsForTrim,

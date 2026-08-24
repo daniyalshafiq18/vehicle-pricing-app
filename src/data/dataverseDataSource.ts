@@ -32,6 +32,7 @@ import {
 import {
   createVehicleScrapeRun,
   createVehicleScrapeSourceResult,
+  fetchVehicleScrapeRunByCorrelationId,
   fetchVehicleScrapeRuns,
   fetchVehicleScrapeSourceResults,
   updateVehicleScrapeRun,
@@ -966,6 +967,12 @@ export class DataverseDataSource implements IDataSource {
     missingVehicleRequestId: string,
   ): Promise<VehicleScrapeRun[]> {
     return fetchVehicleScrapeRuns(missingVehicleRequestId);
+  }
+
+  async getVehicleScrapeRunByCorrelationId(
+    correlationId: string,
+  ): Promise<VehicleScrapeRun | null> {
+    return fetchVehicleScrapeRunByCorrelationId(correlationId);
   }
 
   async updateVehicleScrapeRun(

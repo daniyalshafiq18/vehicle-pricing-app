@@ -136,6 +136,7 @@ export interface IDataSource {
   // Multi-source scrape evidence
   createVehicleScrapeRun(payload: CreateVehicleScrapeRunInput): Promise<string>;
   getVehicleScrapeRuns(missingVehicleRequestId: string): Promise<VehicleScrapeRun[]>;
+  getVehicleScrapeRunByCorrelationId(correlationId: string): Promise<VehicleScrapeRun | null>;
   updateVehicleScrapeRun(id: string, fields: UpdateVehicleScrapeRunInput): Promise<void>;
   createVehicleScrapeSourceResult(
     payload: CreateVehicleScrapeSourceResultInput,

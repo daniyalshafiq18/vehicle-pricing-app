@@ -49,6 +49,10 @@ function cleanGuid(value: string, label: string): string {
   return guid;
 }
 
+function odataStringLiteral(value: string): string {
+  return value.replace(/'/g, "''");
+}
+
 function entityIdFromHeaders(getHeader: (name: string) => string | null): string {
   const entityId =
     getHeader('entityid')
@@ -242,6 +246,33 @@ export async function fetchVehicleScrapeRuns(
     headers: { Prefer: 'odata.include-annotations=*' },
   });
   return (response.value ?? []).map(mapRun);
+}
+
+/**
+ * Resolve one prepared Run by the correlation key carried in a PAD URL.
+ * Keep this query deliberately small: optional Run columns must not be able to
+ * break correlated evidence resolution in Power Pages.
+ */
+export async function fetchVehicleScrapeRunByCorrelationId(
+  correlationId: string,
+): Promise<VehicleScrapeRun | null> {
+  const value = correlationId.trim();
+  if (!value) {
+    throw new Error('Scrape Run correlation ID is required');
+  }
+  const select = [
+    RUN.ID,
+    RUN.CORRELATION_ID,
+    RUN.OVERALL_STATUS,
+    RUN.MISSING_VEHICLE_REQUEST_LOOKUP_REF,
+    RUN.REQUESTED_SOURCE_COUNT,
+  ].join(',');
+  const response = await safeFetch<ODataResponse>({
+    url: `${API_BASE}/${ENTITIES.VEHICLE_SCRAPE_RUN}?$select=${select}&$filter=${RUN.CORRELATION_ID} eq '${odataStringLiteral(value)}'&$top=1`,
+    headers: { Prefer: 'odata.include-annotations=*' },
+  });
+  const raw = response.value?.[0];
+  return raw ? mapRun(raw) : null;
 }
 
 export async function updateVehicleScrapeRun(

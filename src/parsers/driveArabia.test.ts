@@ -5,6 +5,7 @@ import {
   extractDriveArabiaSpecs,
   extractDriveArabiaSpecsForTrim,
   extractDriveArabiaTrimPrices,
+  resolveDriveArabiaTrimPrice,
 } from './driveArabia';
 // Real view-source captures (2026-08-07): Toyota Camry model landing page + a trim detail page.
 import pricesHtml from '../../tests/fixtures/drivearabia-camry-prices.html?raw';
@@ -169,6 +170,63 @@ describe('extractDriveArabiaTrimPrices (PAD per-model-year page)', () => {
       extractDriveArabiaTrimPrices('<h2>Original Trim Prices</h2> Base AWD AED 1 - 2'),
     ).toEqual([]);
     expect(extractDriveArabiaTrimPrices('<title>Example 2026 Price in UAE</title>')).toEqual([]);
+  });
+});
+
+describe('resolveDriveArabiaTrimPrice (cross-source trim identity)', () => {
+  const chargerRows = [
+    { year: 2021, trim: '3.6 V6 SXT', minPrice: 109900, maxPrice: 110000 },
+    { year: 2021, trim: '3.6 V6 GT', minPrice: 124900, maxPrice: 125000 },
+    { year: 2021, trim: '3.6 V6 GTS', minPrice: 139900, maxPrice: 140000 },
+    { year: 2021, trim: '5.7 V8 R/T', minPrice: 149900, maxPrice: 150000 },
+  ];
+
+  it('maps YallaMotor option wording to one unique DriveArabia capacity and grade', () => {
+    expect(
+      resolveDriveArabiaTrimPrice(chargerRows, '3.6L SXT (Mid Option)', 2021),
+    ).toEqual(chargerRows[0]);
+  });
+
+  it('maps attached YallaMotor T notation to one unique DriveArabia TC trim', () => {
+    const captivaRows = [
+      { year: 2023, trim: '1.5TC I4 LS', minPrice: 65300, maxPrice: 66000 },
+      { year: 2023, trim: '1.5TC I4 LT', minPrice: 69900, maxPrice: 70000 },
+      { year: 2023, trim: '1.5TC I4 Premier', minPrice: 74200, maxPrice: 75000 },
+    ];
+
+    expect(resolveDriveArabiaTrimPrice(captivaRows, '1.5T Premier', 2023)).toEqual(
+      captivaRows[2],
+    );
+  });
+
+  it('does not equate turbo-petrol and turbo-diesel trim identities', () => {
+    expect(
+      resolveDriveArabiaTrimPrice(
+        [{ year: 2023, trim: '1.5TD I4 Premier', minPrice: 74200, maxPrice: 75000 }],
+        '1.5T Premier',
+        2023,
+      ),
+    ).toBeUndefined();
+  });
+
+  it('keeps exact normalized matching as the first path', () => {
+    expect(resolveDriveArabiaTrimPrice(chargerRows, '3.6 V6 SXT', 2021)).toEqual(
+      chargerRows[0],
+    );
+  });
+
+  it('refuses ambiguous equivalent rows and conflicting stated engine layouts', () => {
+    expect(
+      resolveDriveArabiaTrimPrice(
+        [
+          chargerRows[0]!,
+          { ...chargerRows[0]!, trim: '3.6 V6 SXT RWD' },
+        ],
+        '3.6L SXT (Mid Option)',
+        2021,
+      ),
+    ).toBeUndefined();
+    expect(resolveDriveArabiaTrimPrice(chargerRows, '3.6L V8 SXT', 2021)).toBeUndefined();
   });
 });
 

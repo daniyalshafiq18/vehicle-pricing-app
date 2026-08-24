@@ -17,6 +17,10 @@ export class VehicleScrapeRepository {
     return getDataSource().getVehicleScrapeRuns(missingVehicleRequestId);
   }
 
+  getRunByCorrelationId(correlationId: string): Promise<VehicleScrapeRun | null> {
+    return getDataSource().getVehicleScrapeRunByCorrelationId(correlationId);
+  }
+
   updateRun(id: string, fields: UpdateVehicleScrapeRunInput): Promise<void> {
     return getDataSource().updateVehicleScrapeRun(id, fields);
   }

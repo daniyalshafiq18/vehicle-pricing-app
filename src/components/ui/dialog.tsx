@@ -1,4 +1,5 @@
 import { useEffect, useCallback, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '@utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
@@ -25,23 +26,33 @@ const sizeClasses = {
 export function Dialog({ isOpen, onClose, title, description, children, className, size = 'md', hideCloseButton = false }: DialogProps) {
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        onClose();
+      }
     },
     [onClose],
   );
 
   useEffect(() => {
     if (isOpen) {
+      const previousOverflow = document.body.style.overflow;
       document.addEventListener('keydown', handleEscape);
       document.body.style.overflow = 'hidden';
+      return () => {
+        document.removeEventListener('keydown', handleEscape);
+        document.body.style.overflow = previousOverflow;
+      };
     }
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = '';
     };
   }, [isOpen, handleEscape]);
 
-  return (
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -84,6 +95,7 @@ export function Dialog({ isOpen, onClose, title, description, children, classNam
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

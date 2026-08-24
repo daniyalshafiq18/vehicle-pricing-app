@@ -13,9 +13,12 @@ import type {
   CreateVehicleScrapeRunInput,
   CreateVehicleScrapeSourceResultInput,
   UpdateVehicleScrapeRunInput,
+  UpdateVehicleScrapeSourceResultInput,
+  VehicleScrapeSourceResult,
 } from '@types';
 import { scrapeWithFallback } from './azureYallaMotorScraper';
 import type { TransportedResponse } from './azureYallaMotorScraper';
+import { refreshMultiSourceRun } from './multiSourceOrchestrator';
 
 export interface YallaMotorScrapeParams {
   id: string;
@@ -48,6 +51,11 @@ interface YallaMotorDualWriteDependencies {
   updateLegacy: (id: string, fields: LegacyScrapeUpdate) => Promise<void>;
   createRun: (input: CreateVehicleScrapeRunInput) => Promise<string>;
   createSourceResult: (input: CreateVehicleScrapeSourceResultInput) => Promise<string>;
+  updateSourceResult: (
+    id: string,
+    input: UpdateVehicleScrapeSourceResultInput,
+  ) => Promise<void>;
+  getSourceResults: (runId: string) => Promise<VehicleScrapeSourceResult[]>;
   updateRun: (id: string, input: UpdateVehicleScrapeRunInput) => Promise<void>;
   now: () => Date;
   correlationId: () => string;
@@ -57,6 +65,14 @@ export type YallaMotorDualWriteResult = Extract<TransportedResponse, { success: 
   evidenceWarning?: string;
 };
 
+export interface YallaMotorPreparedTargetContext {
+  runId: string;
+  runCorrelationId: string;
+  sourceResultId: string;
+  requestedSourceCount: number;
+  attemptNumber?: number;
+}
+
 const RUN_ERROR_SUMMARY_MAX_LENGTH = 2000;
 
 const defaultDependencies: YallaMotorDualWriteDependencies = {
@@ -64,6 +80,8 @@ const defaultDependencies: YallaMotorDualWriteDependencies = {
   updateLegacy: (id, fields) => missingVehicleRepository.updateScrapeResult(id, fields),
   createRun: (input) => vehicleScrapeRepository.createRun(input),
   createSourceResult: (input) => vehicleScrapeRepository.createSourceResult(input),
+  updateSourceResult: (id, input) => vehicleScrapeRepository.updateSourceResult(id, input),
+  getSourceResults: (runId) => vehicleScrapeRepository.getSourceResults(runId),
   updateRun: (id, input) => vehicleScrapeRepository.updateRun(id, input),
   now: () => new Date(),
   correlationId: () => globalThis.crypto.randomUUID(),
@@ -145,12 +163,13 @@ function buildSourceResult(
   result: TransportedResponse,
   startedOn: Date,
   completedOn: Date,
+  attemptNumber = 1,
 ): CreateVehicleScrapeSourceResultInput {
   const base: CreateVehicleScrapeSourceResultInput = {
     name: `YallaMotor - ${vehicleLabel(params)}`,
-    resultCorrelationId: `${runCorrelationId}:yallamotor:1`,
+    resultCorrelationId: `${runCorrelationId}:yallamotor:${attemptNumber}`,
     scrapeRunId: runId,
-    attemptNumber: 1,
+    attemptNumber,
     sourceValue: VEHICLE_SCRAPE_SOURCE.YallaMotor ?? 1,
     transportValue: transportValue(result.transport),
     startedOn,
@@ -219,6 +238,54 @@ function buildSourceResult(
   };
 }
 
+function sourceResultUpdate(
+  input: CreateVehicleScrapeSourceResultInput,
+): UpdateVehicleScrapeSourceResultInput {
+  const { resultCorrelationId, scrapeRunId, ...update } = input;
+  void resultCorrelationId;
+  void scrapeRunId;
+  return update;
+}
+
+async function persistPreparedEvidence(
+  params: YallaMotorScrapeParams,
+  result: TransportedResponse,
+  context: YallaMotorPreparedTargetContext,
+  startedOn: Date,
+  deps: YallaMotorDualWriteDependencies,
+): Promise<string | undefined> {
+  const completedOn = deps.now();
+  try {
+    await deps.updateSourceResult(
+      context.sourceResultId,
+      sourceResultUpdate(
+        buildSourceResult(
+          params,
+          context.runId,
+          context.runCorrelationId,
+          result,
+          startedOn,
+          completedOn,
+          context.attemptNumber ?? 1,
+        ),
+      ),
+    );
+  } catch (error) {
+    return runErrorSummary(`Source Result update failed: ${errorMessage(error)}`);
+  }
+
+  try {
+    await refreshMultiSourceRun(context.runId, context.requestedSourceCount, {
+      getSourceResults: deps.getSourceResults,
+      updateRun: deps.updateRun,
+      now: deps.now,
+    });
+  } catch (error) {
+    return runErrorSummary(`Run aggregation failed: ${errorMessage(error)}`);
+  }
+  return undefined;
+}
+
 async function persistEvidence(
   params: YallaMotorScrapeParams,
   result: TransportedResponse,
@@ -272,6 +339,77 @@ async function persistEvidence(
   }
 
   return undefined;
+}
+
+/** Execute YallaMotor into an already-created shared Run/source target. */
+export async function scrapeYallaMotorIntoPreparedTarget(
+  params: YallaMotorScrapeParams,
+  context: YallaMotorPreparedTargetContext,
+  overrides: Partial<YallaMotorDualWriteDependencies> = {},
+): Promise<YallaMotorDualWriteResult> {
+  const deps = { ...defaultDependencies, ...overrides };
+  const startedOn = deps.now();
+
+  try {
+    await deps.updateSourceResult(context.sourceResultId, {
+      processingStatusValue: VEHICLE_SCRAPE_PROCESSING_STATUS.Running!,
+      startedOn,
+      errorCode: null,
+      errorMessage: null,
+    });
+  } catch (error) {
+    throw new Error(`Unable to start YallaMotor evidence: ${errorMessage(error)}`);
+  }
+
+  const result = await deps.scrape({
+    make: params.make,
+    model: params.model,
+    trim: params.trim,
+    year: params.year,
+  });
+
+  if (!result.success) {
+    await deps.updateLegacy(params.id, {
+      scrapedMinPrice: 0,
+      scrapedMaxPrice: 0,
+      scrapedListings: JSON.stringify({ error: result.error }),
+      scrapedSources: '',
+      scrapeStatusValue: missingVehicleScrapeStatusValue('Failed') ?? 5,
+    });
+    const warning = await persistPreparedEvidence(params, result, context, startedOn, deps);
+    throw new Error(
+      warning ? `${result.error}; evidence storage needs attention: ${warning}` : result.error,
+    );
+  }
+
+  if (result._unavailable) {
+    await deps.updateLegacy(params.id, {
+      scrapedMinPrice: 0,
+      scrapedMaxPrice: 0,
+      scrapedListings: JSON.stringify({
+        count: 0,
+        _unavailable: true,
+        source: 'YallaMotor',
+      }),
+      scrapedSources: '',
+      scrapeStatusValue: missingVehicleScrapeStatusValue('Unreachable') ?? 6,
+    });
+    const warning = await persistPreparedEvidence(params, result, context, startedOn, deps);
+    const message = 'YallaMotor is currently unreachable (Cloudflare / network issue)';
+    throw new Error(
+      warning ? `${message}; evidence storage needs attention: ${warning}` : message,
+    );
+  }
+
+  await deps.updateLegacy(params.id, buildLegacySuccessUpdate(result));
+  const evidenceWarning = await persistPreparedEvidence(
+    params,
+    result,
+    context,
+    startedOn,
+    deps,
+  );
+  return { ...result, ...(evidenceWarning && { evidenceWarning }) };
 }
 
 export async function scrapeYallaMotorWithDualWrite(
