@@ -419,7 +419,7 @@ describe('processNextScrapeInboxItem', () => {
     expect(result.status).toBe('error');
     expect(result.error).toContain("source 'dubizzle' is not implemented");
     expect(fetchFn).toHaveBeenNthCalledWith(
-      3,
+      2,
       'https://mock.azurewebsites.net/api/inbox_status',
       expect.objectContaining({ body: JSON.stringify({ inboxId: ITEM.inboxId, status: 'Error' }) }),
     );
@@ -427,6 +427,29 @@ describe('processNextScrapeInboxItem', () => {
 });
 
 describe('processScrapeInbox', () => {
+  it('processes one exact Inbox ID returned by automated PAD', async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce(json({ ...ITEM, html: camry2024Html }))
+      .mockResolvedValueOnce(json({ inboxId: ITEM.inboxId, status: 'Complete' }));
+
+    const summary = await processScrapeInbox({
+      requests: [REQUEST],
+      inboxId: ITEM.inboxId,
+      functionBaseUrl: BASE,
+      fetchFn,
+      updateScrapeResult: vi.fn(async () => undefined),
+      persistEvidence: vi.fn(async () => undefined),
+    });
+
+    expect(fetchFn).toHaveBeenNthCalledWith(
+      1,
+      `https://mock.azurewebsites.net/api/next_pending?inboxId=${ITEM.inboxId}`,
+    );
+    expect(summary.completedItems).toBe(1);
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
   it('drains completed items until the relay reports an empty queue', async () => {
     const fetchFn = vi
       .fn()

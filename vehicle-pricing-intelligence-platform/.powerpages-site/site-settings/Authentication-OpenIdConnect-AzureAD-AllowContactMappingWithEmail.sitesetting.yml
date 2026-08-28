@@ -1,0 +1,4 @@
+id: 50819b68-e5a1-f111-aaad-6045bdc2428b
+name: Authentication/OpenIdConnect/AzureAD/AllowContactMappingWithEmail
+source: 0
+value: true

@@ -6,7 +6,14 @@ import {
   useTriggerMultiSourceScrape,
   useProcessScrapeInbox,
 } from '@hooks';
-import { Button, Dialog, SkeletonTable, Card as UICard, CardContent } from '@components/ui';
+import {
+  Button,
+  Dialog,
+  Input,
+  SkeletonTable,
+  Card as UICard,
+  CardContent,
+} from '@components/ui';
 import { motion } from 'framer-motion';
 import {
   Car,
@@ -406,13 +413,13 @@ function MissingVehicleDetailModal({
 
           {/* ── Scrape Results Section ── */}
           <div className="mt-5">
-            <div className="mb-3 flex items-center gap-2">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#ecfbf8]">
                 <Loader className="h-3.5 w-3.5 text-[#19b8a5]" />
               </div>
               <h3 className="text-sm font-semibold text-foreground">Scrape Results</h3>
               <ScrapeStatusBadge status={request.scrapeStatus} />
-              <div className="ml-auto">
+              <div className="ml-auto w-full sm:w-auto">
                 <ProcessPadInboxButton request={request} />
               </div>
             </div>
@@ -587,7 +594,7 @@ function ScrapeNowButton({
         sources: selectedSources,
       });
       setResult(outcome);
-      if (outcome.yallaMotorResult) {
+      if (outcome.yallaMotorResult || outcome.driveArabiaInboxSummary?.completedItems === 1) {
         onComplete?.(request.id);
       }
     } catch {
@@ -659,7 +666,8 @@ function ScrapeNowButton({
                   {
                     source: 'DriveArabia' as const,
                     title: 'DriveArabia',
-                    description: 'Original reference prices and specs. Requires attended PAD.',
+                    description:
+                      'Original reference prices and specs. Runs through PAD automatically when the secured cloud flow is configured.',
                   },
                 ] satisfies Array<{
                   source: OrchestratedScrapeSource;
@@ -744,15 +752,26 @@ function ScrapeNowButton({
               </div>
             )}
 
-            {result.driveArabiaPadUrl && (
+            {result.driveArabiaInboxSummary?.completedItems === 1 ? (
+              <div className="rounded-xl border border-[#b7ead4] bg-[#eefbf5] p-3.5 dark:border-[#34d399]/35 dark:bg-[#0f3328]">
+                <p className="text-sm font-semibold text-[#067647] dark:text-[#86efac]">
+                  DriveArabia completed automatically
+                </p>
+                <p className="mt-1 text-xs text-[#067647]/80 dark:text-[#86efac]/80">
+                  PAD captured the page, returned its exact Inbox ID, and the app processed the
+                  correlated evidence without a manual inbox action.
+                </p>
+              </div>
+            ) : result.driveArabiaPadUrl ? (
               <div className="space-y-3 rounded-xl border border-[#c9d8ff] bg-[#eef4ff] p-3.5 dark:border-[#5b7cc8]/40 dark:bg-[#102748]">
                 <div>
                   <p className="text-sm font-semibold text-[#315caa] dark:text-[#9db8ff]">
-                    DriveArabia is ready for PAD
+                    DriveArabia attended fallback
                   </p>
                   <p className="mt-1 text-xs leading-5 text-[#315caa]/80 dark:text-[#9db8ff]/80">
-                    Copy this correlated URL, run the attended PAD flow, confirm HTTP 202,
-                    then open this record and click Process PAD Capture.
+                    {result.sourceErrors.find((failure) => failure.source === 'DriveArabia')
+                      ?.error ??
+                      'Automatic PAD is not configured yet. Copy this correlated URL, run PAD, then process the capture from this record.'}
                   </p>
                 </div>
                 <div className="rounded-lg border bg-white p-2 text-xs text-[#071936] dark:bg-[#071936] dark:text-white">
@@ -765,7 +784,7 @@ function ScrapeNowButton({
                   Copy correlated PAD URL
                 </Button>
               </div>
-            )}
+            ) : null}
 
             <div className="flex justify-end">
               <Button size="sm" onClick={closeDialog}>
@@ -842,19 +861,44 @@ function ScrapeAllPendingButton({ requests }: { requests: MissingVehicleRequest[
 
 function ProcessPadInboxButton({ request }: { request: MissingVehicleRequest }) {
   const processInbox = useProcessScrapeInbox();
+  const [inboxId, setInboxId] = useState('');
+  const normalizedInboxId = inboxId.trim();
+
+  const handleProcess = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!/^[0-9a-f]{12}$/i.test(normalizedInboxId)) {
+      toast.error('Enter the 12-character Inbox ID returned by PAD');
+      return;
+    }
+    processInbox.mutate({ requests: [request], inboxId: normalizedInboxId });
+  };
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      className="!border-[#c9d8ff] !bg-white !text-[#315caa] hover:!bg-[#eef4ff] dark:!border-[#5b7cc8]/40 dark:!bg-[#0c2530] dark:!text-[#9db8ff] dark:hover:!bg-[#102748]"
-      onClick={() => processInbox.mutate([request])}
-      disabled={processInbox.isPending}
-      title={`Process the oldest pending PAD capture only if it matches ${request.make} ${request.model} ${request.trim} ${request.modelYear}`}
-    >
-      <Inbox className={cn('mr-1.5 h-3.5 w-3.5', processInbox.isPending && 'animate-pulse')} />
-      {processInbox.isPending ? 'Processing PAD...' : 'Process PAD Capture'}
-    </Button>
+    <form className="flex w-full items-center gap-2 sm:w-auto" onSubmit={handleProcess}>
+      <Input
+        value={inboxId}
+        onChange={(event) => setInboxId(event.target.value)}
+        aria-label="PAD Inbox ID"
+        placeholder="Inbox ID"
+        autoComplete="off"
+        spellCheck={false}
+        maxLength={12}
+        className="h-9 min-w-0 flex-1 font-mono text-xs sm:w-36 sm:flex-none"
+      />
+      <Button
+        type="submit"
+        variant="outline"
+        size="sm"
+        className="whitespace-nowrap !border-[#c9d8ff] !bg-white !text-[#315caa] hover:!bg-[#eef4ff] dark:!border-[#5b7cc8]/40 dark:!bg-[#0c2530] dark:!text-[#9db8ff] dark:hover:!bg-[#102748]"
+        disabled={processInbox.isPending}
+        title={`Process the exact PAD Inbox ID only for ${request.make} ${request.model} ${request.trim} ${request.modelYear}`}
+      >
+        <Inbox
+          className={cn('mr-1.5 h-3.5 w-3.5', processInbox.isPending && 'animate-pulse')}
+        />
+        {processInbox.isPending ? 'Processing PAD...' : 'Process PAD Capture'}
+      </Button>
+    </form>
   );
 }
 

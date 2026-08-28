@@ -1,0 +1,8 @@
+adx_CloudFlowConsumer_adx_webrole:
+- b0ecfd4e-57d2-4044-8d82-82b6f0cdae91
+flowapiurl: /_api/cloudflow/v1.0/trigger/9af0a2aa-d99f-f111-aaad-6045bdc401aa
+flowtriggerurl: ''
+id: 9da82c0c-11a2-f111-aaad-6045bdc2428b
+metadata: ''
+name: VPI - Run DriveArabia PAD
+processid: 9af0a2aa-d99f-f111-aaad-6045bdc401aa

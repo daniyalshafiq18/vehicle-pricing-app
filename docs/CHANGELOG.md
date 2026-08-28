@@ -1,14 +1,50 @@
 
 # Changelog
 
+## 2026-08-28
+
+### Phase 7 DriveArabia runtime configuration
+- Moved the registered DriveArabia cloud-flow GUID from build-only configuration to the `VPI/DriveArabiaCloudFlowId` Power Pages site setting, exposed through `window.vpiRuntimeConfig` by both code-site entry documents (`Home.webpage.copy.html` and `SPA-Shell`). Production flow replacements now require a site-setting update and portal refresh rather than a new SPA build; the Vite variable remains a local-development fallback.
+- Corrected the Blank Template CSRF fallback to extract the verification token from the hidden input element returned by the current `shell.getTokenDeferred()` implementation before invoking the cloud-flow endpoint.
+- Live deployment verified that the runtime setting resolves to the replacement registration and the app sends the documented CSRF-authenticated form envelope. Power Pages still returns HTTP 500 after Contact/role evaluation and before any Power Automate run exists; correlation `296271a1-defd-4c8f-9504-8d7a848fc786` records the remaining platform-side dispatch blocker.
+- A response-only Power Pages smoke flow reproduced the same pre-run HTTP 500, while a manual run of the production cloud flow successfully started PAD and returned Azure Inbox ID `087ae330a1ef` with status `202`. This isolates the active fault to Power Pages-to-cloud-flow dispatch.
+- Corrected the temporary modal fallback so **Process PAD Capture** requires and retrieves the exact 12-character Inbox ID returned by PAD. It no longer selects an unrelated oldest Pending capture when stale items exist in the relay.
+
+### Phase 7 DriveArabia automation registration replaced
+- Replaced the site registration for the inherited DriveArabia cloud flow after correctly authenticated Power Pages requests continued to fail before producing a Power Automate run. A new solution-native `MVR - DriveArabia - On Demand Scrape` flow now uses a newly authorized local-machine Desktop flows connection and a fresh Power Pages registration.
+- Updated local build configuration to the replacement Power Pages cloud-flow registration GUID. Live one-click acceptance remains pending the rebuilt portal bundle and end-to-end run.
+
+## 2026-08-27
+
+### Phase 7 Power Pages trigger contract corrected
+- Corrected the registered DriveArabia cloud flow after live authenticated requests returned HTTP 500 before creating a Power Automate run. The Power Pages API's outer `eventData` value is a transport envelope: its four inner properties now map directly to matching typed trigger inputs (`driveArabiaUrl`, `missingVehicleRequestId`, `runCorrelationId`, and `attemptNumber`), the redundant Parse JSON action was removed, and the PAD action receives `driveArabiaUrl` directly.
+- Updated the Phase 7 architecture and development guidance to prevent confusing the fixed API envelope with a flow trigger input. The generated site-associated flow URL remains unchanged, so no application rebuild is required for this cloud-flow-only correction.
+- Corrected the portal transport after re-registration still produced HTTP 500 with no Power Automate run: the dedicated adapter now uses Power Pages `shell.ajaxSafePost` with the serialized `eventData` form envelope instead of sending JSON through the Dataverse `webapi.safeAjax` wrapper.
+- Added a CSRF-token form-post fallback for Blank Template SPA runtimes that expose `shell.getTokenDeferred()` but not the optional `shell.ajaxSafePost` convenience helper; the attended PAD URL remains available if neither portal authentication mechanism exists.
+
+## 2026-08-25
+
+### Phase 7 external automation registration
+- Registered the solution-aware DriveArabia cloud flow with the Power Pages site and configured its generated non-secret registration GUID through local Vite configuration.
+- Temporarily granted the flow to the default Authenticated Users web role so live automation testing can continue while duplicate portal Contacts prevent reliable assignment of the dedicated `VPI Administrators` role. Anonymous Users remain explicitly denied.
+- Recorded this as a development-only security exception: administrator-only flow access and least-privilege evidence-table roles remain mandatory before production acceptance.
+
 ## 2026-08-24
 
-### Phase 6 Vehicle Data promotion started
+### Phase 7 secured DriveArabia automation started
+- Added a Power Pages cloud-flow adapter that invokes a site-associated, web-role-protected flow through the authenticated same-origin API. Only the generated registration GUID is configured; no HTTP trigger secret is shipped in the portal bundle.
+- The unified Scrape action can now pass its correlated DriveArabia URL to PAD automatically, require PAD to return `StatusCode=202` plus the exact Azure Inbox ID, and process that one capture through the existing parser/evidence path without the manual inbox button.
+- Preserved the correlated URL and record-scoped Process PAD Capture action as rollback whenever automation is unconfigured or fails. Added exact-Inbox processing and focused tests for flow invocation, response validation, orchestration and capture selection.
+- Added `docs/PHASE-7-AUTOMATION-HARDENING.md` with the external cloud-flow/PAD contract, administrator-only security requirement, acceptance gate and background-processing boundary.
+- Added a dedicated Cloud-vs-PAD architecture decision record explaining the current DriveArabia rendering constraint, why PAD-only and Cloud-only approaches do not meet the complete one-click requirement, the selected responsibility split, security and licensing boundaries, rollback behavior, alternatives, and objective gates for eventually removing PAD.
+
+### Phase 6 Vehicle Data promotion completed
 - Added an explicit **Push to Vehicle Data** action beneath the approved evidence decision. The ordinary MVR Status dropdown can no longer trigger Vehicle Data creation; it now manages only Pending, In Progress and Reject lifecycle states.
 - Replaced client-object promotion with a guarded server-read workflow. Promotion reloads the MVR, requires an Approved pricing decision and valid approved range, verifies the Reviewed Run belongs to the request and is terminal, and accepts only Succeeded selected price/specification results from that Run.
 - Vehicle Data identity remains the requested make/model/year/trim, while technical fields come from the Selected Specification Result with MVR fallback only where that evidence is absent. Prices come exclusively from Approved Minimum/Maximum Price; legacy scraped prices are no longer the promotion authority.
 - Added idempotency guards: an existing MVR Vehicle Data lookup returns safely, one exact make/model/year/spec master match is linked instead of recreated, and ambiguous duplicate matches block promotion. Successful creation links the MVR and sets its ordinary status to Approved only afterward.
 - Added MVR modal synchronization after query refresh so a newly saved Approved decision immediately unlocks promotion, plus focused regression coverage for authoritative mapping, non-approved rejection, existing-link idempotency and partial-failure recovery.
+- **Live acceptance passed:** an Approved MVR was promoted successfully, the master Vehicle Data identity, approved price range and selected specifications matched, the MVR was linked and finalized, all normalized evidence remained intact, and the refreshed UI prevented duplicate promotion.
 
 ### Phase 5 evidence review started
 - Added the guarded pricing-decision form beneath normalized evidence. After a Run becomes terminal, admins can choose the decision method/status, authoritative price result, specification result, approved min/max prices and notes. Active Runs remain read-only; invalid ranges, non-succeeded evidence and undocumented overrides/attention/rejection decisions are blocked client-side.

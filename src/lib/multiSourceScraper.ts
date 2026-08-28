@@ -57,6 +57,8 @@ export interface ScrapeResultUpdate {
 
 export interface ProcessScrapeInboxOptions {
   requests: MissingVehicleRequest[];
+  /** Process one exact relay item returned by an automated desktop flow. */
+  inboxId?: string;
   functionBaseUrl?: string;
   fetchFn?: typeof fetch;
   maxItems?: number;
@@ -122,10 +124,18 @@ async function readJson(response: Response): Promise<Record<string, unknown>> {
 async function fetchPendingItem(
   fetchFn: typeof fetch,
   baseUrl: string,
+  inboxId?: string,
 ): Promise<ScrapeInboxItem | null> {
-  const response = await fetchFn(endpoint(baseUrl, 'next_pending'));
+  const url = new URL(endpoint(baseUrl, 'next_pending'));
+  if (inboxId) {
+    url.searchParams.set('inboxId', inboxId);
+  }
+  const response = await fetchFn(url.toString());
   const body = await readJson(response);
-  if (response.status === 404 && body.error === 'no_pending') {
+  if (
+    response.status === 404 &&
+    (body.error === 'no_pending' || (inboxId && body.error === 'not_found'))
+  ) {
     return null;
   }
   if (!response.ok) {
@@ -293,14 +303,14 @@ export async function processNextScrapeInboxItem(
   const persistPreparedEvidence =
     options.persistPreparedEvidence ?? persistDriveArabiaEvidenceIntoPreparedTarget;
 
-  const pending = await fetchPendingItem(fetchFn, baseUrl);
+  const pending = await fetchPendingItem(fetchFn, baseUrl, options.inboxId);
   if (!pending) {
     return { status: 'empty', updatedRequestIds: [], evidenceWarnings: [] };
   }
 
   let item: ScrapeInboxItem;
   try {
-    item = await fetchInboxHtml(fetchFn, baseUrl, pending.inboxId);
+    item = pending.html ? pending : await fetchInboxHtml(fetchFn, baseUrl, pending.inboxId);
     const matches = matchingRequests(item, options.requests);
     if (matches.length === 0) {
       throw new NoMatchingRequestError(
@@ -452,7 +462,9 @@ export async function processNextScrapeInboxItem(
 export async function processScrapeInbox(
   options: ProcessScrapeInboxOptions,
 ): Promise<InboxProcessSummary> {
-  const maxItems = Math.max(1, Math.min(options.maxItems ?? DEFAULT_MAX_ITEMS, 100));
+  const maxItems = options.inboxId
+    ? 1
+    : Math.max(1, Math.min(options.maxItems ?? DEFAULT_MAX_ITEMS, 100));
   const summary: InboxProcessSummary = {
     processedItems: 0,
     completedItems: 0,

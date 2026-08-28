@@ -1,0 +1,8 @@
+adx_CloudFlowConsumer_adx_webrole:
+- b0ecfd4e-57d2-4044-8d82-82b6f0cdae91
+flowapiurl: /_api/cloudflow/v1.0/trigger/4c0caeb4-97a2-f111-aaad-6045bdc2428b
+flowtriggerurl: ''
+id: cb2d84ea-98a2-f111-aaad-6045bdc401aa
+metadata: ''
+name: MVR - DriveArabia - On Demand Scrape
+processid: 4c0caeb4-97a2-f111-aaad-6045bdc2428b

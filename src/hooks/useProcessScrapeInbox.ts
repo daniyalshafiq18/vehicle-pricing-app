@@ -9,7 +9,13 @@ export function useProcessScrapeInbox() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (requests: MissingVehicleRequest[]) => processScrapeInbox({ requests }),
+    mutationFn: ({
+      requests,
+      inboxId,
+    }: {
+      requests: MissingVehicleRequest[];
+      inboxId: string;
+    }) => processScrapeInbox({ requests, inboxId }),
     onSuccess: (summary) => {
       if (summary.updatedRequestIds.length > 0) {
         queryClient.invalidateQueries({ queryKey: [MISSING_VEHICLE_REQUESTS_KEY] });

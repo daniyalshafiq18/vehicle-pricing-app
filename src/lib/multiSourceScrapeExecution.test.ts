@@ -99,4 +99,45 @@ describe('executeMultiSourceScrape', () => {
     expect(scrapeYallaMotor).not.toHaveBeenCalled();
     expect(result.driveArabiaPadUrl).toContain('vpiRun=shared-run');
   });
+
+  it('processes the exact Inbox ID returned by the secured cloud flow', async () => {
+    const processDriveArabiaCapture = vi.fn().mockResolvedValue({
+      processedItems: 1,
+      completedItems: 1,
+      failedItems: 0,
+      waitingItems: 0,
+      updatedRequestIds: [REQUEST.id],
+      failures: [],
+      evidenceWarnings: [],
+    });
+
+    const result = await executeMultiSourceScrape(
+      { request: REQUEST, sources: ['DriveArabia'] },
+      {
+        prepare: vi.fn().mockResolvedValue({
+          ...PREPARED,
+          sources: [PREPARED.sources[1]!],
+        }),
+        scrapeYallaMotor: vi.fn(),
+        triggerDriveArabia: vi.fn().mockResolvedValue({
+          mode: 'automatic',
+          inboxId: 'automated-inbox',
+          statusCode: 202,
+        }),
+        processDriveArabiaCapture,
+      },
+    );
+
+    expect(processDriveArabiaCapture).toHaveBeenCalledWith({
+      requests: [REQUEST],
+      inboxId: 'automated-inbox',
+    });
+    expect(result.driveArabiaDispatch).toEqual({
+      mode: 'automatic',
+      inboxId: 'automated-inbox',
+      statusCode: 202,
+    });
+    expect(result.driveArabiaInboxSummary?.completedItems).toBe(1);
+    expect(result.sourceErrors).toEqual([]);
+  });
 });

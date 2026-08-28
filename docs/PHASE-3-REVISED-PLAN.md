@@ -26,8 +26,8 @@ Missing Vehicle Request
 | 3. DriveArabia dual-write | Preserve PAD/MVR behavior and add one Run/Source Result per exact MVR match | Complete and live-proven |
 | 4. Unified scrape orchestration | One admin Scrape action creates a shared run and coordinates selected sources | Complete and live-proven |
 | 5. Evidence review and price decision | Compare independent sources; choose price/spec evidence and approve final min/max | Complete and live-proven |
-| 6. Vehicle Data promotion | Promote only administrator-approved prices/specifications to master Vehicle Data | In implementation |
-| 7. Automation and production hardening | Unattended PAD, retries/bulk reliability, monitoring and administrator-only permissions | Not started |
+| 6. Vehicle Data promotion | Promote only administrator-approved prices/specifications to master Vehicle Data | Complete and live-proven |
+| 7. Automation and production hardening | Unattended PAD, retries/bulk reliability, monitoring and administrator-only permissions | In progress — secured one-click slice implemented locally |
 
 ### Phase 3 implementation contract
 

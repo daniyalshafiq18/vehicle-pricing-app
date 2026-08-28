@@ -9,6 +9,11 @@ import {
   scrapeYallaMotorIntoPreparedTarget,
   type YallaMotorDualWriteResult,
 } from './yallaMotorDualWrite';
+import {
+  triggerDriveArabiaPad,
+  type DriveArabiaPadDispatch,
+} from './driveArabiaPadAutomation';
+import { processScrapeInbox, type InboxProcessSummary } from './multiSourceScraper';
 
 export interface ExecuteMultiSourceScrapeInput {
   request: MissingVehicleRequest;
@@ -18,6 +23,8 @@ export interface ExecuteMultiSourceScrapeInput {
 export interface MultiSourceScrapeExecutionResult {
   prepared: PreparedMultiSourceScrape;
   driveArabiaPadUrl?: string;
+  driveArabiaDispatch?: DriveArabiaPadDispatch;
+  driveArabiaInboxSummary?: InboxProcessSummary;
   yallaMotorResult?: YallaMotorDualWriteResult;
   sourceErrors: Array<{ source: OrchestratedScrapeSource; error: string }>;
 }
@@ -25,11 +32,15 @@ export interface MultiSourceScrapeExecutionResult {
 interface MultiSourceScrapeExecutionDependencies {
   prepare: typeof prepareMultiSourceScrape;
   scrapeYallaMotor: typeof scrapeYallaMotorIntoPreparedTarget;
+  triggerDriveArabia: typeof triggerDriveArabiaPad;
+  processDriveArabiaCapture: typeof processScrapeInbox;
 }
 
 const defaultDependencies: MultiSourceScrapeExecutionDependencies = {
   prepare: prepareMultiSourceScrape,
   scrapeYallaMotor: scrapeYallaMotorIntoPreparedTarget,
+  triggerDriveArabia: triggerDriveArabiaPad,
+  processDriveArabiaCapture: processScrapeInbox,
 };
 
 function errorMessage(error: unknown): string {
@@ -92,10 +103,41 @@ export async function executeMultiSourceScrape(
     }
   }
 
+  let driveArabiaDispatch: DriveArabiaPadDispatch | undefined;
+  let driveArabiaInboxSummary: InboxProcessSummary | undefined;
+  if (driveArabiaTarget && driveArabiaPadUrl) {
+    try {
+      driveArabiaDispatch = await deps.triggerDriveArabia({
+        driveArabiaUrl: driveArabiaPadUrl,
+        missingVehicleRequestId: input.request.id,
+        runCorrelationId: prepared.runCorrelationId,
+        attemptNumber: driveArabiaTarget.attemptNumber,
+      });
+      if (driveArabiaDispatch.mode === 'automatic') {
+        driveArabiaInboxSummary = await deps.processDriveArabiaCapture({
+          requests: [input.request],
+          inboxId: driveArabiaDispatch.inboxId,
+        });
+        if (
+          driveArabiaInboxSummary.completedItems !== 1 ||
+          driveArabiaInboxSummary.failedItems > 0 ||
+          driveArabiaInboxSummary.waitingItems > 0
+        ) {
+          const detail = driveArabiaInboxSummary.failures[0]?.error;
+          throw new Error(detail ?? 'Automated PAD capture was not completed');
+        }
+      }
+    } catch (error) {
+      sourceErrors.push({ source: 'DriveArabia', error: errorMessage(error) });
+    }
+  }
+
   return {
     prepared,
     sourceErrors,
     ...(driveArabiaPadUrl && { driveArabiaPadUrl }),
+    ...(driveArabiaDispatch && { driveArabiaDispatch }),
+    ...(driveArabiaInboxSummary && { driveArabiaInboxSummary }),
     ...(yallaMotorResult && { yallaMotorResult }),
   };
 }
