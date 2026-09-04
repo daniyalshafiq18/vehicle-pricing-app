@@ -30,8 +30,6 @@ export function useTriggerMultiSourceScrape() {
       }
       if (result.driveArabiaInboxSummary?.completedItems === 1) {
         toast.success('DriveArabia capture completed automatically');
-      } else if (result.driveArabiaPadUrl && result.driveArabiaDispatch?.mode !== 'automatic') {
-        toast('DriveArabia is prepared. Copy its correlated PAD URL to continue.');
       }
       queryClient.invalidateQueries({ queryKey: [MISSING_VEHICLE_REQUESTS_KEY] });
     },

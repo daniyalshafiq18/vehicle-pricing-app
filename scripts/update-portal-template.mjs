@@ -14,7 +14,7 @@
  * Usage: node scripts/update-portal-template.mjs
  */
 
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs';
+import { copyFileSync, existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { randomUUID } from 'crypto';
 import { resolve, dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
@@ -23,30 +23,20 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 
 const DIST_ASSETS = resolve(ROOT, 'dist', 'assets');
-const WEB_FILES = resolve(
-  ROOT,
-  'vehicle-pricing-intelligence-platform',
-  '.powerpages-site',
-  'web-files',
-);
+const PORTAL_ROOT = resolve(ROOT, 'vehicle-pricing-intelligence-platform');
+const WEB_FILES = resolve(PORTAL_ROOT, 'web-files');
 const MANIFEST = resolve(
-  ROOT,
-  'vehicle-pricing-intelligence-platform',
-  '.powerpages-site',
+  PORTAL_ROOT,
   '.portalconfig',
   'orgdb947021.crm6.dynamics.com-manifest.yml',
 );
 const BASE_MANIFEST = resolve(
-  ROOT,
-  'vehicle-pricing-intelligence-platform',
-  '.powerpages-site',
+  PORTAL_ROOT,
   '.portalconfig',
   'manifest.yml',
 );
 const SPA_SHELL = resolve(
-  ROOT,
-  'vehicle-pricing-intelligence-platform',
-  '.powerpages-site',
+  PORTAL_ROOT,
   'web-templates',
   'spa-shell',
   'SPA-Shell.webtemplate.source.html',
@@ -91,28 +81,22 @@ const GENERATED_MANIFEST_FILE_RE =
 const ASSETS_PARENT_PAGE_ID = 'f95ed4d7-0906-48fc-bcd4-2c1ef1fdf57a';
 const PUBLISHING_STATE_ID = '3252f4b2-ce00-414a-a73d-de4a2a499641';
 
-/** Read .webfile.yml and extract the record ID */
-function getRecordIdFromWebfile(dirPath) {
+/** Read flat Enhanced-export .webfile.yml metadata and extract its record ID. */
+function getRecordIdFromWebfile(fileName) {
   try {
-    const items = readdirSync(dirPath);
-    const ymlFile = items.find((f) => f.endsWith('.webfile.yml'));
-    if (!ymlFile) return null;
-    const content = readFileSync(resolve(dirPath, ymlFile), 'utf-8');
-    const match = content.match(/^id:\s*([a-f0-9-]+)$/m);
+    const content = readFileSync(resolve(WEB_FILES, `${fileName}.webfile.yml`), 'utf-8');
+    const match = content.match(/^(?:adx_webfileid|id):\s*([a-f0-9-]+)$/m);
     return match ? match[1] : null;
   } catch {
     return null;
   }
 }
 
-/** Read .webfile.yml metadata used by PAC manifests. */
-function getWebfileMetadata(dirPath) {
+/** Read flat Enhanced-export .webfile.yml metadata used by PAC manifests. */
+function getWebfileMetadata(fileName) {
   try {
-    const items = readdirSync(dirPath);
-    const ymlFile = items.find((f) => f.endsWith('.webfile.yml'));
-    if (!ymlFile) return null;
-    const content = readFileSync(resolve(dirPath, ymlFile), 'utf-8');
-    const id = content.match(/^id:\s*([a-f0-9-]+)$/m)?.[1];
+    const content = readFileSync(resolve(WEB_FILES, `${fileName}.webfile.yml`), 'utf-8');
+    const id = content.match(/^(?:adx_webfileid|id):\s*([a-f0-9-]+)$/m)?.[1];
     const annotationId = content.match(/^annotationid:\s*([a-f0-9-]+)$/m)?.[1];
     if (!id || !annotationId) return null;
     return { id, annotationId };
@@ -131,21 +115,21 @@ function createWebfileYml(fileName) {
   const id = randomUUID();
   const annotationId = randomUUID();
 
-  return `annotationid: ${annotationId}
-contentdisposition: 756150000
-enabletracking: false
-excludefromsearch: false
+  return `adx_contentdisposition: 756150000
+adx_enabletracking: false
+adx_excludefromsearch: false
+adx_hiddenfromsitemap: false
+adx_name: ${fileName}
+adx_parentpageid: ${ASSETS_PARENT_PAGE_ID}
+adx_partialurl: ${fileName}
+adx_publishingstateid: ${PUBLISHING_STATE_ID}
+adx_webfileid: ${id}
+annotationid: ${annotationId}
 filename: ${fileName}
-hiddenfromsitemap: false
-id: ${id}
 isdocument: true
 mimetype: ${getMimeType(fileName)}
-name: ${fileName}
 objectid: ${id}
 objecttypecode: adx_webfile
-parentpageid: ${ASSETS_PARENT_PAGE_ID}
-partialurl: ${fileName}
-publishingstateid: ${PUBLISHING_STATE_ID}
 `;
 }
 
@@ -187,14 +171,14 @@ function normalizeEmptyManifestSections(manifest) {
   );
 }
 
-function getExistingWebFileDirName(fileName) {
+function getExistingWebFileName(fileName) {
   return readdirSync(WEB_FILES, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
+    .filter((entry) => entry.isFile() && !entry.name.endsWith('.webfile.yml'))
     .map((entry) => entry.name)
-    .find((dirName) => dirName.toLowerCase() === fileName.toLowerCase());
+    .find((existingName) => existingName.toLowerCase() === fileName.toLowerCase());
 }
 
-/** Ensure every current dist asset has an exact Power Pages web-file directory. */
+/** Ensure every current dist asset has an exact flat Enhanced-export web file. */
 function ensureCurrentWebFiles() {
   let created = 0;
   let refreshed = 0;
@@ -203,21 +187,17 @@ function ensureCurrentWebFiles() {
     if (!HASHED_FILE_RE.test(fileName)) continue;
 
     const sourcePath = resolve(DIST_ASSETS, fileName);
-    const existingDirName = getExistingWebFileDirName(fileName);
-    const hasCaseMismatch = !!existingDirName && existingDirName !== fileName;
+    const existingFileName = getExistingWebFileName(fileName);
+    const hasCaseMismatch = !!existingFileName && existingFileName !== fileName;
     if (hasCaseMismatch) {
-      rmSync(resolve(WEB_FILES, existingDirName), { recursive: true, force: true });
+      rmSync(resolve(WEB_FILES, existingFileName), { force: true });
+      rmSync(resolve(WEB_FILES, `${existingFileName}.webfile.yml`), { force: true });
     }
 
-    const dirPath = resolve(WEB_FILES, fileName);
-    const targetPath = resolve(dirPath, fileName);
-    const ymlPath = resolve(dirPath, `${fileName}.webfile.yml`);
+    const targetPath = resolve(WEB_FILES, fileName);
+    const ymlPath = resolve(WEB_FILES, `${fileName}.webfile.yml`);
 
-    if (!existsSync(dirPath) || hasCaseMismatch) {
-      mkdirSync(dirPath, { recursive: true });
-      writeFileSync(ymlPath, createWebfileYml(fileName), 'utf-8');
-      created++;
-    } else if (!existsSync(ymlPath)) {
+    if (!existsSync(ymlPath) || hasCaseMismatch) {
       writeFileSync(ymlPath, createWebfileYml(fileName), 'utf-8');
       created++;
     }
@@ -239,8 +219,7 @@ function getCurrentAssetRecords() {
   for (const fileName of [...currentAssets].sort()) {
     if (!HASHED_FILE_RE.test(fileName)) continue;
 
-    const dirPath = resolve(WEB_FILES, fileName);
-    const metadata = getWebfileMetadata(dirPath);
+    const metadata = getWebfileMetadata(fileName);
     if (!metadata) continue;
 
     records.push({ recordId: metadata.id, annotationId: metadata.annotationId, displayName: fileName });
@@ -447,7 +426,7 @@ if (template === updated) {
   console.log(viteAssetBlock.split('\n').map((tag) => `   ${tag}`).join('\n'));
 }
 
-// STEP 2: Clean up orphaned web-file directories and manifest records
+// STEP 2: Clean up orphaned flat web files and manifest records
 
 ensureCurrentWebFiles();
 syncBaseManifestCurrentAssets();
@@ -463,38 +442,39 @@ console.log('\nChecking for orphaned web-file records...');
 
 const currentAssets = getCurrentAssets();
 const orphanedIds = [];
-const orphanedDirs = [];
+const orphanedFiles = [];
 
-// Scan web-files directory for hashed assets not in dist/assets/ anymore
+// Scan flat web-files export for hashed assets not in dist/assets/ anymore
 let webFilesScanned = 0;
 let webFilesTotal = 0;
 for (const entry of readdirSync(WEB_FILES, { withFileTypes: true })) {
-  if (!entry.isDirectory()) continue;
+  if (!entry.isFile() || entry.name.endsWith('.webfile.yml')) continue;
   webFilesTotal++;
-  const dirName = entry.name;
+  const fileName = entry.name;
 
   // Only process files matching Vite hashed patterns
-  if (!HASHED_FILE_RE.test(dirName)) continue;
+  if (!HASHED_FILE_RE.test(fileName)) continue;
 
   webFilesScanned++;
 
   // Skip if this file still exists in current dist/assets/
-  if (currentAssets.has(dirName)) continue;
+  if (currentAssets.has(fileName)) continue;
 
   // Orphan found: get its record ID and mark for deletion.
-  const dirPath = resolve(WEB_FILES, dirName);
-  const recordId = getRecordIdFromWebfile(dirPath);
+  const assetPath = resolve(WEB_FILES, fileName);
+  const metadataPath = resolve(WEB_FILES, `${fileName}.webfile.yml`);
+  const recordId = getRecordIdFromWebfile(fileName);
   if (recordId) {
     orphanedIds.push(recordId);
-    orphanedDirs.push(dirPath);
-    console.log(`   Orphan: ${dirName} (record ${recordId})`);
+    orphanedFiles.push(assetPath, metadataPath);
+    console.log(`   Orphan: ${fileName} (record ${recordId})`);
   } else {
-    orphanedDirs.push(dirPath);
-    console.log(`   Orphan: ${dirName} (no record ID found; deleting directory only)`);
+    orphanedFiles.push(assetPath, metadataPath);
+    console.log(`   Orphan: ${fileName} (no record ID found; deleting files only)`);
   }
 }
 
-if (orphanedIds.length === 0 && orphanedDirs.length === 0) {
+if (orphanedIds.length === 0 && orphanedFiles.length === 0) {
   console.log('   No orphaned files found; all assets are current.');
 } else {
   // Update manifest.
@@ -517,11 +497,11 @@ if (orphanedIds.length === 0 && orphanedDirs.length === 0) {
     }
   }
 
-  // Delete orphaned directories.
-  for (const dirPath of orphanedDirs) {
-    rmSync(dirPath, { recursive: true, force: true });
-    console.log(`   Deleted: ${basename(dirPath)}`);
+  // Delete orphaned asset and metadata files.
+  for (const filePath of orphanedFiles) {
+    rmSync(filePath, { force: true });
+    console.log(`   Deleted: ${basename(filePath)}`);
   }
 }
 
-console.log(`\nSummary: scanned ${webFilesTotal} directories, checked ${webFilesScanned} hashed assets.`);
+console.log(`\nSummary: scanned ${webFilesTotal} files, checked ${webFilesScanned} hashed assets.`);

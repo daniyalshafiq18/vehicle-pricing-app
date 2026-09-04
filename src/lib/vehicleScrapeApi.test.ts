@@ -152,6 +152,7 @@ describe('vehicleScrapeApi', () => {
     expect(mockedSafeFetch.mock.calls[0]![0].url).not.toContain('vpi_MissingVehicleRequest,');
     expect(mockedSafeFetch.mock.calls[0]![0].url).not.toContain('vpi_requestedbycontact');
     expect(mockedSafeFetch.mock.calls[1]![0].url).not.toContain('vpi_ScrapeRun,');
+    expect(mockedSafeFetch.mock.calls[1]![0].bypassCache).toBe(true);
   });
 
   it('resolves a prepared Run by correlation with a minimal Power Pages query', async () => {

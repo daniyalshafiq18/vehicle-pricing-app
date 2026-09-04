@@ -7,6 +7,26 @@ metadata:
 
 # Cleanup History
 
+## 2026-09-04 — Retired Power Pages Diagnostic Dispatch Artifacts
+
+- Removed the downloaded response-only smoke-flow consumer and its broad Workflow table permission from the local Power Pages export; neither artifact belongs to the accepted Dataverse-triggered scrape path.
+- Restored incidental downloaded Contact-role and generated entry-bundle references instead of mixing environment/export drift into the DriveArabia implementation commit.
+- Removed the signed Power Automate callback from the tracked legacy `Web-Scraper.js` server-logic endpoint and replaced its POST behavior with an explicit retired-path response. The active Dataverse-triggered workflow and Azure exact-correlation handoff are unaffected.
+
+## 2026-09-01 — Cached Dataverse Receipt Poll Removed from Automatic PAD Completion
+
+- Removed `multiSourceScrapeExecution.ts` polling of the workflow-updated Vehicle Scrape Source Result after repeated live tests proved Power Pages could serve the original Queued snapshot beyond the interactive deadline.
+- Replaced that critical-path read with exact Azure Inbox lookup by Run correlation and attempt. The Dataverse receipt fields and flow action remain intact as audit/recovery evidence; no working manual recovery path was removed.
+
+## 2026-08-31 — Removed legacy code-site layout assumptions from publish helper
+
+- Replaced `.powerpages-site` wrapper paths and per-asset web-file directory handling in `scripts/update-portal-template.mjs` after the deployment pipeline moved to the matching Enhanced `pac pages download/upload` command pair.
+- The helper now targets the configuration export root directly and manages flat asset plus `.webfile.yml` pairs, preventing missing-path build failures and incompatible upload packages.
+- Removed the portal-configuration updater from the default `npm run build` path after configuration upload proved unsuitable for large compiled SPA chunks. It remains available only through `npm run build:portal-config`; normal publishing now sends `dist/` through the dedicated code-site uploader without processing `adx_*` metadata.
+
+## 2026-08-28 - FIFO-Blocked PAD Recovery Replaced
+- Replaced the temporary modal action's implicit oldest-Pending lookup with explicit exact-Inbox recovery. The record-scoped action now requires the Inbox ID returned by PAD, so stale captures remain untouched instead of blocking or being compared with the open MVR.
+
 ## 2026-08-24 - Legacy Status-Driven Promotion Removed from UI
 - Removed `Approved` from the ordinary MVR Status dropdown and replaced its direct legacy aggregate-field promotion with the explicit evidence-backed Phase 6 action. Existing Approved records still render normally; only the unsafe creation shortcut was removed.
 - Replaced repository/data-source approval entry points that accepted a stale full MVR object with an ID-based guarded promotion contract that re-reads Dataverse before creating or linking Vehicle Data.

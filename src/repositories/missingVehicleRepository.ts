@@ -45,6 +45,10 @@ export class MissingVehicleRepository {
     return ds.updateMissingVehicleRequestStatus(id, status);
   }
 
+  async updateScrapeStatus(id: string, scrapeStatusValue: number): Promise<void> {
+    return getDataSource().updateMissingVehicleScrapeStatus(id, scrapeStatusValue);
+  }
+
   async update(id: string, fields: { minPrice?: number; maxPrice?: number }): Promise<void> {
     const ds = getDataSource();
     return ds.updateMissingVehicleRequest(id, fields);

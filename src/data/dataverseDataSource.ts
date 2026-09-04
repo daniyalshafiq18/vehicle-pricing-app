@@ -21,6 +21,7 @@ import {
   updateMissingVehicleRequest,
   saveMissingVehiclePricingDecision,
   updateMissingVehicleRequestStatus,
+  updateMissingVehicleScrapeStatus,
   updateMissingVehicleScrapeResult,
   promoteApprovedMissingVehicle,
 } from '@lib/missingVehicleApi';
@@ -924,6 +925,13 @@ export class DataverseDataSource implements IDataSource {
 
   async updateMissingVehicleRequestStatus(id: string, status: string): Promise<void> {
     return updateMissingVehicleRequestStatus(id, status);
+  }
+
+  async updateMissingVehicleScrapeStatus(
+    id: string,
+    scrapeStatusValue: number,
+  ): Promise<void> {
+    return updateMissingVehicleScrapeStatus(id, scrapeStatusValue);
   }
 
   async updateMissingVehicleRequest(

@@ -110,6 +110,7 @@ export interface IDataSource {
   getMissingVehicleRequests(): Promise<MissingVehicleRequest[]>;
   getMissingVehicleRequestById(id: string): Promise<MissingVehicleRequest | null>;
   updateMissingVehicleRequestStatus(id: string, status: string): Promise<void>;
+  updateMissingVehicleScrapeStatus(id: string, scrapeStatusValue: number): Promise<void>;
   updateMissingVehicleRequest(
     id: string,
     fields: { minPrice?: number; maxPrice?: number },

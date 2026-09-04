@@ -34,6 +34,14 @@ npm run build
 npm run preview
 ```
 
+## Power Pages Publish
+
+```bash
+npm run publish
+```
+
+The verified publish sequence uses the SPA-specific commands end to end: `download-code-site --overwrite`, `npm run build`, then `upload-code-site --compiledPath .\dist`. The site download creates or refreshes `vehicle-pricing-intelligence-platform/.powerpages-site`, whose `website.yml` identifies the existing site and prevents PAC from creating a duplicate. The normal build produces only `dist/`; it does not rewrite downloaded portal configuration. If the local site folder has previously been contaminated by a classic `pac pages download --modelVersion Enhanced`, replace it with a fresh `download-code-site` copy before uploading.
+
 ## Troubleshooting
 
 ### Type errors

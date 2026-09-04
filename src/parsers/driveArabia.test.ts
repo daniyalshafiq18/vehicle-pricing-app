@@ -215,6 +215,20 @@ describe('resolveDriveArabiaTrimPrice (cross-source trim identity)', () => {
     );
   });
 
+  it('does not collapse a plus-suffixed grade into its plain sibling', () => {
+    const patrolRows = [
+      { year: 2026, trim: 'LE Titanium', minPrice: 347900, maxPrice: 348000 },
+      { year: 2026, trim: 'LE Titanium+', minPrice: 359900, maxPrice: 360000 },
+    ];
+
+    expect(resolveDriveArabiaTrimPrice(patrolRows, 'LE Titanium+', 2026)).toEqual(
+      patrolRows[1],
+    );
+    expect(resolveDriveArabiaTrimPrice(patrolRows, 'LE Titanium', 2026)).toEqual(
+      patrolRows[0],
+    );
+  });
+
   it('refuses ambiguous equivalent rows and conflicting stated engine layouts', () => {
     expect(
       resolveDriveArabiaTrimPrice(
@@ -296,6 +310,95 @@ describe('DriveArabia multi-trim spec groups', () => {
         horsepower: 208,
       }),
     ]);
+  });
+
+  it('extracts and de-duplicates modern rendered accordions when the PAD marker is absent', () => {
+    const repeated38 = `
+      <div class="accordion">
+        <h3><button aria-controls="patrol-38">XE</button></h3>
+        <div id="patrol-38" role="region">
+          <div>3.8 V6 4WD</div>
+          <div><span>Engine Layout</span><span>V6</span></div>
+          <div><span>Engine Size</span><span>3.8 L</span></div>
+          <div><span>Engine Type</span><span>Petrol</span></div>
+          <div><span>Drive Train</span><span>4WD</span></div>
+          <div><span>Transmission</span><span>9A</span></div>
+          <div><span>Horsepower</span><span>316 HP</span></div>
+          <div><span>Torque</span><span>386 Nm</span></div>
+        </div>
+      </div>
+    `;
+    const html = `
+      <script type="application/ld+json">${JSON.stringify({
+        '@type': 'Vehicle',
+        vehicleConfiguration: 'XE',
+        vehicleModelDate: '2026',
+        bodyType: 'SUV',
+        numberOfDoors: 5,
+      })}</script>
+      <section id="specs">
+        ${repeated38}
+        ${repeated38
+          .replace('patrol-38', 'patrol-38-se')
+          .replace('>XE<', '><span>SE</span><span>Titanium</span><')}
+        <div class="accordion">
+          <h3>
+            <button aria-controls="patrol-35">
+              <span>LE</span><span>Titanium</span><span>+</span>
+            </button>
+          </h3>
+          <div id="patrol-35" role="region">
+            <div>3.5 TC V6 4WD</div>
+            <div><span>Engine Layout</span><span>V6</span></div>
+            <div><span>Engine Size</span><span>3.5 L</span></div>
+            <div><span>Engine Type</span><span>Petrol</span></div>
+            <div><span>Drive Train</span><span>4WD</span></div>
+            <div><span>Transmission</span><span>9A</span></div>
+            <div><span>Horsepower</span><span>425 HP</span></div>
+            <div><span>Torque</span><span>700 Nm</span></div>
+          </div>
+        </div>
+      </section>
+    `;
+
+    expect(extractDriveArabiaSpecGroups(html)).toEqual([
+      expect.objectContaining({
+        configuration: '3.8 V6 4WD',
+        engineSize: '3800',
+        cylinders: '6',
+        transmission: 'Automatic',
+        horsepower: 316,
+        commercialTrims: ['XE', 'SE Titanium'],
+      }),
+      expect.objectContaining({
+        configuration: '3.5 TC V6 4WD',
+        engineSize: '3500',
+        cylinders: '6',
+        horsepower: 425,
+        torqueNm: 700,
+        commercialTrims: ['LE Titanium +'],
+      }),
+    ]);
+    expect(extractDriveArabiaSpecsForTrim(html, 'LE Titanium+')).toMatchObject({
+      trim: 'LE Titanium+',
+      year: 2026,
+      bodyType: 'SUV',
+      doors: '5',
+      fuelType: 'Petrol',
+      driveType: '4WD',
+      transmission: 'Automatic',
+      engineSize: '3500',
+      cylinders: '6',
+      horsepower: 425,
+      torqueNm: 700,
+    });
+    expect(extractDriveArabiaSpecsForTrim(html, 'XE')).toMatchObject({
+      trim: 'XE',
+      engineSize: '3800',
+      cylinders: '6',
+      horsepower: 316,
+      torqueNm: 386,
+    });
   });
 
   it('maps two commercial V6 trims to the one shared V6 engine group', () => {

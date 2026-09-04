@@ -144,6 +144,48 @@ async function fetchPendingItem(
   return validateItem(body);
 }
 
+/** Find the exact pending PAD item for one prepared Run/source attempt. */
+export async function findScrapeInboxItemByCorrelation(
+  correlation: DriveArabiaPadCorrelation,
+  options: {
+    functionBaseUrl?: string;
+    fetchFn?: typeof fetch;
+  } = {},
+): Promise<ScrapeInboxItem | null> {
+  const runCorrelationId = correlation.runCorrelationId.trim();
+  if (
+    !runCorrelationId ||
+    !Number.isInteger(correlation.attemptNumber) ||
+    correlation.attemptNumber < 1
+  ) {
+    throw new Error('A Run correlation ID and positive attempt number are required');
+  }
+
+  const fetchFn = options.fetchFn ?? fetch;
+  const url = new URL(endpoint(options.functionBaseUrl ?? AZURE_FUNCTION_URL, 'next_pending'));
+  url.searchParams.set('runCorrelationId', runCorrelationId);
+  url.searchParams.set('attemptNumber', String(correlation.attemptNumber));
+  const response = await fetchFn(url.toString());
+  const body = await readJson(response);
+  if (response.status === 404 && body.error === 'not_found') {
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error(String(body.error ?? `Inbox correlation lookup failed (${response.status})`));
+  }
+
+  const item = validateItem(body);
+  const actual = parseDriveArabiaPadCorrelation(item.url);
+  if (
+    !actual ||
+    actual.runCorrelationId !== runCorrelationId ||
+    actual.attemptNumber !== correlation.attemptNumber
+  ) {
+    throw new Error('Inbox response correlation does not match the prepared DriveArabia target');
+  }
+  return item;
+}
+
 async function fetchInboxHtml(
   fetchFn: typeof fetch,
   baseUrl: string,

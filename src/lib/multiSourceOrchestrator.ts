@@ -21,6 +21,7 @@ import {
   buildSourceResultCorrelationId,
   type VehicleScrapeRunAggregate,
 } from './vehicleScrapeRunState';
+import { buildCorrelatedDriveArabiaPadUrl } from './driveArabiaUrl';
 
 const DATAVERSE_NAME_MAX_LENGTH = 100;
 const RUN_ERROR_SUMMARY_MAX_LENGTH = 2000;
@@ -145,6 +146,17 @@ function queuedSourceResult(
   attemptNumber: number,
 ): CreateVehicleScrapeSourceResultInput {
   const contract = sourceContract(source);
+  const sourceUrl =
+    source === 'DriveArabia'
+      ? buildCorrelatedDriveArabiaPadUrl(
+          {
+            make: request.make,
+            model: request.model,
+            year: request.modelYear,
+          },
+          { runCorrelationId, attemptNumber },
+        )
+      : undefined;
   return {
     name: `${source} - ${vehicleLabel(request)}`.slice(0, DATAVERSE_NAME_MAX_LENGTH),
     resultCorrelationId: buildSourceResultCorrelationId(
@@ -160,6 +172,7 @@ function queuedSourceResult(
     priceTypeValue: contract.priceTypeValue,
     trim: request.trim,
     modelYear: request.modelYear,
+    ...(sourceUrl && { sourceUrl }),
   };
 }
 

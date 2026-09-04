@@ -390,6 +390,7 @@ export async function fetchVehicleScrapeSourceResults(
   const response = await safeFetch<ODataResponse>({
     url: `${API_BASE}/${ENTITIES.VEHICLE_SCRAPE_SOURCE_RESULT}?$select=${select}&$filter=${RESULT.SCRAPE_RUN_LOOKUP_REF} eq ${id}&$orderby=${RESULT.ATTEMPT_NUMBER} asc`,
     headers: { Prefer: 'odata.include-annotations=*' },
+    bypassCache: true,
   });
   return (response.value ?? []).map(mapResult);
 }

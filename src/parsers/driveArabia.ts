@@ -50,6 +50,8 @@ export interface DriveArabiaSpecs {
 /** One rendered DriveArabia Specs accordion, keyed by its engine heading. */
 export interface DriveArabiaSpecGroup extends DriveArabiaSpecs {
   configuration: string;
+  /** Commercial grade labels whose accordions repeat this engine block. */
+  commercialTrims?: string[];
 }
 
 const Q = String.fromCharCode(34); // hold onto a bare double-quote char
@@ -472,6 +474,111 @@ function specsFromCapturedGroup(configuration: string, text: string): DriveArabi
   return out;
 }
 
+function renderedTextLines(html: string): string {
+  return html
+    .replace(new RegExp('<' + 'script[^]*?<\\/script>', 'gi'), ' ')
+    .replace(new RegExp('<style[^]*?</style>', 'gi'), ' ')
+    .replace(/<[^>]+>/g, '\n')
+    .replace(/&amp;/g, '&')
+    .replace(/&nbsp;|&#160;/gi, ' ')
+    .replace(/&quot;|&#34;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n');
+}
+
+function specGroupIdentity(group: DriveArabiaSpecGroup): string {
+  return [
+    comparableTrim(group.configuration),
+    group.engineSize ?? '',
+    group.cylinders ?? '',
+    group.fuelType?.toLowerCase() ?? '',
+    group.driveType?.toUpperCase() ?? '',
+    group.transmission?.toLowerCase() ?? '',
+    group.horsepower ?? '',
+    group.torqueNm ?? '',
+  ].join('|');
+}
+
+function dedupeSpecGroups(groups: DriveArabiaSpecGroup[]): DriveArabiaSpecGroup[] {
+  const unique = new Map<string, DriveArabiaSpecGroup>();
+  for (const group of groups) {
+    const identity = specGroupIdentity(group);
+    const existing = unique.get(identity);
+    if (!existing) {
+      unique.set(identity, {
+        ...group,
+        ...(group.commercialTrims && { commercialTrims: [...group.commercialTrims] }),
+      });
+      continue;
+    }
+    const commercialTrims = new Set([
+      ...(existing.commercialTrims ?? []),
+      ...(group.commercialTrims ?? []),
+    ]);
+    if (commercialTrims.size > 0) {
+      existing.commercialTrims = [...commercialTrims];
+    }
+  }
+  return [...unique.values()];
+}
+
+/**
+ * Current DriveArabia pages can retain every opened accordion body in the
+ * serialized page source even though they omit PAD's injected marker. Bound
+ * extraction to #specs, split at its aria-controls buttons, and accept a block
+ * only when it contains an explicit engine signature. Grade accordions that
+ * repeat the same engine are de-duplicated before trim matching.
+ */
+function extractRenderedDriveArabiaSpecGroups(html: string): DriveArabiaSpecGroup[] {
+  const section = /<section\b[^>]*\bid=["']specs["'][^>]*>([\s\S]*?)<\/section>/i.exec(
+    html,
+  )?.[1];
+  if (!section) {
+    return [];
+  }
+
+  const buttonRe =
+    /<button\b(?=[^>]*\baria-controls=["'][^"']+["'])[^>]*>[\s\S]*?<\/button>/gi;
+  const buttons = [...section.matchAll(buttonRe)];
+  const groups = buttons.flatMap((button, index) => {
+    if (button.index === undefined) {
+      return [];
+    }
+    const nextIndex = buttons[index + 1]?.index ?? section.length;
+    const block = section.slice(button.index, nextIndex);
+    const text = renderedTextLines(block);
+    const lines = text.split('\n');
+    const commercialTrim = renderedTextLines(button[0]).replace(/\n/g, ' ').trim();
+    const configuration = lines.find(
+      (line) => line.length <= 80 && engineSignature(line) !== undefined,
+    );
+    if (!configuration) {
+      return [];
+    }
+    const group: DriveArabiaSpecGroup = {
+      ...specsFromCapturedGroup(configuration, text),
+      ...(commercialTrim &&
+        engineSignature(commercialTrim) === undefined && {
+          commercialTrims: [commercialTrim],
+        }),
+    };
+    const hasRenderedDetails =
+      group.fuelType !== undefined ||
+      group.transmission !== undefined ||
+      group.horsepower !== undefined ||
+      group.torqueNm !== undefined;
+    return hasRenderedDetails ? [group] : [];
+  });
+
+  if (buttons.length === 0 || groups.length !== buttons.length) {
+    return [];
+  }
+  return dedupeSpecGroups(groups);
+}
+
 /**
  * Read the spec accordions captured by PAD. DriveArabia unmounts closed
  * accordion bodies, so PAD serializes each rendered body into this marker
@@ -480,23 +587,25 @@ function specsFromCapturedGroup(configuration: string, text: string): DriveArabi
 export function extractDriveArabiaSpecGroups(html: string): DriveArabiaSpecGroup[] {
   const marker =
     /<script[^>]+id=["']vpi-pad-spec-groups["'][^>]*>([\s\S]*?)<\/script>/i.exec(html);
-  if (!marker) {
-    return [];
-  }
-  try {
-    const parsed = JSON.parse(marker[1]!) as unknown;
-    if (!Array.isArray(parsed)) {
-      return [];
+  if (marker) {
+    try {
+      const parsed = JSON.parse(marker[1]!) as unknown;
+      if (Array.isArray(parsed)) {
+        const groups = parsed.flatMap((candidate) => {
+          const item = record(candidate);
+          const configuration = stringValue(item?.configuration);
+          const text = stringValue(item?.text);
+          return configuration && text ? [specsFromCapturedGroup(configuration, text)] : [];
+        });
+        if (groups.length > 0) {
+          return groups;
+        }
+      }
+    } catch {
+      // Fall back to rendered accordion bodies when the optional marker is malformed.
     }
-    return parsed.flatMap((candidate) => {
-      const item = record(candidate);
-      const configuration = stringValue(item?.configuration);
-      const text = stringValue(item?.text);
-      return configuration && text ? [specsFromCapturedGroup(configuration, text)] : [];
-    });
-  } catch {
-    return [];
   }
+  return extractRenderedDriveArabiaSpecGroups(html);
 }
 
 function specsFromVehicleJsonLd(vehicle: JsonRecord): DriveArabiaSpecs {
@@ -648,6 +757,14 @@ export function extractDriveArabiaSpecsForTrim(
 ): DriveArabiaSpecs {
   const selected = extractDriveArabiaSpecs(html);
   const groups = extractDriveArabiaSpecGroups(html);
+  const commercialMatches = groups.filter((group) =>
+    group.commercialTrims?.some(
+      (commercialTrim) => comparableTrim(commercialTrim) === comparableTrim(trim),
+    ),
+  );
+  if (commercialMatches.length === 1) {
+    return specsFromUniqueGroup(trim, selected, commercialMatches[0]!);
+  }
   const requestedSignature = engineSignature(trim);
   if (requestedSignature) {
     const matchingGroups = groups.filter((group) => {
@@ -679,5 +796,5 @@ export function extractDriveArabiaSpecsForTrim(
 }
 
 function comparableTrim(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return value.toLowerCase().replace(/\+/g, 'plus').replace(/[^a-z0-9]/g, '');
 }

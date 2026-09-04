@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { processNextScrapeInboxItem, processScrapeInbox } from './multiSourceScraper';
+import {
+  findScrapeInboxItemByCorrelation,
+  processNextScrapeInboxItem,
+  processScrapeInbox,
+} from './multiSourceScraper';
 import type { ScrapeResultUpdate } from './multiSourceScraper';
 import type { MissingVehicleRequest } from '@types';
 import camry2024Html from '../../tests/fixtures/drivearabia-camry-2024-pad.html?raw';
@@ -50,6 +54,53 @@ function json(body: unknown, status = 200): Response {
     headers: { 'Content-Type': 'application/json' },
   });
 }
+
+describe('findScrapeInboxItemByCorrelation', () => {
+  it('retrieves only the pending Inbox item for the prepared Run attempt', async () => {
+    const correlatedItem = {
+      ...ITEM,
+      url: `${ITEM.url}#vpiRun=shared-run-correlation&vpiAttempt=1`,
+    };
+    const fetchFn = vi.fn().mockResolvedValue(json(correlatedItem));
+
+    await expect(
+      findScrapeInboxItemByCorrelation(
+        { runCorrelationId: 'shared-run-correlation', attemptNumber: 1 },
+        { functionBaseUrl: BASE, fetchFn },
+      ),
+    ).resolves.toEqual(correlatedItem);
+    expect(fetchFn).toHaveBeenCalledWith(
+      'https://mock.azurewebsites.net/api/next_pending?runCorrelationId=shared-run-correlation&attemptNumber=1',
+    );
+  });
+
+  it('returns null while the correlated PAD capture is not available', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(json({ error: 'not_found' }, 404));
+
+    await expect(
+      findScrapeInboxItemByCorrelation(
+        { runCorrelationId: 'shared-run-correlation', attemptNumber: 1 },
+        { functionBaseUrl: BASE, fetchFn },
+      ),
+    ).resolves.toBeNull();
+  });
+
+  it('rejects an Inbox response owned by a different correlation', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(
+      json({
+        ...ITEM,
+        url: `${ITEM.url}#vpiRun=another-run&vpiAttempt=1`,
+      }),
+    );
+
+    await expect(
+      findScrapeInboxItemByCorrelation(
+        { runCorrelationId: 'shared-run-correlation', attemptNumber: 1 },
+        { functionBaseUrl: BASE, fetchFn },
+      ),
+    ).rejects.toThrow('does not match the prepared DriveArabia target');
+  });
+});
 
 describe('processNextScrapeInboxItem', () => {
   it('matches a real DriveArabia capture, writes PAD provenance, and marks Complete', async () => {

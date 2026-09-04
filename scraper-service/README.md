@@ -16,6 +16,11 @@ path; the adapter is not wired to the frontend yet.
 | `host.json` / `.funcignore` | Functions host config + publish ignore rules. |
 | `local.settings.json.example` | Local config template — copy to `local.settings.json` (gitignored; will hold function keys later). |
 
+The PAD relay's `next_pending` endpoint supports legacy FIFO lookup, exact
+`inboxId` retrieval, and exact DriveArabia lookup through
+`runCorrelationId` plus `attemptNumber`. Correlation lookup compares those
+values with the `vpiRun`/`vpiAttempt` fragment stored in the captured URL.
+
 ## The adapter contract
 
 `probe_py` returns the raw HTML. The JSON-LD → `Flow3ScrapeResult` extraction
@@ -46,6 +51,12 @@ func azure functionapp publish <app> --python
 ```
 
 Verify from the Azure portal: `POST /api/probe_py?url=<yallamotor-url>&client=cloudscraper`.
+
+For DriveArabia orchestration, verify
+`GET /api/next_pending?runCorrelationId=<uuid>&attemptNumber=1` returns
+`404 not_found` before ingest and the exact Pending Inbox metadata after PAD
+uploads the correlated URL. The subsequent exact `?inboxId=<id>` request
+returns the HTML for processing.
 
 ## Gotchas baked in
 

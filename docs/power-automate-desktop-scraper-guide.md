@@ -115,15 +115,11 @@ All three write the **same MVR fields** with the **same `transport`/`scrapedSour
 2. **Launch browser** — `Launch new Microsoft Edge/Chrome` with a **real user profile** (default session; never `--incognito`, never `--headless`, never `--disable-web-security`). Replace the fixed Camry Initial URL with `%DriveArabiaUrl%`.
 3. **Human pacing** — wait 0.5–2 s randomly between navigations (mirrors guide §6.6). One listing at a time; no burst of tabs.
 4. **Open the first listing detail** — read the search page listing link, `Go to web page`.
-5. **Capture full HTML** — either:
-   - **Browser automation → Run JavaScript on web page**: `document.documentElement.outerHTML` → store to a text variable, **or**
-   - **Web → Get details of web page → WebPageContent**.
-6. **POST to the ingest endpoint** — **Web → Invoke web service**: `POST https://vpi-probe-py-20260805.azurewebsites.net/api/ingest_html?code=<FUNCTION_KEY>`, JSON body:
-   ```json
-   { "source": "drivearabia", "url": "https://…/detail-…", "searchUrl": "https://…", "html": "<full page html>" }
-   ```
-   (Use **Application/JSON** content type; capture the returned `inboxId`.)
-7. **Loop/stop** — for the attended first run, stop after one detail (manual validation); scale to N listings later.
+5. **Capture full HTML** — use **Browser automation → Get details of web page → Web page source** and store the text in `WebPageProperty`. Do not pass the large result of **Run JavaScript function on web page** directly to the HTTP action; the current Chrome/PAD bridge can coerce it to `[object Object]`.
+6. **Build valid JSON in PAD** — set `UploadPayload` to a native PAD Custom Object with `source`, `url`, `kind`, and `html`, then use **Convert custom object to JSON** to produce the text variable `CustomObjectAsJson`.
+7. **POST to the ingest endpoint** — use **Web → Invoke web service** with `POST https://vpi-probe-py-20260805.azurewebsites.net/api/ingest_html?code=<FUNCTION_KEY>`, content type `application/json`, and select `CustomObjectAsJson` from PAD's variable picker for the request body. Do not manually type `%CustomObjectAsJson%`; PAD can transmit that text literally. Convert the response JSON, assign its `inboxId` to the desktop-flow output `InboxIdOutput`, and assign the HTTP status to `StatusCodeOutput`.
+8. **Publish the desktop flow** — when version control is enabled, **Save draft** is insufficient. Select **Publish**, then verify the Flow Version timestamp on the next cloud-triggered Desktop Flow Run.
+9. **Loop/stop** — for the attended first run, stop after one detail (manual validation); scale to N listings later.
 
 ### 5.2 DriveArabia multi-trim capture function
 
@@ -186,7 +182,7 @@ function ExecuteScript() {
 
 **Action 3 — Wait:** add PAD's **Wait** action for **5 seconds**. This is intentionally outside JavaScript because PAD's browser action does not wait for Promise results.
 
-**Action 4 — Build and validate the upload payload.** Keep its produced variable as `JavaScriptResult`, which the existing Write file / Invoke web service actions use:
+**Action 4 — Validate the asynchronous capture.** Keep its produced variable as `JavaScriptResult`, but use it only as a validation signal. The HTTP body is built by the native PAD actions described below.
 
 ```javascript
 function ExecuteScript() {
@@ -203,16 +199,19 @@ function ExecuteScript() {
     );
   }
 
-  return JSON.stringify({
-    source: 'drivearabia',
-    url: window.location.href,
-    kind: 'prices',
-    html: document.documentElement.outerHTML
-  });
+  return 'READY:' + groups.length;
 }
 ```
 
-The resulting flow is: enter `DriveArabiaUrl` → Launch Chrome → Start spec capture → Wait 5 seconds → Build payload → Write file → Invoke web service. The validation prevents an incomplete capture from being uploaded. The parser ignores marketing words and requires one unique engine signature: capacity + I/V cylinder layout + hybrid marker + drivetrain.
+After Action 4, use this live-accepted sequence:
+
+1. **Get details of web page** → `Web page source` → `WebPageProperty`.
+2. **Set variable** `UploadPayload` to the native Custom Object `%{ 'source': 'drivearabia', 'url': DriveArabiaUrl, 'kind': 'prices', 'html': WebPageProperty }%`.
+3. **Convert custom object to JSON** → `CustomObjectAsJson`.
+4. **Invoke web service** with the request body bound to `CustomObjectAsJson` through the variable picker.
+5. **Convert JSON to custom object**, then assign `inboxId` and the HTTP status to the two desktop-flow output variables.
+
+The validation prevents an incomplete accordion walk from being uploaded, but native **Web page source** does not include the JavaScript-injected `vpi-pad-spec-groups` marker. The automated transport was accepted live on 2026-09-02 (`next_pending` returned the exact Inbox item and `inbox_status` returned `Complete`), while that first Nissan Patrol result proved the marker-free parser path was initially price-only. The parser now falls back to the fully populated accordion bodies serialized beneath `#specs`, requires every Specs control to contain detailed mechanical content, and de-duplicates identical engine groups without discarding their complete commercial grade labels. The actual capture maps XE/SE grades to 3.8 V6/316 HP and LE grades to 3.5 TC V6/425 HP. Other labels still require one unique engine signature—capacity + I/V cylinder layout + hybrid marker + drivetrain. Live acceptance on 2026-09-04 confirmed that both split-grade edge cases, `SE Titanium` and `LE Titanium+`, complete with specifications in the published workflow.
 
 The app deliberately builds DriveArabia's short route:
 
@@ -249,6 +248,12 @@ Add to `scraper-service/function_app.py` (same app; do not touch `probe_py`).
 - Returns `202` + `{inboxId}`. **No extraction here** — this is storage + queueing only.
 
 ### 6.2 `GET /api/next_pending` (anonymous + CORS — browser-callable)
+
+Supported selectors:
+
+- no query — oldest Pending item for legacy/manual draining;
+- `?inboxId=<id>` — exact item plus raw HTML;
+- `?runCorrelationId=<uuid>&attemptNumber=<n>` — exact Pending DriveArabia metadata for automatic orchestration. Both values are required, and the function compares them to the `vpiRun`/`vpiAttempt` URL fragment stored at ingest.
 
 - Returns the oldest `Pending` inbox item as `{inboxId, source, url, searchUrl}` (metadata only). The browser then fetches the HTML itself (optionally the same endpoint can return `html` for a single `inboxId`, capped size).
 - CORS headers identical to `probe_py` (`Access-Control-Allow-Origin: *` + OPTIONS preflight).
@@ -291,7 +296,7 @@ Keep it parallel to `azureYallaMotorScraper.ts`:
 
 ## 8. Extraction — the discovery method (unknowns are resolved this way)
 
-DriveArabia's model landing and per-model-year HTML shapes are captured and fixture-pinned. Current per-year pages contain useful schema.org `Product`/`Vehicle` JSON-LD for one selected/default `vehicleConfiguration`, while other engine groups are dynamically mounted accordion bodies. The §5.2 PAD marker preserves those rendered groups; `src/parsers/driveArabia.ts` combines safe model-level JSON-LD fields with one uniquely matched engine group and uses serialized/bounded visible content for price rows. Because the price table contains multiple trims, specs are never copied across an ambiguous engine signature. Dubizzle remains uncaptured. For every new page shape, follow the same discovery method instead of guessing selectors:
+DriveArabia's model landing and per-model-year HTML shapes are captured and fixture-pinned. Current per-year pages contain useful schema.org `Product`/`Vehicle` JSON-LD for one selected/default `vehicleConfiguration`, while other engine groups are accordion bodies. `src/parsers/driveArabia.ts` prefers the §5.2 PAD marker and falls back to a complete rendered `#specs` section when native page source omits the marker. The fallback rejects partial control sets, de-duplicates repeated grade accordions by their complete mechanical identity while merging their commercial labels, combines safe model-level JSON-LD fields with one uniquely matched engine group, and uses serialized/bounded visible content for price rows. Because the price table contains multiple trims, specs are never copied across an ambiguous engine signature. Dubizzle remains uncaptured. For every new page shape, follow the same discovery method instead of guessing selectors:
 
 1. **Capture real HTML fixtures** — run the PAD flow once per source, save the raw `outerHTML` into `tests/fixtures/` (`drivearabia-<model>-detail.html`, `dubizzle-<model>-detail.html`) + one search page each.
 2. **Inspect for structured data** — grep for `application/ld+json` (schema.org `Car` / `Product` / `ItemList`). If absent, fall back to the rendered spec-grid HTML (the pattern already used for YallaMotor cylinders).

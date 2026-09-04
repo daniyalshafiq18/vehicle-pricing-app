@@ -4,6 +4,7 @@ import {
   fetchMissingVehicleRequestById,
   promoteApprovedMissingVehicle,
   saveMissingVehiclePricingDecision,
+  updateMissingVehicleScrapeStatus,
 } from './missingVehicleApi';
 import {
   fetchVehicleScrapeRuns,
@@ -46,6 +47,23 @@ function approvedMvrRecord(overrides: Record<string, unknown> = {}): Record<stri
     ...overrides,
   };
 }
+
+describe('missingVehicleApi scrape lifecycle', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('patches only the MVR scrape status', async () => {
+    vi.mocked(safeFetch).mockResolvedValue(undefined);
+
+    await updateMissingVehicleScrapeStatus(MVR_ID, 3);
+
+    expect(safeFetch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ vpi_scrapestatus: 3 }),
+      }),
+    );
+  });
+});
 
 const completedRun = {
   id: RUN_ID,

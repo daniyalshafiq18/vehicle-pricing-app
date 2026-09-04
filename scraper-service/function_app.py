@@ -146,6 +146,37 @@ def _find_by_inbox_id(table, inbox_id: str):
     return rows[0] if rows else None
 
 
+def _correlation_from_url(url: str) -> tuple[str, int] | None:
+    """Read the PAD correlation carried in a DriveArabia URL fragment."""
+    try:
+        fragment = urllib.parse.parse_qs(urllib.parse.urlparse(url).fragment)
+        run_correlation_id = (fragment.get("vpiRun") or [""])[0].strip()
+        attempt_number = int((fragment.get("vpiAttempt") or [""])[0])
+        if not run_correlation_id or attempt_number < 1:
+            return None
+        return run_correlation_id, attempt_number
+    except (TypeError, ValueError):
+        return None
+
+
+def _find_pending_by_correlation(table, run_correlation_id: str, attempt_number: int):
+    """Resolve one pending DriveArabia item without FIFO guesswork."""
+    rows = list(
+        table.query_entities(
+            "PartitionKey eq 'drivearabia' and Status eq 'Pending'"
+        )
+    )
+    matches = [
+        row
+        for row in rows
+        if _correlation_from_url(row.get("Url", ""))
+        == (run_correlation_id, attempt_number)
+    ]
+    if len(matches) > 1:
+        raise ValueError("multiple pending items share the requested correlation")
+    return matches[0] if matches else None
+
+
 def _read_blob(blob, source: str, inbox_id: str) -> str | None:
     try:
         return (
@@ -354,6 +385,43 @@ def next_pending(req: func.HttpRequest) -> func.HttpResponse:
                 "kind": entity.get("Kind", "detail"),
                 "status": entity.get("Status"),
                 "html": html,
+            })
+
+        run_correlation_id = (req.params.get("runCorrelationId") or "").strip()
+        raw_attempt_number = (req.params.get("attemptNumber") or "").strip()
+        if run_correlation_id or raw_attempt_number:
+            if not run_correlation_id or not raw_attempt_number:
+                return _json_response(
+                    {"error": "runCorrelationId and attemptNumber are required together"},
+                    status_code=400,
+                )
+            try:
+                attempt_number = int(raw_attempt_number)
+            except ValueError:
+                return _json_response(
+                    {"error": "attemptNumber must be a positive integer"},
+                    status_code=400,
+                )
+            if attempt_number < 1:
+                return _json_response(
+                    {"error": "attemptNumber must be a positive integer"},
+                    status_code=400,
+                )
+
+            entity = _find_pending_by_correlation(
+                table,
+                run_correlation_id,
+                attempt_number,
+            )
+            if not entity:
+                return _json_response({"error": "not_found"}, status_code=404)
+            return _json_response({
+                "inboxId": entity["InboxId"],
+                "source": entity["Source"],
+                "url": entity["Url"],
+                "searchUrl": entity.get("SearchUrl", ""),
+                "kind": entity.get("Kind", "detail"),
+                "status": entity.get("Status"),
             })
 
         pending = list(table.query_entities("Status eq 'Pending'"))

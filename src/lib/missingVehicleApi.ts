@@ -474,6 +474,25 @@ export async function updateMissingVehicleRequestStatus(
   });
 }
 
+/** Update only the system-managed scrape lifecycle status. */
+export async function updateMissingVehicleScrapeStatus(
+  id: string,
+  scrapeStatusValue: number,
+): Promise<void> {
+  const baseUrl = `${API_BASE}/${ENTITIES.MISSING_VEHICLE_REQUEST}`;
+  await safeFetch<void>({
+    url: `${baseUrl}(${id})`,
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'If-Match': '*',
+    },
+    body: JSON.stringify({
+      [MISSING_VEHICLE_REQUEST_FIELDS.SCRAPE_STATUS]: scrapeStatusValue,
+    }),
+  });
+}
+
 /**
  * Update an existing missing vehicle request (PATCH).
  * Used to save scraped or user-corrected prices after creation.

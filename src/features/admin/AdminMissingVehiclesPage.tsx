@@ -771,7 +771,7 @@ function ScrapeNowButton({
                   <p className="mt-1 text-xs leading-5 text-[#315caa]/80 dark:text-[#9db8ff]/80">
                     {result.sourceErrors.find((failure) => failure.source === 'DriveArabia')
                       ?.error ??
-                      'Automatic PAD is not configured yet. Copy this correlated URL, run PAD, then process the capture from this record.'}
+                      'The Dataverse-triggered desktop automation did not complete. Use this exact correlated URL only for diagnosis or a controlled retry.'}
                   </p>
                 </div>
                 <div className="rounded-lg border bg-white p-2 text-xs text-[#071936] dark:bg-[#071936] dark:text-white">

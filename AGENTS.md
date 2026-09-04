@@ -73,6 +73,7 @@ All paths use `@` prefix, configured in both `tsconfig.json` and `vite.config.ts
 |---|---|
 | `npm run dev` | Start Vite dev server (port 3000) |
 | `npm run build` | Type-check + production build |
+| `npm run build:portal-config` | Legacy/manual build that also updates a downloaded portal-configuration export |
 | `npm run preview` | Preview production build |
 | `npm run lint` | ESLint check |
 | `npm run format` | Prettier format |
@@ -81,6 +82,7 @@ All paths use `@` prefix, configured in both `tsconfig.json` and `vite.config.ts
 | `npm run test:run` | Vitest single run |
 | `npm run test:coverage` | Vitest with coverage |
 | `npm run test:e2e` | Playwright E2E |
+| `npm run publish` | Build and deploy only the compiled SPA through the Power Pages code-site uploader |
 
 ## Project Structure
 ```
@@ -99,7 +101,7 @@ src/
 ├── types/          # TypeScript interfaces
 ├── utils/          # Helpers (formatters, validators, memoize, debounce)
 ├── data/           # Data source context + DataverseDataSource + config
-├── lib/            # API/scraper modules (safeAjax, Dataverse APIs, YallaMotor transports, PAD inbox processor)
+├── lib/            # API/scraper modules (cache-safe Power Pages transport + tests, Dataverse APIs, scrapers, PAD inbox processor)
 ├── parsers/        # Transport-agnostic YallaMotor + DriveArabia extraction and normalization
 ├── styles/         # globals.css
 └── testing/        # Vitest setup
@@ -129,6 +131,7 @@ All docs live in `docs/`:
 - `PHASE-3-REVISED-PLAN.md` — Phase 3 plan with Path B postmortem and Power Automate Desktop pivot
 - `PHASE-7-AUTOMATION-HARDENING.md` — secured one-click PAD automation, background completion, retry/bulk, monitoring and security plan
 - `DRIVEARABIA-CLOUD-VS-PAD-DECISION.md` — detailed decision record for Cloud, PAD, security, licensing, alternatives and PAD-removal gates
+- `DRIVEARABIA-SCRAPE-END-TO-END.md` — canonical DriveArabia history, final architecture, failure analysis, deployment, acceptance, recovery and troubleshooting runbook
 - `PHASE-4-UNIFIED-SCRAPE-ORCHESTRATION.md` — Approved shared-run, source selection, correlation, aggregation, and retry contract
 - `PHASE-2-PERFORMANCE-OPTIMIZATION.md` — Phase 2 performance optimization (code splitting, debounce, React.memo)
 - `path-b-scraper-microservice-postmortem.md` — Full retrospective on the abandoned Puppeteer approach

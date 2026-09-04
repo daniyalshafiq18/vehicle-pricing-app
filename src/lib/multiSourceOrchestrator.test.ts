@@ -95,6 +95,8 @@ describe('prepareMultiSourceScrape', () => {
         transportValue: 3,
         processingStatusValue: 1,
         priceTypeValue: 2,
+        sourceUrl:
+          'https://www.drivearabia.com/carprices/uae/mg/5/2026/#vpiRun=run-correlation-id&vpiAttempt=1',
       }),
     );
   });
@@ -132,6 +134,8 @@ describe('prepareMultiSourceScrape', () => {
       expect.objectContaining({
         attemptNumber: 2,
         resultCorrelationId: 'run-correlation-id:drivearabia:2',
+        sourceUrl:
+          'https://www.drivearabia.com/carprices/uae/mg/5/2026/#vpiRun=run-correlation-id&vpiAttempt=2',
       }),
     );
   });

@@ -31,6 +31,33 @@ const PREPARED = {
   ],
 };
 
+function automaticDriveArabia() {
+  return {
+    waitForDriveArabiaReceipt: vi.fn().mockResolvedValue({
+      mode: 'automatic' as const,
+      inboxId: 'automated-inbox',
+      statusCode: 202,
+    }),
+    processDriveArabiaCapture: vi.fn().mockResolvedValue({
+      processedItems: 1,
+      completedItems: 1,
+      failedItems: 0,
+      waitingItems: 0,
+      updatedRequestIds: [REQUEST.id],
+      failures: [],
+      evidenceWarnings: [],
+    }),
+    refreshRun: vi.fn().mockResolvedValue({
+      overallStatusValue: 4,
+      successfulSourceCount: 2,
+      failedSourceCount: 0,
+      isTerminal: true,
+      errorSummary: null,
+    }),
+    updateRequestScrapeStatus: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
 describe('executeMultiSourceScrape', () => {
   it('dispatches YallaMotor into the shared target and returns a correlated PAD URL', async () => {
     const prepare = vi.fn().mockResolvedValue(PREPARED);
@@ -43,7 +70,11 @@ describe('executeMultiSourceScrape', () => {
 
     const result = await executeMultiSourceScrape(
       { request: REQUEST, sources: ['YallaMotor', 'DriveArabia'] },
-      { prepare, scrapeYallaMotor },
+      {
+        prepare,
+        scrapeYallaMotor,
+        ...automaticDriveArabia(),
+      },
     );
 
     expect(prepare).toHaveBeenCalledWith({
@@ -78,6 +109,7 @@ describe('executeMultiSourceScrape', () => {
       {
         prepare: vi.fn().mockResolvedValue(PREPARED),
         scrapeYallaMotor: vi.fn().mockRejectedValue(new Error('Yalla blocked')),
+        ...automaticDriveArabia(),
       },
     );
 
@@ -93,14 +125,18 @@ describe('executeMultiSourceScrape', () => {
 
     const result = await executeMultiSourceScrape(
       { request: REQUEST, sources: ['DriveArabia'] },
-      { prepare: vi.fn().mockResolvedValue(driveOnly), scrapeYallaMotor },
+      {
+        prepare: vi.fn().mockResolvedValue(driveOnly),
+        scrapeYallaMotor,
+        ...automaticDriveArabia(),
+      },
     );
 
     expect(scrapeYallaMotor).not.toHaveBeenCalled();
     expect(result.driveArabiaPadUrl).toContain('vpiRun=shared-run');
   });
 
-  it('processes the exact Inbox ID returned by the secured cloud flow', async () => {
+  it('processes the exact Inbox ID resolved from the correlated Azure capture', async () => {
     const processDriveArabiaCapture = vi.fn().mockResolvedValue({
       processedItems: 1,
       completedItems: 1,
@@ -111,23 +147,29 @@ describe('executeMultiSourceScrape', () => {
       evidenceWarnings: [],
     });
 
+    const waitForDriveArabiaReceipt = vi.fn().mockResolvedValue({
+      mode: 'automatic' as const,
+      inboxId: 'automated-inbox',
+      statusCode: 202,
+    });
     const result = await executeMultiSourceScrape(
       { request: REQUEST, sources: ['DriveArabia'] },
       {
+        ...automaticDriveArabia(),
         prepare: vi.fn().mockResolvedValue({
           ...PREPARED,
           sources: [PREPARED.sources[1]!],
         }),
         scrapeYallaMotor: vi.fn(),
-        triggerDriveArabia: vi.fn().mockResolvedValue({
-          mode: 'automatic',
-          inboxId: 'automated-inbox',
-          statusCode: 202,
-        }),
+        waitForDriveArabiaReceipt,
         processDriveArabiaCapture,
       },
     );
 
+    expect(waitForDriveArabiaReceipt).toHaveBeenCalledWith({
+      runCorrelationId: PREPARED.runCorrelationId,
+      attemptNumber: 1,
+    });
     expect(processDriveArabiaCapture).toHaveBeenCalledWith({
       requests: [REQUEST],
       inboxId: 'automated-inbox',
@@ -139,5 +181,58 @@ describe('executeMultiSourceScrape', () => {
     });
     expect(result.driveArabiaInboxSummary?.completedItems).toBe(1);
     expect(result.sourceErrors).toEqual([]);
+  });
+
+  it('keeps the MVR In Progress until the shared Run becomes terminal', async () => {
+    const updateRequestScrapeStatus = vi.fn().mockResolvedValue(undefined);
+    const result = await executeMultiSourceScrape(
+      { request: REQUEST, sources: ['DriveArabia'] },
+      {
+        ...automaticDriveArabia(),
+        prepare: vi.fn().mockResolvedValue({
+          ...PREPARED,
+          sources: [PREPARED.sources[1]!],
+        }),
+        updateRequestScrapeStatus,
+      },
+    );
+
+    expect(updateRequestScrapeStatus.mock.calls).toEqual([
+      [REQUEST.id, 3],
+      [REQUEST.id, 4],
+    ]);
+    expect(result.sourceErrors).toEqual([]);
+  });
+
+  it('marks the MVR Failed when every selected source terminates unsuccessfully', async () => {
+    const updateRequestScrapeStatus = vi.fn().mockResolvedValue(undefined);
+    const result = await executeMultiSourceScrape(
+      { request: REQUEST, sources: ['DriveArabia'] },
+      {
+        ...automaticDriveArabia(),
+        prepare: vi.fn().mockResolvedValue({
+          ...PREPARED,
+          sources: [PREPARED.sources[1]!],
+        }),
+        waitForDriveArabiaReceipt: vi.fn().mockRejectedValue(new Error('PAD failed')),
+        refreshRun: vi.fn().mockResolvedValue({
+          overallStatusValue: 5,
+          successfulSourceCount: 0,
+          failedSourceCount: 1,
+          isTerminal: true,
+          errorSummary: 'DriveArabia: PAD failed',
+        }),
+        updateRequestScrapeStatus,
+      },
+    );
+
+    expect(updateRequestScrapeStatus.mock.calls).toEqual([
+      [REQUEST.id, 3],
+      [REQUEST.id, 5],
+    ]);
+    expect(result.sourceErrors).toContainEqual({
+      source: 'DriveArabia',
+      error: 'PAD failed',
+    });
   });
 });

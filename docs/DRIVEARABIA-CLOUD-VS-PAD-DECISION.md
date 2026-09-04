@@ -174,48 +174,53 @@ The selected Phase 7A flow is:
 1. Administrator clicks Scrape in Power Pages.
 2. Application creates the shared Run and queued Source Results.
 3. YallaMotor starts through its existing cloud path.
-4. Power Pages securely calls its associated cloud flow.
-5. Power Pages maps the properties inside its fixed `eventData` API envelope directly to the cloud flow's four typed trigger inputs.
-6. Cloud flow passes the `driveArabiaUrl` trigger input to PAD without a Parse JSON action.
+4. Adding the DriveArabia/Queued Source Result triggers a solution-aware Dataverse cloud flow.
+5. The flow marks that exact row Running and passes its correlated Source URL to PAD.
+6. Trigger concurrency one serializes work for the attended desktop session.
 7. PAD launches Chrome, expands specs, captures HTML and uploads to Azure.
 8. PAD outputs InboxId and StatusCode.
-9. Cloud flow returns those values to Power Pages.
-10. Application retrieves that exact InboxId.
+9. Cloud flow writes those values back to the same Source Result.
+10. Application polls that exact row and retrieves that exact InboxId.
 11. Existing parser and evidence writers complete the prepared DriveArabia result.
 12. Shared Run aggregation calculates the terminal outcome.
 ```
 
 The cloud flow is an orchestration boundary, not an extraction boundary. DriveArabia parsing remains in the tested TypeScript parser rather than being duplicated in PAD or cloud-flow expressions.
 
-## 8. Why Power Pages invokes the cloud flow through site integration
+## 8. Why Dataverse now invokes the cloud flow
 
-A public Power Automate HTTP trigger contains a signed URL. Placing that URL in a `VITE_*` variable would ship it inside the public JavaScript bundle. Authentication by URL secrecy is therefore unsuitable for an administrator operation.
+A public Power Automate HTTP trigger contains a signed URL. Placing that URL in a `VITE_*` variable would ship it inside the public JavaScript bundle. Authentication by URL secrecy is therefore unsuitable for an administrator operation. The role-protected Power Pages site-associated endpoint was also live-proven to fail with HTTP 500 before creating a flow run.
 
-Power Pages provides a site-associated cloud-flow API:
+The selected replacement uses the durable Dataverse job row already created by the application:
 
 ```text
-POST /_api/cloudflow/v1.0/trigger/<registration-guid>
+Vehicle Scrape Source Result added
+  where vpi_source = 2 and vpi_processingstatus = 1
+  → automated cloud flow
 ```
 
-The portal session supplies authentication and a CSRF token, and the flow is assigned to authorized Power Pages web roles. The configured GUID is a site registration identifier, not the secret HTTP trigger URL.
+The SPA holds no callback secret and performs no second dispatch call. The flow's Dataverse and Desktop flows connections remain solution-managed server-side resources. The Source Result provides durable job identity, URL, attempt, status, timing, Inbox ID and diagnostics.
 
 For this project:
 
-- assign the DriveArabia flow only to the administrator web role;
-- never assign it to Anonymous Users;
-- do not assign it to general Authenticated Users;
+- restrict the administrator UI and Source Result creation permissions through normal Power Pages/Dataverse security;
+- use solution connection references and a least-privilege Dataverse connection for the automated flow;
+- serialize the attended Desktop flows connector at concurrency one;
 - keep the Azure `ingest_html` function key inside PAD only;
 - keep source HTML transient and out of Dataverse.
 
-Development exception recorded on 2026-08-25: the flow is temporarily assigned to Authenticated Users so live acceptance can proceed while the correct administrator Contact is unresolved among duplicates. Anonymous Users remain denied. This exception does not change the production decision above and must be removed before production acceptance.
+The earlier Power Pages-associated flow remains under the documented Authenticated Users development exception only as a rollback artifact. It is no longer called by unified scraping and should be removed from the site after Dataverse-triggered live acceptance. The temporary HTTP-trigger diagnostic must likewise be disabled or deleted after evidence capture.
 
-Reference: <https://learn.microsoft.com/power-pages/configure/cloud-flow-integration>
+References:
+
+- <https://learn.microsoft.com/power-automate/dataverse/create-update-delete-trigger>
+- <https://learn.microsoft.com/power-automate/desktop-flows/trigger-desktop-flows>
 
 ## 9. Responsibilities by component
 
 | Component | Owns | Must not own |
 |---|---|---|
-| Power Pages application | Admin selection, Run preparation, secure flow invocation, exact Inbox processing, UI feedback | Desktop credentials, ingest function key, browser scraping |
+| Power Pages application | Admin selection, Run preparation, durable job creation, exact receipt polling/Inbox processing, UI feedback | Desktop credentials, ingest function key, browser scraping |
 | Power Automate Cloud | Authorization boundary, machine dispatch, input/output handoff, run history | DriveArabia parsing, trim guessing, master-data decisions |
 | Power Automate Desktop | Chrome navigation, rendered DOM preparation, capture, Azure upload | Dataverse price decisions, cross-source aggregation |
 | Azure inbox | Temporary HTML and capture metadata | Permanent business evidence or administrator decisions |
@@ -301,22 +306,27 @@ Until then, removing PAD would trade a visible operational step for silent evide
 
 ## 14. Current implementation position
 
-Phase 7A application support is implemented locally:
+Phase 7A Dataverse dispatch and exact-correlation completion are deployed and live-accepted:
 
-- `driveArabiaPadAutomation.ts` invokes the associated Power Pages cloud flow.
-- `multiSourceScrapeExecution.ts` passes the correlated URL and processes the returned Inbox ID.
+- `multiSourceOrchestrator.ts` writes the correlated PAD URL onto the queued DriveArabia Source Result before creation.
+- `multiSourceScrapeExecution.ts` no longer invokes the Power Pages endpoint or waits for a cache-sensitive Dataverse receipt; it polls Azure by exact Run correlation plus attempt, validates the returned capture identity, and processes only its Inbox ID.
 - `multiSourceScraper.ts` can retrieve and process one exact inbox item.
 - The admin dialog reports automatic completion or presents the attended fallback.
 - Focused tests cover trigger security shape, response validation, exact capture selection and orchestration.
 
-External configuration is still required:
+Live configuration and acceptance status:
 
-1. Expose PAD `InboxId` and `StatusCode` output variables.
-2. Create the solution-aware Power Pages-triggered cloud flow.
-3. Connect it to the registered machine and existing PAD flow.
-4. Return `InboxId` and `StatusCode` to Power Pages.
-5. Add the flow to the site with the administrator role only.
-6. Configure `VITE_DRIVEARABIA_CLOUD_FLOW_ID`.
-7. Build, upload and perform live acceptance.
+1. PAD exposes `InboxId` and `StatusCode`; manual cloud-flow execution returned Inbox `087ae330a1ef` and status `202`.
+2. The solution-aware cloud flow, registered machine, authorized Desktop flows connection and Power Pages site registration are configured.
+3. Production resolves the registration from the `VPI/DriveArabiaCloudFlowId` site setting; the Vite value is only a development fallback.
+4. Exact manual recovery is deployed and live-proven: the MG 5 capture updated its intended MVR, completed Run and succeeded Source Result without consuming an older Captiva item.
+5. A minimal response-only flow and the production flow both fail at the Power Pages endpoint with HTTP `500` before any cloud-flow run exists. That path is retained only as diagnostic history; unified scraping no longer depends on it.
+6. The old site-associated Power Pages flow registration and its temporary Authenticated Users development exception are no longer part of the active scrape path. They must not be redeployed as production prerequisites; administrator access is enforced at the portal operation and Dataverse permission boundaries.
+7. On 2026-08-31, a temporary HTTP-triggered copy proved the downstream boundary independently: an application-prepared correlation launched attended PAD, uploaded Inbox `e9fa983b3483` with status `202`, and completed the exact prepared Source Result and parent Run.
+8. The direct HTTP test used asynchronous response because a synchronous Postman Cloud Agent request disconnected after 30 seconds even though PAD completed. Durable completion must not depend on keeping one browser request open.
+9. The HTTP callback URL is a signed credential and the test trigger was temporarily accessible to **Anyone**. This is diagnostic evidence, not an approved replacement for the role-protected production boundary, and the URL must never be embedded in the SPA.
+10. The automated Dataverse flow is configured for added DriveArabia/Queued rows, concurrency one, Running state, attended PAD, durable Inbox/status receipt, and a parallel Failed-state handler. Focused application verification and deployment are complete.
+11. The 2026-09-01 live MVR test proved automatic Dataverse dispatch and durable receipt persistence: PAD returned Inbox `03df3cede18b`/HTTP `202`, and the exact Source Result stored those values. Manual exact-Inbox processing completed that result successfully.
+12. Automatic browser completion is accepted. Audi RS 7 and Volkswagen PASSAT CC tests proved that browser cache controls, Dataverse change tracking and a Power Pages cache reset cannot make workflow-written receipts reliably immediate, so the implementation polls the Azure Inbox by exact Run correlation plus attempt and treats Dataverse receipt fields as audit only. The Azure Function and portal were deployed, and fresh Nissan Patrol `SE Titanium` and `LE Titanium+` runs completed automatically with prices and specifications.
 
-Background completion after the portal closes is a separate Phase 7B responsibility. Until then, an interrupted automatic handoff leaves the Azure capture recoverable through the existing record-scoped action.
+Background completion after the portal closes remains a separate Phase 7B responsibility. An interrupted interactive handoff leaves the Azure capture recoverable through the existing record-scoped action. With the portal open, the accepted Phase 7A path is one authenticated administrator click with no manual URL copy, Postman request, Inbox ID entry, or **Process PAD Capture** step.

@@ -3,6 +3,7 @@
  *
  * Primary path: uses the portal's built-in `webapi.safeAjax` which handles CSRF
  * token acquisition and injection automatically.
+ * Mutable polling reads can opt out of browser/jQuery response caching.
  *
  * Fallback: obtains the CSRF token via `shell.getTokenDeferred()` and calls
  * native `fetch()` — the request always appears in the Network tab.
@@ -29,6 +30,7 @@ interface TokenDeferredLike {
 interface SafeAjaxOptions {
   type: string;
   url: string;
+  cache?: boolean;
   contentType?: string;
   headers?: Record<string, string>;
   data?: unknown;
@@ -41,6 +43,8 @@ export interface SafeFetchOptions {
   method?: string;
   headers?: Record<string, string>;
   body?: BodyInit | null;
+  /** Force a fresh GET when polling mutable Power Pages Web API records. */
+  bypassCache?: boolean;
 }
 
 /**
@@ -87,6 +91,7 @@ export async function safeFetch<T = unknown>({
   method = 'GET',
   headers = {},
   body,
+  bypassCache = false,
 }: SafeFetchOptions): Promise<T> {
   // ── Primary: portal's built-in webapi.safeAjax ──
   if (window.webapi?.safeAjax) {
@@ -94,6 +99,7 @@ export async function safeFetch<T = unknown>({
       window.webapi!.safeAjax({
         type: method,
         url,
+        cache: bypassCache ? false : undefined,
         contentType: headers['Content-Type'] || 'application/json',
         headers: Object.keys(headers).length > 0 ? headers : undefined,
         data: body, // Raw JSON string — matches the working API pattern
@@ -121,7 +127,12 @@ export async function safeFetch<T = unknown>({
       mergedHeaders['Content-Type'] = 'application/json; charset=utf-8';
     }
 
-    const resp = await fetch(url, { method, headers: mergedHeaders, body });
+    const resp = await fetch(url, {
+      method,
+      headers: mergedHeaders,
+      body,
+      cache: bypassCache ? 'no-store' : undefined,
+    });
     if (!resp.ok) {
       const text = await resp.text().catch(() => '');
       throw new Error(`HTTP ${resp.status} ${resp.statusText} — ${text}`);
@@ -150,7 +161,9 @@ function extractErrorDetail(xhr: unknown, fallback: string): string {
   try {
     const xhr_ = xhr as XMLHttpRequest;
     const text = xhr_.responseText;
-    if (!text) return fallback;
+    if (!text) {
+      return fallback;
+    }
     const parsed = JSON.parse(text);
     return parsed?.error?.message ?? fallback;
   } catch {
@@ -178,6 +191,7 @@ export async function safeFetchWithMeta<T = unknown>({
   method = 'GET',
   headers = {},
   body,
+  bypassCache = false,
 }: SafeFetchOptions): Promise<{ data: T; meta: SafeFetchMeta }> {
   // ── Primary: portal's built-in webapi.safeAjax ──
   if (window.webapi?.safeAjax) {
@@ -185,6 +199,7 @@ export async function safeFetchWithMeta<T = unknown>({
       window.webapi!.safeAjax({
         type: method,
         url,
+        cache: bypassCache ? false : undefined,
         contentType: headers['Content-Type'] || 'application/json',
         headers: Object.keys(headers).length > 0 ? headers : undefined,
         data: body, // Raw JSON string — matches the working API pattern
@@ -217,7 +232,12 @@ export async function safeFetchWithMeta<T = unknown>({
       mergedHeaders['Content-Type'] = 'application/json; charset=utf-8';
     }
 
-    const resp = await fetch(url, { method, headers: mergedHeaders, body });
+    const resp = await fetch(url, {
+      method,
+      headers: mergedHeaders,
+      body,
+      cache: bypassCache ? 'no-store' : undefined,
+    });
     const meta: SafeFetchMeta = { getHeader: (name) => resp.headers.get(name) };
 
     if (!resp.ok) {
